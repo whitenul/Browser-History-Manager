@@ -1,0 +1,1160 @@
+export function getDomain(url: string): string {
+  try {
+    const hostname = new URL(url).hostname
+    return hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+export function getFaviconUrl(url: string): string {
+  try {
+    const domain = new URL(url).hostname.replace(/^www\./, '')
+    return `https://icons.duckduckgo.com/ip3/${domain}.ico`
+  } catch {
+    return ''
+  }
+}
+
+export function stringToColor(str: string): string {
+  if (!str) return '#94a3b8'
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+    hash = hash & hash
+  }
+  const hue = Math.abs(hash % 360)
+  const sat = 55 + Math.abs(hash % 25)
+  const light = 45 + Math.abs(hash % 20)
+  return `hsl(${hue}, ${sat}%, ${light}%)`
+}
+
+export function escapeHtml(text: string): string {
+  if (!text) return ''
+  const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }
+  return text.replace(/[&<>"']/g, m => map[m])
+}
+
+export function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+export function debounce<T extends (...args: any[]) => any>(fn: T, wait: number): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout>
+  return (...args: Parameters<T>) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), wait)
+  }
+}
+
+export function throttle<T extends (...args: any[]) => any>(fn: T, limit: number): (...args: Parameters<T>) => void {
+  let inThrottle = false
+  return (...args: Parameters<T>) => {
+    if (!inThrottle) {
+      fn(...args)
+      inThrottle = true
+      setTimeout(() => (inThrottle = false), limit)
+    }
+  }
+}
+
+export function formatTime(timestamp: number): string {
+  const diff = Date.now() - timestamp
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+  if (days > 0) return `${days}天前`
+  if (hours > 0) return `${hours}小时前`
+  if (minutes > 0) return `${minutes}分钟前`
+  return '刚刚'
+}
+
+export function formatDate(timestamp: number): string {
+  const d = new Date(timestamp)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function formatDateTime(timestamp: number): string {
+  const d = new Date(timestamp)
+  return `${formatDate(timestamp)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+export function formatNumber(n: number): string {
+  if (n >= 10000) return (n / 10000).toFixed(1) + '万'
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k'
+  return String(n)
+}
+
+export function getTimeRange(range: string): { startTime: number; endTime: number } {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  switch (range) {
+    case 'today': return { startTime: today, endTime: now.getTime() }
+    case 'yesterday': return { startTime: today - 86400000, endTime: today }
+    case '3days': return { startTime: today - 3 * 86400000, endTime: now.getTime() }
+    case 'week': return { startTime: today - 7 * 86400000, endTime: now.getTime() }
+    case 'month': return { startTime: today - 30 * 86400000, endTime: now.getTime() }
+    case 'quarter': return { startTime: today - 90 * 86400000, endTime: now.getTime() }
+    case 'year': return { startTime: today - 365 * 86400000, endTime: now.getTime() }
+    default: return { startTime: 0, endTime: now.getTime() }
+  }
+}
+
+export function highlightText(text: string, keyword: string): string {
+  if (!keyword || !text) return escapeHtml(text || '')
+  const escaped = escapeHtml(text)
+  const regex = new RegExp(`(${escapeRegExp(keyword)})`, 'gi')
+  return escaped.replace(regex, '<mark>$1</mark>')
+}
+
+export function createCustomRule(name: string, pattern: string, type: string = 'domain') {
+  return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name, pattern, type }
+}
+
+export function matchRule(url: string, rule: { pattern: string; type: string }): boolean {
+  const domain = getDomain(url)
+  switch (rule.type) {
+    case 'domain': return domain === rule.pattern || domain.endsWith('.' + rule.pattern)
+    case 'path': return url.includes(rule.pattern)
+    case 'regex':
+      try { return new RegExp(rule.pattern).test(url) } catch { return false }
+    default: return false
+  }
+}
+
+export interface HistoryRecord {
+  id: string
+  url: string
+  title: string
+  lastVisitTime: number
+  visitCount: number
+  typedCount?: number
+  domain: string
+  domainColor: string
+}
+
+export interface GroupResult {
+  groups: Record<string, HistoryRecord[]>
+  order: string[]
+}
+
+const GROUP_LABELS: Record<string, string> = {
+  today: '今天',
+  yesterday: '昨天',
+  last7days: '近7天',
+  last30days: '近30天',
+  older: '更早',
+  _other: '其他',
+}
+
+export function getGroupLabel(key: string): string {
+  return GROUP_LABELS[key] || key
+}
+
+export function groupByDomain(records: HistoryRecord[]): GroupResult {
+  const groups: Record<string, HistoryRecord[]> = {}
+  const order: string[] = []
+  records.forEach(r => {
+    if (!groups[r.domain]) { groups[r.domain] = []; order.push(r.domain) }
+    groups[r.domain].push(r)
+  })
+  order.sort((a, b) => groups[b].length - groups[a].length)
+  return { groups, order }
+}
+
+export function groupByTimeline(records: HistoryRecord[]): GroupResult {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const groups: Record<string, HistoryRecord[]> = { today: [], yesterday: [], last7days: [], last30days: [], older: [] }
+  records.forEach(r => {
+    if (r.lastVisitTime >= today) groups.today.push(r)
+    else if (r.lastVisitTime >= today - 86400000) groups.yesterday.push(r)
+    else if (r.lastVisitTime >= today - 7 * 86400000) groups.last7days.push(r)
+    else if (r.lastVisitTime >= today - 30 * 86400000) groups.last30days.push(r)
+    else groups.older.push(r)
+  })
+  const order = ['today', 'yesterday', 'last7days', 'last30days', 'older'].filter(k => groups[k].length > 0)
+  return { groups, order }
+}
+
+export function groupByCustomRules(records: HistoryRecord[], rules: ReturnType<typeof createCustomRule>[]): GroupResult {
+  const groups: Record<string, HistoryRecord[]> = { _other: [] }
+  const order: string[] = ['_other']
+  rules.forEach(rule => { groups[rule.name] = []; order.push(rule.name) })
+  records.forEach(r => {
+    let matched = false
+    for (const rule of rules) {
+      if (matchRule(r.url, rule)) { groups[rule.name].push(r); matched = true; break }
+    }
+    if (!matched) groups._other.push(r)
+  })
+  return { groups, order: order.filter(id => groups[id]?.length > 0) }
+}
+
+export function groupBySession(records: HistoryRecord[], gapMs: number = 30 * 60 * 1000): GroupResult {
+  const sorted = [...records].sort((a, b) => b.lastVisitTime - a.lastVisitTime)
+  if (!sorted.length) return { groups: {}, order: [] }
+  const groups: Record<string, HistoryRecord[]> = {}
+  const order: string[] = []
+  let sessionIdx = 0
+  let sessionStart = sorted[0].lastVisitTime
+  let sessionKey = `session-${sessionIdx}`
+  groups[sessionKey] = [sorted[0]]
+  order.push(sessionKey)
+  for (let i = 1; i < sorted.length; i++) {
+    if (sessionStart - sorted[i].lastVisitTime > gapMs) {
+      sessionIdx++
+      sessionKey = `session-${sessionIdx}`
+      groups[sessionKey] = []
+      order.push(sessionKey)
+    }
+    groups[sessionKey].push(sorted[i])
+    sessionStart = sorted[i].lastVisitTime
+  }
+  return { groups, order }
+}
+
+export function exportToCSV(records: HistoryRecord[]): void {
+  if (!records.length) return
+  const headers = ['标题', '网址', '域名', '最后访问时间', '访问次数']
+  const escCSV = (v: string) => (v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v)
+  const rows = records.map(r => [
+    escCSV(r.title || ''), escCSV(r.url), escCSV(r.domain),
+    escCSV(new Date(r.lastVisitTime).toISOString()), String(r.visitCount || 0)
+  ])
+  const csv = '\ufeff' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `browser-history-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+interface TagRule {
+  tag: string
+  subtags?: string[]
+  domains: string[]
+  domainSuffixes?: string[]
+  titleKeywords: string[]
+  urlPatterns?: string[]
+  queryPatterns?: string[]
+  priority?: number
+}
+
+const TAG_RULES: TagRule[] = [
+  {
+    tag: '社交',
+    subtags: ['即时通讯', '社区论坛', '职业社交', '图片社交'],
+    domains: [
+      'twitter.com', 'x.com', 'weibo.com', 'facebook.com', 'instagram.com', 'reddit.com',
+      'douban.com', 'linkedin.com', 'mastodon.social', 'threads.net', 'tumblr.com',
+      'zhihu.com', 'tieba.baidu.com', 'discord.com', 'telegram.org', 'slack.com',
+      'clubhouse.com', 'vk.com', 'snapchat.com', 'xiaohongshu.com', 'pinterest.com',
+      'quora.com', 'stackexchange.com', 'zhihuishu.com', 'weixin.qq.com', 'wx.qq.com',
+      'web.wechat.com', 'messenger.com', 'whatsapp.com', 'web.whatsapp.com',
+      'line.me', 'kakao.com', 'signal.org', 'teams.microsoft.com', 'skype.com',
+      'icq.com', 'irc', 'gitter.im', 'matrix.org', 'element.io',
+      'bluesky.social', 'bsky.app', 'cohost.org', 'post.news',
+      'misskey.io', 'pleroma.social', 'friendica', 'diaspora',
+    ],
+    domainSuffixes: ['.social', '.chat', '.moe'],
+    titleKeywords: [
+      '社交', 'social', '关注', '粉丝', '动态', '朋友圈', '帖子', '讨论',
+      '私信', '群聊', '好友', '评论', '转发', '点赞', '关注',
+      'inbox', 'message', 'chat', 'follow', 'follower',
+    ],
+    urlPatterns: ['/feed', '/timeline', '/status/', '/post/', '/comment/', '/messages/', '/dm/', '/chat/'],
+    queryPatterns: ['tab=messages', 'action=chat', 'view=feed'],
+    priority: 8,
+  },
+  {
+    tag: '视频',
+    subtags: ['短视频', '长视频', '直播', '流媒体'],
+    domains: [
+      'youtube.com', 'bilibili.com', 'netflix.com', 'vimeo.com', 'tiktok.com', 'douyin.com',
+      'hulu.com', 'disneyplus.com', 'primevideo.com', 'hbomax.com', 'iqiyi.com', 'youku.com',
+      'mgtv.com', 'acfun.cn', 'nicovideo.jp', 'dailymotion.com',
+      'twitch.tv', 'live.bilibili.com', 'douyu.com', 'huya.com', 'cc.163.com',
+      'peertube', 'odysee.com', 'rumble.com', 'kick.com', 'trovo.live',
+      'youtube.com/shorts', 'youtube.com/live',
+      'crunchyroll.com', 'funimation.com', 'vrv.co', 'animelab.com',
+      'paramountplus.com', 'peacocktv.com', 'appletv.apple.com',
+      'm.youtube.com', 'studio.youtube.com',
+      'v.qq.com', 'v.youku.com', 'film.sohu.com', 'tv.sohu.com',
+      'le.com', 'pptv.com', 'wasu.cn',
+    ],
+    domainSuffixes: ['.tv'],
+    titleKeywords: [
+      '视频', 'video', 'watch', '直播', 'live', '番剧', '动漫', '动画',
+      'movie', 'film', '剧集', '综艺', '短视频', 'vlog', 'stream',
+      '纪录片', 'documentary', '预告', 'trailer', '弹幕', 'danmaku',
+    ],
+    urlPatterns: ['/watch', '/video/', '/live/', '/play/', '/episode/', '/shorts/', '/stream/', '/clip/'],
+    queryPatterns: ['v=', 'video_id=', 'bvid=', 'aid=', 'ep_id='],
+    priority: 9,
+  },
+  {
+    tag: '技术',
+    subtags: ['前端', '后端', '移动端', 'DevOps', '数据库', '安全', '开源'],
+    domains: [
+      'github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com',
+      'developer.mozilla.org', 'npmjs.com', 'pypi.org', 'crates.io', 'rubygems.org',
+      'csdn.net', 'juejin.cn', 'segmentfault.com', 'dev.to', 'hashnode.dev', 'hackernoon.com',
+      'news.ycombinator.com', 'lobste.rs', 'v2ex.com', 'infoq.cn', 'oschina.net',
+      'cnblogs.com', 'iteye.com', '51cto.com', 'linux.cn', 'rust-lang.org',
+      'python.org', 'nodejs.org', 'go.dev', 'vuejs.org', 'react.dev', 'angular.io',
+      'webpack.js.org', 'vitejs.dev', 'typescriptlang.org', 'docs.rs',
+      'pkg.go.dev', 'docs.python.org', 'kubernetes.io', 'docker.com',
+      'aws.amazon.com', 'cloud.google.com', 'azure.microsoft.com',
+      'digitalocean.com', 'heroku.com', 'vercel.com', 'netlify.app',
+      'cloudflare.com', 'firebase.google.com', 'supabase.com',
+      'codepen.io', 'codesandbox.io', 'jsfiddle.net', 'replit.com',
+      'leetcode.com', 'codeforces.com', 'hackerrank.com', 'codewars.com',
+      'atcoder.jp', 'topcoder.com', 'spoj.com', 'projecteuler.net',
+      'svelte.dev', 'nextjs.org', 'nuxt.com', 'astro.build', 'remix.run',
+      'tailwindcss.com', 'unocss.dev', 'mui.com', 'ant.design',
+      'expressjs.com', 'fastapi.tiangolo.com', 'django.com', 'flask.palletsprojects.com',
+      'spring.io', 'laravel.com', 'rails.org', 'gin-gonic.com',
+      'mongodb.com', 'redis.com', 'postgresql.org', 'mysql.com',
+      'elastic.co', 'grafana.com', 'prometheus.io', 'jenkins.io',
+      'owasp.org', 'portswigger.net', 'hackthebox.com', 'tryhackme.com',
+      'android.com/developers', 'developer.apple.com', 'developer.android.com',
+      'docs.flutter.dev', 'reactnative.dev', 'capacitorjs.com',
+      'deno.land', 'bun.sh', 'prisma.io', 'drizzle.team',
+      'trpc.io', 'graphql.org', 'hasura.io', 'supabase.com/docs',
+    ],
+    domainSuffixes: ['.dev', '.io', '.rs', '.sh', '.app'],
+    titleKeywords: [
+      'api', 'sdk', '代码', '编程', '开发', 'debug', 'react', 'vue', 'python', 'typescript',
+      'javascript', 'rust', 'golang', 'java', 'c++', '算法', '数据结构', '框架', '库',
+      '部署', 'deploy', '容器', 'docker', 'k8s', '微服务', 'serverless',
+      '前端', '后端', 'fullstack', 'devops', 'ci/cd', 'git', '数据库',
+      '编程题', '刷题', 'leetcode', 'oj', '竞赛', 'runtime', 'compiler',
+      'middleware', 'orm', 'cache', 'queue', 'websocket', 'grpc',
+      'component', 'hook', 'state', 'render', 'bundle', 'webpack', 'vite',
+      'sql', 'nosql', 'migration', 'schema', 'index', 'query',
+      'authentication', 'authorization', 'jwt', 'oauth', 'cors',
+      'ssh', 'tls', 'ssl', 'encryption', 'vulnerability', 'xss', 'csrf',
+    ],
+    urlPatterns: [
+      '/issues/', '/pull/', '/commit/', '/blob/', '/tree/', '/releases/',
+      '/questions/', '/answers/', '/tags/', '/repos/', '/packages/',
+      '/api/', '/sdk/', '/cli/', '/config/', '/env/',
+    ],
+    queryPatterns: ['tab=repositories', 'q=repo', 'sort=stars', 'language='],
+    priority: 9,
+  },
+  {
+    tag: '文档',
+    subtags: ['协作', '知识库', 'API文档', '笔记'],
+    domains: [
+      'docs.google.com', 'notion.so', 'notion.site', 'confluence', 'wiki',
+      'readthedocs.io', 'gitbook.com', 'docusaurus.io', 'mkdocs.org',
+      'swagger.io', 'postman.com', 'insomnia.rest', 'typora.io',
+      'feishu.cn', 'dingtalk.com', 'yuque.com', 'shimo.im', 'mubu.com',
+      'processon.com', 'draw.io', 'miro.com', 'lucidchart.com',
+      'coda.io', 'airtable.com', 'clickup.com', 'asana.com',
+      'atlassian.net', 'atlassian.com', 'jira', 'trello.com',
+      'obsidian.md', 'logseq.com', 'roamresearch.com',
+      'craft.do', 'bear.app', 'ulysses.app', 'ia.net',
+      'dropbox.com', 'drive.google.com', 'onedrive.com',
+      'overleaf.com', 'sharelatex.com', 'latex',
+      'hackmd.io', 'markmap.js.org', 'mindmup.com',
+    ],
+    titleKeywords: [
+      '文档', 'docs', 'documentation', '手册', '指南', 'wiki', '知识库', '笔记', '协作',
+      '规范', '标准', 'rfc', 'specification', 'markdown', 'latex', '表格',
+      'spreadsheet', 'presentation', 'slides', '模板', 'template',
+    ],
+    urlPatterns: ['/docs/', '/wiki/', '/guide/', '/manual/', '/reference/', '/handbook/', '/note/', '/page/'],
+    queryPatterns: ['edit=', 'view=edit', 'mode=edit'],
+    priority: 7,
+  },
+  {
+    tag: '购物',
+    subtags: ['电商', '比价', '二手', '品牌'],
+    domains: [
+      'taobao.com', 'jd.com', 'amazon.com', 'pinduoduo.com', 'tmall.com', 'ebay.com',
+      'suning.com', 'vip.com', 'kaola.com', 'mi.com', 'apple.com/shop',
+      'walmart.com', 'target.com', 'bestbuy.com', 'costco.com',
+      'shein.com', 'shopee.com', 'lazada.com', 'aliexpress.com',
+      'etsy.com', 'zara.com', 'uniqlo.com', 'nike.com', 'adidas.com',
+      'smzdm.com', 'manmanbuy.com', 'gwdang.com',
+      'xianyu.com', 'idle.taobao.com', 'poizon.com', 'zhuanzhuan.com',
+      'dangdang.com', 'yanxuan.com', 'you.163.com',
+      'samsung.com', 'huawei.com', 'oppo.com', 'vivo.com',
+      'newegg.com', 'microcenter.com', 'bhphotovideo.com',
+      'farfetch.com', 'ssense.com', 'matchesfashion.com',
+      'sephora.com', 'macys.com', 'nordstrom.com',
+      'mercari.com', 'rakuten.co.jp', 'yahoo.co.jp/shopping',
+    ],
+    domainSuffixes: ['.shop', '.store', '.market'],
+    titleKeywords: [
+      '购买', '价格', '优惠', '折扣', '秒杀', '优惠券', '比价', '包邮', '下单', '购物车',
+      '促销', '特价', '打折', '满减', '好价', '值得买', 'review', '测评',
+      '开箱', 'unboxing', '种草', '拔草', '正品', '假货', '物流', '快递',
+    ],
+    urlPatterns: ['/product/', '/item/', '/cart', '/checkout', '/order/', '/deal/', '/coupon/', '/shop/', '/goods/'],
+    queryPatterns: ['item_id=', 'product_id=', 'sku=', 'spu=', 'category_id='],
+    priority: 8,
+  },
+  {
+    tag: '新闻',
+    subtags: ['科技', '财经', '国际', '社会'],
+    domains: [
+      'news.ycombinator.com', 'bbc.com', 'cnn.com', 'sina.com.cn', '163.com', 'thepaper.cn',
+      'reuters.com', 'apnews.com', 'nytimes.com', 'washingtonpost.com', 'theguardian.com',
+      'wsj.com', 'ft.com', 'economist.com', 'time.com', 'newsweek.com',
+      'ifeng.com', 'sohu.com', 'qq.com/news', 'caixin.com', 'jiemian.com',
+      'guancha.cn', 'zaobao.com', 'chinadaily.com.cn', 'people.com.cn',
+      'xinhuanet.com', 'cctv.com', 'ithome.com', '36kr.com', 'huxiu.com',
+      'tmtpost.com', 'ifanr.com', 'cnbeta.com', 'solidot.org',
+      'aljazeera.com', 'dw.com', 'france24.com', 'nhk.or.jp',
+      'foxnews.com', 'nbcnews.com', 'abcnews.go.com', 'cbsnews.com',
+      'apnews.com', 'usatoday.com', 'npr.org', 'bbc.co.uk',
+      'theverge.com', 'wired.com', 'arstechnica.com', 'techcrunch.com',
+      'engadget.com', 'gizmodo.com', 'mashable.com',
+      'zaobao.com.sg', 'scmp.com', 'thestraitstimes.com',
+    ],
+    titleKeywords: [
+      '新闻', 'news', '报道', '快讯', '头条', '突发', '时事', '热点', '评论', '社论',
+      'breaking', 'headline', 'exclusive', '深度', '调查', '专题',
+    ],
+    urlPatterns: ['/news/', '/article/', '/story/', '/breaking/', '/headline/', '/report/', '/column/'],
+    queryPatterns: ['section=news', 'category=news', 'type=article'],
+    priority: 7,
+  },
+  {
+    tag: '设计',
+    subtags: ['UI/UX', '平面', '3D', '动效', '素材'],
+    domains: [
+      'dribbble.com', 'behance.net', 'figma.com', 'canva.com', 'unsplash.com', 'pinterest.com',
+      'adobe.com', 'sketch.com', 'invisionapp.com', 'framer.com', 'spline.design',
+      'coolors.co', 'color.adobe.com', 'fontawesome.com', 'fonts.google.com',
+      'iconfont.cn', 'iconify.design', 'flaticon.com', 'iconfinder.com',
+      'shutterstock.com', 'gettyimages.com', 'pexels.com', 'pixabay.com',
+      'freepik.com', 'awwwards.com', 'cssdesignawards.com',
+      'zcool.com.cn', 'uisdc.com', 'seeseed.com',
+      'blender.org', 'sketchfab.com', 'poly.food', 'threejs.org',
+      'lottiefiles.com', 'rive.app', 'haiku.ai',
+      'penpot.app', 'plasmic.app', 'webflow.com', 'bubble.io',
+      'creativemarket.com', 'envato.com', 'themeforest.net',
+      'dribbble.com/shots', 'mobbin.com', 'pageflows.com',
+    ],
+    domainSuffixes: ['.design', '.art'],
+    titleKeywords: [
+      '设计', 'design', 'ui', 'ux', '配色', '字体', '排版', '原型', '交互', '视觉',
+      'icon', '插画', 'illustration', 'mockup', 'wireframe', 'gradient',
+      'figma', 'sketch', '组件', 'component', 'token', '色板', 'palette',
+      '响应式', 'responsive', '动画', 'motion', '3d', '建模',
+    ],
+    urlPatterns: ['/design/', '/prototype/', '/canvas/', '/editor/', '/template/', '/shot/', '/portfolio/'],
+    queryPatterns: ['file=', 'node-id=', 'type=design'],
+    priority: 7,
+  },
+  {
+    tag: '学习',
+    subtags: ['课程', '学术', '语言', '编程学习'],
+    domains: [
+      'coursera.org', 'udemy.com', 'khan', 'edu.cn', 'mooc',
+      'edx.org', 'mit.edu', 'stanford.edu', 'harvard.edu', 'ocw.mit.edu',
+      'skillshare.com', 'pluralsight.com', 'linkedin.com/learning',
+      'duolingo.com', 'babbel.com', 'rosettastone.com',
+      'icourse163.org', 'xuetangx.com', 'imooc.com', 'jikexueyuan.com',
+      'runoob.com', 'w3schools.com', 'tutorialspoint.com', 'geeksforgeeks.org',
+      'brilliant.org', 'khanacademy.org', 'scratch.mit.edu',
+      'scholar.google.com', 'arxiv.org', 'researchgate.net', 'semanticscholar.org',
+      'academia.edu', 'core.ac.uk', 'doi.org', 'springer.com', 'ieee.org',
+      'udacity.com', 'datacamp.com', 'codecademy.com',
+      'futurelearn.com', 'coursera.org', 'khanacademy.org',
+      'quizlet.com', 'ankiweb.net', 'memrise.com',
+      'z-library.org', 'libgen.is', 'sci-hub',
+    ],
+    domainSuffixes: ['.edu', '.ac.uk', '.ac.jp'],
+    titleKeywords: [
+      '教程', 'tutorial', '课程', 'course', '学习', '入门', '进阶', '实战', '培训',
+      '论文', 'paper', '研究', 'research', '学术', 'academic', '学位', 'thesis',
+      '考试', 'exam', '认证', 'certification', '练习', 'exercise', 'quiz',
+    ],
+    urlPatterns: ['/learn/', '/course/', '/lesson/', '/lecture/', '/tutorial/', '/paper/', '/class/'],
+    queryPatterns: ['course_id=', 'lesson=', 'chapter='],
+    priority: 8,
+  },
+  {
+    tag: '邮件',
+    domains: [
+      'mail.google.com', 'outlook.com', 'outlook.live.com', 'mail.qq.com', 'mail.163.com',
+      'mail.yahoo.com', 'proton.me', 'protonmail.com', 'zoho.com/mail',
+      'fastmail.com', 'tutanota.com', 'gmx.com', 'mail.ru',
+      'mail.sina.com', 'mail.126.com', 'mail.sohu.com', 'ym.163.com',
+      'mail.139.com', 'mail.exmail.qq.com',
+    ],
+    titleKeywords: ['邮件', 'email', 'inbox', '收件箱', '发件', 'draft', 'sent'],
+    urlPatterns: ['/mail/', '/inbox/', '/compose/'],
+    priority: 6,
+  },
+  {
+    tag: '音乐',
+    subtags: ['流媒体', '播客', '歌词'],
+    domains: [
+      'spotify.com', 'music.163.com', 'soundcloud.com', 'apple.com/music',
+      'music.apple.com', 'tidal.com', 'deezer.com', 'pandora.com',
+      'y.qq.com', 'kugou.com', 'kuwo.cn', 'xiami.com',
+      'bandcamp.com', 'last.fm', 'genius.com', 'azlyrics.com',
+      'music.youtube.com', 'audius.co', 'reverbnation.com',
+      'podcasts.apple.com', 'podcasts.google.com', 'overcast.fm',
+      'pocketcasts.com', 'castro.fm', 'breakers.fm',
+      'kuaishou.com', '5sing.kugou.com',
+    ],
+    domainSuffixes: ['.fm', '.radio'],
+    titleKeywords: [
+      '音乐', 'music', 'playlist', '歌单', '专辑', 'album', '歌词', 'lyrics',
+      '播客', 'podcast', '单曲', '歌手', 'singer', 'band',
+    ],
+    urlPatterns: ['/track/', '/album/', '/playlist/', '/artist/', '/podcast/', '/song/'],
+    queryPatterns: ['id=', 'track=', 'album='],
+    priority: 7,
+  },
+  {
+    tag: 'AI',
+    subtags: ['对话', '图像生成', '模型', 'AI工具'],
+    domains: [
+      'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'huggingface.co',
+      'midjourney.com', 'perplexity.ai', 'poe.com', 'character.ai',
+      'stability.ai', 'runwayml.com', 'replicate.com', 'together.ai',
+      'anthropic.com', 'openai.com', 'deepmind.com', 'deepmind.google',
+      'copilot.microsoft.com', 'bing.com/chat', 'bard.google.com',
+      'civitai.com', 'ollama.com', 'langchain.com', 'lmstudio.ai',
+      'chat.zhipu.ai', 'yiyan.baidu.com', 'tongyi.aliyun.com',
+      'xinghuo.xfyun.cn', 'kimi.moonshot.cn', 'doubao.com',
+      'tiangong.cn', 'baichuan-ai.com', 'minimaxi.com',
+      'suno.com', 'udio.com', 'elevenlabs.io',
+      'leonardo.ai', 'playground.ai', 'nightcafe.studio',
+      'huggingface.co/spaces', 'huggingface.co/models',
+      'openrouter.ai', 'groq.com', 'cerebras.ai', 'sambanova.ai',
+      'dify.ai', 'coze.com', 'fastgpt.in', 'lobechat.com',
+      'cursor.com', 'windsurf.ai', 'augmentcode.com',
+      'v0.dev', 'bolt.new', 'lovable.dev', 'replit.com/ai',
+      'comfyui.com', 'automatic1111.com', 'fooocus.ai',
+    ],
+    titleKeywords: [
+      'chatgpt', 'gpt', 'ai', '人工智能', 'llm', 'prompt', '大模型', '生成式',
+      'diffusion', 'transformer', 'neural', '机器学习', '深度学习',
+      'stable diffusion', 'midjourney', 'dall-e', 'copilot',
+      'embedding', 'fine-tune', 'rag', 'agent', 'chain-of-thought',
+      '文生图', '图生图', '文生视频', 'ai绘画', 'ai写作',
+    ],
+    urlPatterns: ['/chat/', '/generate/', '/model/', '/inference/', '/completions/', '/playground/'],
+    queryPatterns: ['model=', 'prompt=', 'q=', 'chat='],
+    priority: 10,
+  },
+  {
+    tag: '游戏',
+    subtags: ['PC', '主机', '手游', '攻略', '电竞'],
+    domains: [
+      'store.steampowered.com', 'steampowered.com', 'epicgames.com', 'playstation.com',
+      'xbox.com', 'twitch.tv', 'nintendo.com', 'gog.com', 'origin.com',
+      'blizzard.com', 'riotgames.com', 'ubisoft.com', 'ea.com',
+      'taptap.com', '4399.com', '7k7k.com', '3dmgame.com',
+      'ign.com', 'gamespot.com', 'polygon.com', 'kotaku.com',
+      'nexusmods.com', 'moddb.com', 'curseforge.com',
+      'speedrun.com', 'howlongtobeat.com', 'metacritic.com',
+      'op.gg', 'u.gg', 'mobafire.com', 'lol.qq.com',
+      'pvp.qq.com', 'cg.163.com', 'hs.blizzard.com',
+      'playvalorant.com', 'playapex.com', 'playoverwatch.com',
+      'genshin.hoyoverse.com', 'hoyolab.com', 'starrail.hoyoverse.com',
+      'roblox.com', 'mojang.com', 'minecraft.net',
+      'gamefaqs.gamespot.com', 'trueachievements.com',
+      'deckbuilder', 'mmorpg.com', 'rockpapershotgun.com',
+      'biligame.com', 'game.bilibili.com',
+    ],
+    domainSuffixes: ['.gg'],
+    titleKeywords: [
+      '游戏', 'game', 'gaming', '攻略', 'walkthrough', 'mod', '通关', '副本',
+      'fps', 'rpg', 'moba', '开放世界', '角色扮演', 'steam',
+      '电竞', 'esports', '排位', 'ranked', '赛季', 'season',
+      '抽卡', 'gacha', '装备', 'build', '天赋', 'skill',
+    ],
+    urlPatterns: ['/game/', '/app/', '/store/', '/play/', '/mods/', '/wiki/'],
+    queryPatterns: ['app_id=', 'game_id=', 'rank='],
+    priority: 8,
+  },
+  {
+    tag: '金融',
+    subtags: ['股票', '加密货币', '基金', '银行'],
+    domains: [
+      'bloomberg.com', 'finance.yahoo.com', 'xueqiu.com', 'eastmoney.com',
+      'coinmarketcap.com', 'binance.com', 'okx.com', 'huobi.com',
+      'tradingview.com', 'investing.com', 'seekingalpha.com',
+      'robinhood.com', 'fidelity.com', 'vanguard.com', 'schwab.com',
+      'wallstreetcn.com', 'jinse.com', '8btc.com', 'mifengcha.com',
+      'fund.eastmoney.com', 'laohu8.com', 'longbridgeapp.com',
+      'rich.baidu.com', 'finance.sina.com.cn', 'stock.xueqiu.com',
+      'icbc.com.cn', 'ccb.com', 'boc.cn', 'abchina.com', 'bankcomm.com',
+      'cmbchina.com', 'spdb.com.cn', 'cib.com.cn',
+      'paypal.com', 'wise.com', 'revolut.com',
+      'coinbase.com', 'kraken.com', 'gate.io', 'bybit.com',
+      'dune.com', 'defillama.com', 'etherscan.io', 'bscscan.com',
+    ],
+    titleKeywords: [
+      '股票', '基金', '投资', '行情', '加密', 'crypto', 'bitcoin', 'btc', 'eth',
+      '区块链', 'blockchain', 'defi', 'nft', '交易', 'trading', 'k线',
+      '估值', '财报', 'ipo', '市值', '涨幅', '跌幅', '涨停',
+      '利率', '通胀', '美联储', 'fed', 'bond', '期货', 'futures',
+    ],
+    urlPatterns: ['/quote/', '/stock/', '/crypto/', '/trade/', '/portfolio/', '/market/', '/fund/'],
+    queryPatterns: ['symbol=', 'ticker=', 'pair='],
+    priority: 8,
+  },
+  {
+    tag: '博客',
+    subtags: ['技术博客', '个人博客', '专栏'],
+    domains: [
+      'medium.com', 'substack.com', 'wordpress.com', 'ghost.org',
+      'dev.to', 'hashnode.dev', 'hackernoon.com',
+      'blog.cloudflare.com', 'blog.google', 'netflixtechblog.com',
+      'engineering.fb.com', 'twobithistory.org', 'danluu.com',
+      'paulgraham.com', 'blog.ycombinator.com', 'martinfowler.com',
+      'joelonsoftware.com', 'vercel.com/blog', 'stripe.com/blog',
+      'shopify.engineering', 'uber.com/blog',
+      'cnblogs.com', 'iteye.com', 'oschina.net/blog',
+      'sspai.com', 'ruanyifeng.com', 'coolshell.cn',
+      'overreacted.io', 'kentcdodds.com', 'joshwcomeau.com',
+    ],
+    titleKeywords: ['博客', 'blog', '博文', '随笔', '思考', '心得', '经验分享', '踩坑', '专栏', 'column'],
+    urlPatterns: ['/blog/', '/post/', '/article/', '/archive/', '/essays/'],
+    priority: 5,
+  },
+  {
+    tag: '论坛',
+    subtags: ['技术社区', '兴趣社区', '问答'],
+    domains: [
+      'v2ex.com', 'reddit.com', 'tieba.baidu.com',
+      'douban.com/group', 'nga.cn', 'nga.178.com', 'colg.cn',
+      'bbs.nga.cn', 'hostloc.com', 'linux.do',
+      'testerhome.com', 'ruby-china.org', 'elixir-cn.org',
+      'golangtc.com', 'python-china.org', 'cnodejs.org',
+      '4chan.org', '8kun.top', 'discourse',
+      'lesswrong.com', 'effectivealtruism.org',
+      'chiphell.com', 'bbs.pcbeta.com', 'bbs.kafan.cn',
+    ],
+    domainSuffixes: ['.forum'],
+    titleKeywords: ['论坛', 'forum', '社区', 'community', '讨论区', '板块', '帖子', '回帖', '问答', 'q&a'],
+    urlPatterns: ['/forum/', '/board/', '/thread/', '/topic/', '/t/', '/c/', '/r/'],
+    priority: 6,
+  },
+  {
+    tag: '工具',
+    subtags: ['开发工具', '效率工具', '转换工具'],
+    domains: [
+      'translate.google.com', 'deepl.com', 'grammarly.com',
+      '1password.com', 'bitwarden.com', 'lastpass.com',
+      'wolframalpha.com', 'desmos.com', 'geogebra.org',
+      'regex101.com', 'jsonformatter.org', 'codebeautify.org',
+      'caniuse.com', 'bundlephobia.com', 'npm.anvaka.com',
+      'speedtest.net', 'fast.com', 'whatismyip.com',
+      'remove.bg', 'tinypng.com', 'squoosh.app', 'compressor.io',
+      'carbon.now.sh', 'ray.so', 'snappify.com',
+      'excalidraw.com', 'tldraw.com', 'whimsical.com',
+      'mermaid.live', 'plantuml.com', 'websequencediagrams.com',
+      'diffchecker.com', 'vim-adventures.com', 'typing.com',
+      'jwt.io', 'base64encode.org', 'urlencoder.org',
+      'cyberchef.org', 'gchq.github.io/CyberChef',
+      'transform.tools', 'convertio.co', 'cloudconvert.com',
+      'pdf24.org', 'ilovepdf.com', 'smallpdf.com',
+      'temp-mail.org', 'guerrillamail.com',
+      'downforeveryoneorjustme.com', 'isitdownrightnow.com',
+    ],
+    titleKeywords: [
+      '工具', 'tool', '转换', 'converter', '计算器', 'calculator', '生成器', 'generator',
+      '格式化', 'formatter', '压缩', 'compress', '加密', 'decrypt', 'encrypt',
+      '编码', 'decode', 'encode', '校验', 'validate', '解析', 'parse',
+    ],
+    urlPatterns: ['/tool/', '/utils/', '/convert/', '/generate/', '/calculate/', '/format/', '/encode/'],
+    priority: 6,
+  },
+  {
+    tag: '云服务',
+    subtags: ['云平台', '监控', 'CDN', 'Serverless'],
+    domains: [
+      'console.aws.amazon.com', 'console.cloud.google.com', 'portal.azure.com',
+      'dash.cloudflare.com', 'app.vercel.com', 'app.netlify.com',
+      'dashboard.heroku.com', 'console.firebase.google.com',
+      'manage.digitalocean.com', 'app.supabase.com',
+      'oci.oraclecloud.com', 'console.alibabacloud.com',
+      'console.tencentcloud.com', 'console.huaweicloud.com',
+      'dashboard.stripe.com', 'dashboard.paypal.com',
+      'analytics.google.com', 'search.google.com/search-console',
+      'app.datadoghq.com', 'app.newrelic.com', 'grafana.com',
+      'sentry.io', 'logrocket.com', 'pagerduty.com',
+      'updown.io', 'pingdom.com', 'statuspage.io',
+      'railway.app', 'render.com', 'fly.io',
+      'planetscale.com', 'neon.tech', 'cockroachlabs.com',
+      'turso.tech', 'xata.io', 'nhost.io',
+    ],
+    titleKeywords: [
+      '云服务', 'cloud', '部署', 'deploy', '运维', 'devops', '监控', 'monitoring',
+      '服务器', 'server', '域名', 'dns', 'cdn', '负载均衡', 'load balancer',
+    ],
+    urlPatterns: ['/console/', '/dashboard/', '/admin/', '/manage/', '/portal/', '/project/'],
+    priority: 7,
+  },
+  {
+    tag: '健康',
+    subtags: ['医疗', '健身', '心理', '饮食'],
+    domains: [
+      'webmd.com', 'mayoclinic.org', 'healthline.com', 'nih.gov',
+      'who.int', 'cdc.gov', 'medlineplus.gov',
+      'dxy.com', 'chunyuyisheng.com', 'guahao.com',
+      'keep.com', 'codoon.com', 'joyrun.com',
+      'myfitnesspal.com', 'strava.com', 'fitbit.com',
+      'calm.com', 'headspace.com', 'noom.com',
+      'peloton.com', 'nike.com/nrc', 'adidas.com/running',
+      'bodybuilding.com', 'muscleandstrength.com',
+      'psychologytoday.com', 'betterhelp.com', 'talkspace.com',
+    ],
+    titleKeywords: [
+      '健康', 'health', '医疗', '医学', '症状', '诊断', '养生', '运动', 'fitness',
+      '减肥', '饮食', '营养', '睡眠', '心理', '冥想', 'meditation',
+      '卡路里', 'calorie', '增肌', '减脂', '有氧', '无氧',
+    ],
+    urlPatterns: ['/health/', '/medical/', '/symptom/', '/fitness/', '/workout/', '/exercise/'],
+    priority: 5,
+  },
+  {
+    tag: '旅行',
+    subtags: ['机票', '酒店', '攻略', '签证'],
+    domains: [
+      'booking.com', 'airbnb.com', 'tripadvisor.com', 'expedia.com',
+      'ctrip.com', 'qunar.com', 'mafengwo.cn', 'tuniu.com',
+      'agoda.com', 'hotels.com', 'priceline.com',
+      'skyscanner.com', 'kayak.com', 'google.com/travel',
+      'rome2rio.com', 'lonelyplanet.com', 'wikivoyage.org',
+      'viator.com', 'getyourguide.com', 'klook.com',
+      'hostelworld.com', 'couchsurfing.com',
+    ],
+    titleKeywords: [
+      '旅行', 'travel', '旅游', '机票', '酒店', '民宿', '景点', '攻略', '签证',
+      'flight', 'hotel', 'booking', 'vacation', '度假', '行程', 'itinerary',
+    ],
+    urlPatterns: ['/travel/', '/hotel/', '/flight/', '/booking/', '/destination/', '/attraction/'],
+    priority: 5,
+  },
+  {
+    tag: '美食',
+    subtags: ['外卖', '菜谱', '餐厅', '饮品'],
+    domains: [
+      'meituan.com', 'ele.me', 'dianping.com',
+      'yelp.com', 'opentable.com', 'just-eat.com', 'deliveroo.com',
+      'ubereats.com', 'doordash.com', 'grubhub.com',
+      'xiachufang.com', 'cookpad.com', 'allrecipes.com',
+      'foodnetwork.com', 'seriouseats.com', 'bonappetit.com',
+      'starbucks.com', 'luckincoffee.com',
+    ],
+    titleKeywords: [
+      '美食', '食谱', 'recipe', '烹饪', 'cooking', '餐厅', 'restaurant', '外卖',
+      '菜单', 'menu', '烘焙', 'baking', '料理', '小吃', '咖啡', 'coffee',
+    ],
+    urlPatterns: ['/recipe/', '/restaurant/', '/food/', '/menu/', '/dish/'],
+    priority: 5,
+  },
+  {
+    tag: '政府',
+    subtags: ['政务', '交通', '税务', '社保'],
+    domains: [
+      'gov.cn', 'gov.uk', 'usa.gov', 'whitehouse.gov',
+      'nhs.uk', 'irs.gov', 'ssa.gov',
+      '12306.cn', 'gjj.beijing.gov.cn', 'bjzwfw.gov.cn',
+      'shanghai.gov.cn', 'gd.gov.cn', 'sz.gov.cn',
+      'nhs.uk', 'service.gov.uk', 'usa.gov',
+      'chengdu.gov.cn', 'hangzhou.gov.cn', 'nanjing.gov.cn',
+      'chongqing.gov.cn', 'tianjin.gov.cn', 'wuhan.gov.cn',
+    ],
+    domainSuffixes: ['.gov', '.gov.cn', '.gov.uk', '.gov.us'],
+    titleKeywords: ['政府', '政务', '办事', '公积金', '社保', '税务', '工商', '民政', '户籍', '护照', '签证'],
+    urlPatterns: ['/gov/', '/public/', '/service/', '/portal/', '/zwfw/'],
+    priority: 4,
+  },
+  {
+    tag: '搜索',
+    domains: [
+      'google.com', 'google.com.hk', 'baidu.com', 'bing.com', 'sogou.com',
+      'so.com', 'duckduckgo.com', 'yandex.com', 'ecosia.org',
+      'search.yahoo.com', 'startpage.com', 'brave.com/search',
+      'google.co.jp', 'google.co.kr', 'google.de', 'google.fr',
+    ],
+    titleKeywords: ['搜索', 'search', '查找', 'query', '搜索结果'],
+    urlPatterns: ['/search?', '/s?', '/webhp?', '/results', '/search/'],
+    queryPatterns: ['q=', 'query=', 'wd=', 'word=', 'text='],
+    priority: 3,
+  },
+  {
+    tag: '阅读',
+    subtags: ['小说', '资讯', 'RSS'],
+    domains: [
+      'readwise.io', 'pocket.com', 'instapaper.com', 'readability.com',
+      'feedly.com', 'inoreader.com', 'theoldreader.com', 'miniflux',
+      'qidian.com', 'jjwxc.net', 'zongheng.com', '17k.com',
+      'kindle.amazon.com', 'goodreads.com', 'book.douban.com',
+      'z-library.org', 'gutenberg.org', 'archive.org',
+      'weread.qq.com', 'duokan.com', 'dushu.baidu.com',
+      'medium.com', 'substack.com', 'sspai.com',
+    ],
+    titleKeywords: [
+      '阅读', 'reading', '小说', 'novel', '书评', 'book review',
+      '章节', 'chapter', '连载', 'serial', 'rss', '订阅', 'subscribe',
+    ],
+    urlPatterns: ['/read/', '/book/', '/chapter/', '/article/', '/feed/', '/novel/'],
+    priority: 5,
+  },
+  {
+    tag: '开发',
+    subtags: ['IDE', 'CI/CD', '测试'],
+    domains: [
+      'github.com', 'gitlab.com', 'bitbucket.org',
+      'code.visualstudio.com', 'jetbrains.com', 'eclipse.org',
+      'circleci.com', 'travis-ci.org', 'github.com/features/actions',
+      'jenkins.io', 'buildkite.com', 'teamcity',
+      'sonarqube.org', 'snyk.io', 'codacy.com',
+      'browserstack.com', 'saucelabs.com', 'cypress.io',
+      'playwright.dev', 'selenium.dev',
+      'figma.com/dev', 'storybook.js.org',
+      'linear.app', 'shortcut.com', 'jira.atlassian.net',
+    ],
+    titleKeywords: [
+      'ide', '编辑器', 'editor', '编译', 'compile', '构建', 'build',
+      '测试', 'test', '部署', 'deploy', '发布', 'release',
+      '代码审查', 'code review', '合并', 'merge', '分支', 'branch',
+    ],
+    urlPatterns: ['/dev/', '/build/', '/test/', '/deploy/', '/release/', '/pipeline/'],
+    priority: 7,
+  },
+  {
+    tag: '摄影',
+    subtags: ['图库', '后期', '器材'],
+    domains: [
+      'flickr.com', '500px.com', 'unsplash.com', 'pexels.com', 'pixabay.com',
+      'adobe.com/lightroom', 'captureone.com', 'darkroom.co',
+      'dpreview.com', 'petapixel.com', 'fstoppers.com',
+      'lensculture.com', '1x.com', 'viewbug.com',
+      'vsco.co', 'lightroom.adobe.com', 'snapseed',
+    ],
+    titleKeywords: [
+      '摄影', 'photography', 'photo', '相机', 'camera', '镜头', 'lens',
+      '曝光', 'exposure', '光圈', 'aperture', '快门', 'shutter',
+      '后期', 'retouch', '修图', '滤镜', 'filter',
+    ],
+    urlPatterns: ['/photo/', '/gallery/', '/album/', '/portfolio/', '/shots/'],
+    priority: 4,
+  },
+  {
+    tag: '教育',
+    subtags: ['K12', '大学', '考研', '职业培训'],
+    domains: [
+      'edu.cn', 'mooc.cn', 'chaoxing.com', 'xueersi.com',
+      'zhangmen.com', 'yuanfudao.com', 'hujiang.com',
+      'koolearn.com', 'neworiental.org', 'offcn.com',
+      'kaoyan.com', 'chinakaoyan.com',
+      'collegeboard.org', 'ets.org', 'ielts.org',
+      'toefl.org', 'gre.org',
+      'wikipedia.org', 'britannica.com', 'wikihow.com',
+    ],
+    domainSuffixes: ['.edu'],
+    titleKeywords: [
+      '教育', 'education', '学校', 'school', '考试', 'exam', '成绩', 'grade',
+      '课程', 'curriculum', '学期', 'semester', '招生', 'admission',
+      '考研', '考公', '雅思', '托福', 'gre', 'gmat',
+    ],
+    urlPatterns: ['/edu/', '/school/', '/exam/', '/admission/', '/course/'],
+    priority: 6,
+  },
+  {
+    tag: '体育',
+    subtags: ['足球', '篮球', '电竞', '健身'],
+    domains: [
+      'espn.com', 'sports.yahoo.com', 'skysports.com', 'bbc.com/sport',
+      'nba.com', 'fifa.com', 'uefa.com',
+      'dongqiudi.com', 'zhibo8.com', 'hupu.com',
+      '懂球帝', '直播吧', '虎扑',
+      'strava.com', 'garmin.com', 'mapmyrun.com',
+      'bodybuilding.com', 'muscleandstrength.com',
+    ],
+    titleKeywords: [
+      '体育', 'sport', '足球', 'football', 'soccer', '篮球', 'basketball',
+      'nba', '比分', 'score', '联赛', 'league', '冠军', 'champion',
+      '奥运', 'olympics', '世界杯', 'world cup',
+    ],
+    urlPatterns: ['/sport/', '/match/', '/score/', '/league/', '/player/'],
+    priority: 4,
+  },
+  {
+    tag: '汽车',
+    subtags: ['购车', '评测', '维修', '新能源'],
+    domains: [
+      'autohome.com.cn', 'dongchedi.com', 'yiche.com',
+      'pcauto.com.cn', 'xcar.com.cn', 'cheshi.com',
+      'caranddriver.com', 'motortrend.com', 'edmunds.com',
+      'tesla.com', 'byd.com', 'nio.com', 'xiaopeng.com', 'lixiang.com',
+      'evspecifications.com', 'insideevs.com',
+    ],
+    titleKeywords: [
+      '汽车', 'car', 'auto', '购车', '买车', '试驾', '评测',
+      '电动车', 'ev', '新能源', '充电桩', '续航', '油耗',
+      '保养', '维修', '改装', 'suv', '轿车',
+    ],
+    urlPatterns: ['/car/', '/auto/', '/model/', '/spec/', '/review/'],
+    priority: 4,
+  },
+  {
+    tag: '房产',
+    subtags: ['租房', '买房', '装修'],
+    domains: [
+      'lianjia.com', 'ke.com', 'anjuke.com', 'fang.com',
+      'ziroom.com', 'danke.com', 'mogoroom.com',
+      'zillow.com', 'realtor.com', 'redfin.com', 'trulia.com',
+      'rightmove.co.uk', 'zoopla.co.uk',
+      'tubatu.com', 'qijia.com', 'jia.com',
+    ],
+    titleKeywords: [
+      '房产', '房子', '租房', '买房', '房价', '房贷', '装修',
+      'real estate', 'apartment', 'house', 'rent', 'mortgage',
+      '二手房', '新房', '楼盘', '户型', '学区房',
+    ],
+    urlPatterns: ['/house/', '/rent/', '/property/', '/apartment/', '/community/'],
+    priority: 4,
+  },
+  {
+    tag: '法律',
+    domains: [
+      'court.gov.cn', 'wenshu.court.gov.cn', 'chinacourt.org',
+      'lawyer.com', 'legalzoom.com', 'avvo.com',
+      'findlaw.com', 'justia.com', 'law.cornell.edu',
+    ],
+    domainSuffixes: ['.law'],
+    titleKeywords: [
+      '法律', 'law', '律师', 'lawyer', '诉讼', 'litigation',
+      '合同', 'contract', '法规', 'regulation', '判例', 'case',
+    ],
+    urlPatterns: ['/law/', '/legal/', '/case/', '/statute/'],
+    priority: 3,
+  },
+  {
+    tag: '招聘',
+    subtags: ['求职', '简历', '面试'],
+    domains: [
+      'zhipin.com', 'liepin.com', '51job.com', 'zhaopin.com',
+      'linkedin.com/jobs', 'indeed.com', 'glassdoor.com',
+      'monster.com', 'dice.com', 'simplyhired.com',
+      'maimai.cn', 'lagou.com', 'neitui.me',
+      'angel.co', 'wellfound.com', 'ycombinator.com/jobs',
+    ],
+    titleKeywords: [
+      '招聘', '求职', 'job', 'career', '简历', 'resume', '面试', 'interview',
+      '薪资', 'salary', 'offer', '跳槽', '校招', '实习', 'intern',
+    ],
+    urlPatterns: ['/job/', '/career/', '/position/', '/resume/', '/company/'],
+    queryPatterns: ['job_id=', 'position=', 'location='],
+    priority: 5,
+  },
+]
+
+interface TagCandidate {
+  tag: string
+  confidence: number
+  source: 'domain' | 'domain-suffix' | 'title' | 'url-pattern' | 'url-query'
+}
+
+export interface TagResult {
+  tag: string
+  confidence: number
+  subtags: string[]
+}
+
+export function autoTag(url: string, title: string): string[] {
+  const results = autoTagDetailed(url, title)
+  return results.map(r => r.tag)
+}
+
+export function autoTagDetailed(url: string, title: string): TagResult[] {
+  const candidates: TagCandidate[] = []
+  const domain = getDomain(url)
+  const domainParts = domain.split('.')
+  const titleLower = (title || '').toLowerCase()
+  const urlLower = url.toLowerCase()
+
+  for (const rule of TAG_RULES) {
+    const exactDomainMatch = rule.domains.some(d => domain === d)
+    if (exactDomainMatch) {
+      candidates.push({ tag: rule.tag, confidence: 0.95, source: 'domain' })
+      continue
+    }
+
+    const suffixDomainMatch = rule.domains.some(d => domain.endsWith('.' + d))
+    if (suffixDomainMatch) {
+      candidates.push({ tag: rule.tag, confidence: 0.85, source: 'domain' })
+      continue
+    }
+
+    const domainSuffixMatch = rule.domainSuffixes?.some(s => domain.endsWith(s)) ?? false
+    if (domainSuffixMatch) {
+      candidates.push({ tag: rule.tag, confidence: 0.6, source: 'domain-suffix' })
+      continue
+    }
+
+    const urlPatternMatch = rule.urlPatterns?.some(p => urlLower.includes(p)) ?? false
+    const queryMatch = rule.queryPatterns?.some(p => urlLower.includes(p)) ?? false
+    const titleMatch = rule.titleKeywords.some(kw => titleLower.includes(kw))
+
+    if (urlPatternMatch && titleMatch) {
+      candidates.push({ tag: rule.tag, confidence: 0.8, source: 'url-pattern' })
+    } else if (urlPatternMatch) {
+      candidates.push({ tag: rule.tag, confidence: 0.55, source: 'url-pattern' })
+    } else if (queryMatch && titleMatch) {
+      candidates.push({ tag: rule.tag, confidence: 0.75, source: 'url-query' })
+    } else if (queryMatch) {
+      candidates.push({ tag: rule.tag, confidence: 0.45, source: 'url-query' })
+    } else if (titleMatch) {
+      const kwLen = rule.titleKeywords.filter(kw => titleLower.includes(kw)).length
+      const conf = Math.min(0.7, 0.3 + kwLen * 0.15)
+      candidates.push({ tag: rule.tag, confidence: conf, source: 'title' })
+    }
+  }
+
+  const tagMap = new Map<string, { confidence: number; subtags: string[] }>()
+  for (const c of candidates) {
+    const existing = tagMap.get(c.tag)
+    if (existing) {
+      existing.confidence = Math.max(existing.confidence, c.confidence)
+    } else {
+      const rule = TAG_RULES.find(r => r.tag === c.tag)
+      tagMap.set(c.tag, { confidence: c.confidence, subtags: rule?.subtags || [] })
+    }
+  }
+
+  const hour = new Date().getHours()
+  if (hour >= 22 || hour < 6) {
+    tagMap.set('深夜', { confidence: 0.9, subtags: [] })
+  } else if (hour >= 6 && hour < 9) {
+    tagMap.set('早间', { confidence: 0.7, subtags: [] })
+  } else if (hour >= 9 && hour < 12) {
+    tagMap.set('上午', { confidence: 0.5, subtags: [] })
+  } else if (hour >= 14 && hour < 18) {
+    tagMap.set('下午', { confidence: 0.5, subtags: [] })
+  }
+
+  if (title) {
+    if (title.length > 80) tagMap.set('长文', { confidence: 0.9, subtags: [] })
+    else if (title.length > 40) tagMap.set('中篇', { confidence: 0.6, subtags: [] })
+  }
+
+  let urlPath = '/'
+  try { urlPath = new URL(url).pathname } catch { /* ignore invalid URLs */ }
+  const depth = urlPath.split('/').filter(Boolean).length
+  if (depth >= 5) tagMap.set('深层页面', { confidence: 0.4, subtags: [] })
+
+  const sorted = Array.from(tagMap.entries())
+    .sort((a, b) => b[1].confidence - a[1].confidence)
+    .slice(0, 4)
+
+  return sorted.map(([tag, data]) => ({
+    tag,
+    confidence: data.confidence,
+    subtags: data.subtags,
+  }))
+}
+
+export function getTagConfidence(url: string, title: string, tag: string): number {
+  const results = autoTagDetailed(url, title)
+  const found = results.find(r => r.tag === tag)
+  return found?.confidence ?? 0
+}
+
+export function getTagSubtags(tag: string): string[] {
+  const rule = TAG_RULES.find(r => r.tag === tag)
+  return rule?.subtags ?? []
+}
+
+export const TAG_COLORS: Record<string, string> = {
+  '社交': '#3b82f6',
+  '视频': '#ef4444',
+  '技术': '#10b981',
+  '文档': '#6366f1',
+  '购物': '#f59e0b',
+  '新闻': '#06b6d4',
+  '设计': '#ec4899',
+  '学习': '#8b5cf6',
+  '邮件': '#64748b',
+  '音乐': '#14b8a6',
+  'AI': '#a855f7',
+  '游戏': '#22c55e',
+  '金融': '#eab308',
+  '博客': '#0ea5e9',
+  '论坛': '#f97316',
+  '工具': '#8b5cf6',
+  '云服务': '#6366f1',
+  '健康': '#10b981',
+  '旅行': '#14b8a6',
+  '美食': '#f43f5e',
+  '政府': '#475569',
+  '搜索': '#3b82f6',
+  '阅读': '#818cf8',
+  '开发': '#06b6d4',
+  '摄影': '#f472b6',
+  '教育': '#a78bfa',
+  '体育': '#22d3ee',
+  '汽车': '#fb923c',
+  '房产': '#34d399',
+  '法律': '#94a3b8',
+  '招聘': '#2dd4bf',
+  '深夜': '#475569',
+  '早间': '#fbbf24',
+  '上午': '#fcd34d',
+  '下午': '#fb923c',
+  '长文': '#78716c',
+  '中篇': '#a8a29e',
+  '深层页面': '#6b7280',
+}
+
+export const TAG_ICONS: Record<string, string> = {
+  '社交': 'i-lucide:users',
+  '视频': 'i-lucide:play-circle',
+  '技术': 'i-lucide:code-2',
+  '文档': 'i-lucide:file-text',
+  '购物': 'i-lucide:shopping-bag',
+  '新闻': 'i-lucide:newspaper',
+  '设计': 'i-lucide:palette',
+  '学习': 'i-lucide:graduation-cap',
+  '邮件': 'i-lucide:mail',
+  '音乐': 'i-lucide:music',
+  'AI': 'i-lucide:brain',
+  '游戏': 'i-lucide:gamepad-2',
+  '金融': 'i-lucide:trending-up',
+  '博客': 'i-lucide:pen-line',
+  '论坛': 'i-lucide:message-circle',
+  '工具': 'i-lucide:wrench',
+  '云服务': 'i-lucide:cloud',
+  '健康': 'i-lucide:heart-pulse',
+  '旅行': 'i-lucide:plane',
+  '美食': 'i-lucide:utensils',
+  '政府': 'i-lucide:landmark',
+  '搜索': 'i-lucide:search',
+  '阅读': 'i-lucide:book-open',
+  '开发': 'i-lucide:terminal',
+  '摄影': 'i-lucide:camera',
+  '教育': 'i-lucide:school',
+  '体育': 'i-lucide:trophy',
+  '汽车': 'i-lucide:car',
+  '房产': 'i-lucide:home',
+  '法律': 'i-lucide:scale',
+  '招聘': 'i-lucide:briefcase',
+  '深夜': 'i-lucide:moon',
+  '早间': 'i-lucide:sunrise',
+  '上午': 'i-lucide:sun',
+  '下午': 'i-lucide:cloud-sun',
+  '长文': 'i-lucide:scroll-text',
+  '中篇': 'i-lucide:file-text',
+  '深层页面': 'i-lucide:layers',
+}
