@@ -307,6 +307,7 @@ watch(() => history.allRecords.length, () => {
               @mouseleave="onHeatCellLeave"
             />
           </div>
+        </div>
         <div
           v-if="hoveredHeatCell"
           class="heat-tooltip"

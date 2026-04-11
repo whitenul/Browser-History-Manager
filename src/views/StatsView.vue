@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
-import { getFaviconUrl, formatNumber } from '@/utils/helpers'
+import { getFaviconUrl, formatNumber, safeOpenUrl } from '@/utils/helpers'
 import BrowsingDNA from '@/components/business/BrowsingDNA.vue'
 import FocusMode from '@/components/business/FocusMode.vue'
 import ReadingQueue from '@/components/business/ReadingQueue.vue'
@@ -92,9 +92,7 @@ watch(() => stats.timeRange, () => {
 
 watch(() => stats.topSites.length, () => { carouselPage.value = 0 })
 
-function openUrl(url: string) {
-  chrome.tabs.create({ url })
-}
+function openUrl(url: string) { safeOpenUrl(url) }
 
 function blacklistDomain(domain: string) {
   const removed = domain

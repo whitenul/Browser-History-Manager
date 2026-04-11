@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
-import { formatTime, getFaviconUrl } from '@/utils/helpers'
+import { formatTime, getFaviconUrl, safeOpenUrl } from '@/utils/helpers'
 
 const ui = useUIStore()
 const history = useHistoryStore()
@@ -14,7 +14,7 @@ function copyUrl() {
 }
 
 function openUrl(url?: string) {
-  if (url) chrome.tabs.create({ url })
+  if (url) safeOpenUrl(url)
 }
 </script>
 

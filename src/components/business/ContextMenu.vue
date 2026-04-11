@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
+import { safeOpenUrl } from '@/utils/helpers'
 
 const ui = useUIStore()
 const history = useHistoryStore()
@@ -10,7 +11,7 @@ function handleAction(action: string) {
   if (!record) return
   switch (action) {
     case 'open': history.openRecord(record.url); break
-    case 'newTab': chrome.tabs.create({ url: record.url, active: false }); break
+    case 'newTab': safeOpenUrl(record.url, false); break
     case 'copyUrl': navigator.clipboard.writeText(record.url); ui.notify('已复制链接', 'info'); break
     case 'favorite': history.toggleFavorite(record.url); break
     case 'tag': ui.openTagModal(record.url); break

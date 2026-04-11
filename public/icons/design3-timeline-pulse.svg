@@ -1,0 +1,31 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle cx="64" cy="64" r="56" fill="url(#bg)"/>
+  <path d="M 64 20 L 64 108" stroke="rgba(255,255,255,0.15)" stroke-width="2" stroke-dasharray="4 4"/>
+  <circle cx="64" cy="28" r="5" fill="rgba(255,255,255,0.2)"/>
+  <circle cx="64" cy="28" r="2.5" fill="white"/>
+  <circle cx="64" cy="50" r="7" fill="rgba(251,191,36,0.35)" filter="url(#glow)"/>
+  <circle cx="64" cy="50" r="3.5" fill="#fbbf24"/>
+  <circle cx="64" cy="72" r="9" fill="rgba(253,224,71,0.4)" filter="url(#glow)"/>
+  <circle cx="64" cy="72" r="4.5" fill="#fde047"/>
+  <circle cx="64" cy="94" r="6" fill="rgba(255,255,255,0.2)"/>
+  <circle cx="64" cy="94" r="3" fill="white"/>
+  <line x1="64" y1="33" x2="64" y2="43" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <line x1="64" y1="57" x2="64" y2="63" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <line x1="64" y1="81" x2="64" y2="88" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <circle cx="48" cy="40" r="3" fill="rgba(251,191,36,0.2)"/>
+  <circle cx="80" cy="62" r="3.5" fill="rgba(255,255,255,0.15)"/>
+  <circle cx="44" cy="84" r="2.5" fill="rgba(251,191,36,0.15)"/>
+  <line x1="51" y1="40" x2="57" y2="47" stroke="rgba(251,191,36,0.12)" stroke-width="1.5"/>
+  <line x1="73" y1="62" x2="67" y2="69" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
+  <line x1="47" y1="84" x2="57" y2="80" stroke="rgba(251,191,36,0.08)" stroke-width="1.5"/>
+</svg>

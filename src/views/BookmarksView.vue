@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, defineComponent, h, type VNode, PropType } from 'vue'
 import { useBookmarksStore } from '@/stores/bookmarks'
-import { getFaviconUrl } from '@/utils/helpers'
+import { getFaviconUrl, safeOpenUrl } from '@/utils/helpers'
 
 const store = useBookmarksStore()
 const LEVEL_PAD = [12, 28, 44, 60]
@@ -25,7 +25,7 @@ function renderNode(node: any, level: number): VNode {
       style: `height:28px;padding:0 12px;padding-left:${pad}px;display:flex;align-items:center;cursor:pointer;user-select:none;transition:background-color .15s ease;text-decoration:none;color:var(--text-primary);`,
       href: node.url,
       target: '_blank',
-      onClick: (e: MouseEvent) => { e.preventDefault(); chrome.tabs.create({ url: node.url }) },
+      onClick: (e: MouseEvent) => { e.preventDefault(); safeOpenUrl(node.url) },
       onMouseenter(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--primary-light)' },
       onMouseleave(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' },
     }, [

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useReadingQueueStore } from '@/stores/readingQueue'
-import { getFaviconUrl } from '@/utils/helpers'
+import { getFaviconUrl, safeOpenUrl } from '@/utils/helpers'
 
 const queue = useReadingQueueStore()
 
 onMounted(() => { queue.loadQueue() })
 
 function openUrl(url: string) {
-  chrome.tabs.create({ url })
+  safeOpenUrl(url)
 }
 
 function priorityLabel(p: number): string {

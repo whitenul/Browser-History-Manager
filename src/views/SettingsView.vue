@@ -8,6 +8,8 @@ const history = useHistoryStore()
 const theme = useThemeStore()
 const ui = useUIStore()
 
+import { safeOpenUrl } from '@/utils/helpers'
+
 const newBlacklistDomain = ref('')
 const clearConfirm = ref(false)
 
@@ -47,9 +49,7 @@ async function addBlacklist() {
   newBlacklistDomain.value = ''
 }
 
-function openUrl(url: string) {
-  chrome.tabs.create({ url })
-}
+function openUrl(url: string) { safeOpenUrl(url) }
 </script>
 
 <template>

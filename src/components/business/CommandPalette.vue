@@ -4,7 +4,7 @@ import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { useStatsStore } from '@/stores/stats'
 import { useThemeStore } from '@/stores/theme'
-import { getFaviconUrl } from '@/utils/helpers'
+import { getFaviconUrl, safeOpenUrl, isValidDomain } from '@/utils/helpers'
 
 const ui = useUIStore()
 const history = useHistoryStore()
@@ -71,7 +71,7 @@ const allCommands = computed<Command[]>(() => {
         label: `此时段推荐：${rec.domain}`,
         icon: 'i-lucide:compass',
         category: '智能推荐',
-        action: () => chrome.tabs.create({ url: 'https://' + rec.domain }),
+        action: () => { if (isValidDomain(rec.domain)) safeOpenUrl('https://' + rec.domain) },
       })
     })
   }

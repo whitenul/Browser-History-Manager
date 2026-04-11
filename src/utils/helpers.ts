@@ -3,8 +3,23 @@ export function getDomain(url: string): string {
     const hostname = new URL(url).hostname
     return hostname.replace(/^www\./, '')
   } catch {
-    return url
+    return ''
   }
+}
+
+export function safeOpenUrl(url: string, active: boolean = true): boolean {
+  try {
+    const protocol = new URL(url).protocol
+    if (protocol !== 'http:' && protocol !== 'https:') return false
+    chrome.tabs.create({ url, active })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function isValidDomain(domain: string): boolean {
+  return /^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(domain) && domain.length <= 253
 }
 
 export function getFaviconUrl(url: string): string {
@@ -118,7 +133,10 @@ export function matchRule(url: string, rule: { pattern: string; type: string }):
     case 'domain': return domain === rule.pattern || domain.endsWith('.' + rule.pattern)
     case 'path': return url.includes(rule.pattern)
     case 'regex':
-      try { return new RegExp(rule.pattern).test(url) } catch { return false }
+      try {
+        if (rule.pattern.length > 200) return false
+        return new RegExp(rule.pattern).test(url.slice(0, 2000))
+      } catch { return false }
     default: return false
   }
 }
@@ -218,7 +236,11 @@ export function groupBySession(records: HistoryRecord[], gapMs: number = 30 * 60
 export function exportToCSV(records: HistoryRecord[]): void {
   if (!records.length) return
   const headers = ['标题', '网址', '域名', '最后访问时间', '访问次数']
-  const escCSV = (v: string) => (v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v)
+  const escCSV = (v: string) => {
+    let escaped = v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v
+    if (/^[=+\-@\t\r]/.test(escaped)) escaped = "'" + escaped
+    return escaped
+  }
   const rows = records.map(r => [
     escCSV(r.title || ''), escCSV(r.url), escCSV(r.domain),
     escCSV(new Date(r.lastVisitTime).toISOString()), String(r.visitCount || 0)

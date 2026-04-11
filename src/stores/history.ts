@@ -6,7 +6,7 @@ import {
   groupByTimeline, groupByCustomRules, groupBySession,
   createCustomRule, matchRule, getGroupLabel, formatTime,
   formatDateTime, getFaviconUrl, highlightText, exportToCSV,
-  debounce, autoTag, type GroupResult,
+  debounce, autoTag, safeOpenUrl, isValidDomain, type GroupResult,
 } from '@/utils/helpers'
 import { appCache } from '@/utils/cache'
 
@@ -274,7 +274,7 @@ export const useHistoryStore = defineStore('history', () => {
   }
 
   async function openRecord(url: string) {
-    chrome.tabs.create({ url, active: true })
+    safeOpenUrl(url, true)
   }
 
   async function restoreSession(groupKey: string) {
@@ -282,7 +282,7 @@ export const useHistoryStore = defineStore('history', () => {
     const records = groupedResult.value.groups[groupKey]
     if (!records?.length) return
     for (const r of records) {
-      chrome.tabs.create({ url: r.url, active: false })
+      safeOpenUrl(r.url, false)
     }
   }
 
@@ -324,7 +324,8 @@ export const useHistoryStore = defineStore('history', () => {
   async function loadFavorites() {
     try {
       const result = await chrome.storage.local.get('favorites')
-      favorites.value = (result.favorites as string[]) || []
+      const data = result.favorites
+      favorites.value = Array.isArray(data) ? data : []
     } catch { /* ignore */ }
   }
 
@@ -337,7 +338,8 @@ export const useHistoryStore = defineStore('history', () => {
   async function loadCustomRules() {
     try {
       const result = await chrome.storage.local.get('customRules')
-      customRules.value = (result.customRules as typeof customRules.value) || []
+      const data = result.customRules
+      customRules.value = Array.isArray(data) ? data : []
     } catch { /* ignore */ }
   }
 
@@ -363,8 +365,12 @@ export const useHistoryStore = defineStore('history', () => {
   async function loadTags() {
     try {
       const result = await chrome.storage.local.get(['customTags', 'recordTagsMap'])
-      customTags.value = (result.customTags as typeof customTags.value) || []
-      recordTagsMap.value = (result.recordTagsMap as typeof recordTagsMap.value) || {}
+      const tagsData = result.customTags
+      const mapData = result.recordTagsMap
+      customTags.value = Array.isArray(tagsData) ? tagsData : []
+      recordTagsMap.value = (mapData && typeof mapData === 'object' && !Array.isArray(mapData)) 
+        ? mapData as Record<string, string[]> 
+        : {}
     } catch { /* ignore */ }
   }
 
@@ -404,7 +410,8 @@ export const useHistoryStore = defineStore('history', () => {
   async function loadBlacklist() {
     try {
       const result = await chrome.storage.local.get('blacklistedDomains')
-      blacklistedDomains.value = (result.blacklistedDomains as string[]) || []
+      const data = result.blacklistedDomains
+      blacklistedDomains.value = Array.isArray(data) ? data : []
     } catch { /* ignore */ }
   }
 

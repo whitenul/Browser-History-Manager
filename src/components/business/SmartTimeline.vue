@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'
-import { formatTime, getFaviconUrl, autoTag, TAG_COLORS } from '@/utils/helpers'
+import { formatTime, getFaviconUrl, autoTag, TAG_COLORS, safeOpenUrl } from '@/utils/helpers'
 import type { HistoryRecord } from '@/utils/helpers'
 
 const history = useHistoryStore()
@@ -210,10 +210,10 @@ function getSegmentDots(seg: TimeSegment) {
 function restoreSegment(seg: TimeSegment) {
   const urls = [...new Set(seg.records.map(r => r.url))]
   ui.notifyWithUndo(`将打开${seg.label}时段的${urls.length}个页面`, () => {})
-  for (const url of urls) {
-    chrome.tabs.create({ url, active: false })
+    for (const url of urls) {
+      safeOpenUrl(url, false)
+    }
   }
-}
 
 const currentHour = new Date().getHours()
 

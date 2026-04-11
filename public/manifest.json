@@ -10,8 +10,7 @@
   "permissions": [
     "history",
     "storage",
-    "bookmarks",
-    "tabs"
+    "bookmarks"
   ],
   "host_permissions": [
     "https://icons.duckduckgo.com/*"

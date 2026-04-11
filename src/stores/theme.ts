@@ -248,7 +248,38 @@ export const useThemeStore = defineStore('theme', () => {
 
   function importConfig(json: string): boolean {
     try {
-      const c = JSON.parse(json) as ThemeConfig
+      const c = JSON.parse(json)
+      if (typeof c !== 'object' || c === null) return false
+      const validModes = ['auto', 'light', 'dark']
+      const validPresets = ['indigo', 'emerald', 'rose', 'amber', 'cyan', 'violet', 'slate', 'pink']
+      const validRadius = ['none', 'small', 'medium', 'large']
+      const validFontSize = ['small', 'medium', 'large']
+      const validFontFamily = ['system', 'serif', 'mono', 'rounded']
+      const validHeaderStyle = ['solid', 'gradient', 'glass', 'minimal']
+      const validCardStyle = ['flat', 'bordered', 'shadowed', 'elevated']
+      const validAnimSpeed = ['off', 'slow', 'normal', 'fast']
+      const validScrollbar = ['thin', 'default', 'hidden']
+      const validBgPattern = ['none', 'dots', 'grid', 'diagonal', 'noise']
+      const isValidHex = (v: unknown) => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)
+      if (c.mode && !validModes.includes(c.mode)) return false
+      if (c.activePreset && !validPresets.includes(c.activePreset)) return false
+      if (c.radiusStyle && !validRadius.includes(c.radiusStyle)) return false
+      if (c.fontSize && !validFontSize.includes(c.fontSize)) return false
+      if (c.fontFamily && !validFontFamily.includes(c.fontFamily)) return false
+      if (c.headerStyle && !validHeaderStyle.includes(c.headerStyle)) return false
+      if (c.cardStyle && !validCardStyle.includes(c.cardStyle)) return false
+      if (c.animationSpeed && !validAnimSpeed.includes(c.animationSpeed)) return false
+      if (c.scrollbarStyle && !validScrollbar.includes(c.scrollbarStyle)) return false
+      if (c.backgroundPattern && !validBgPattern.includes(c.backgroundPattern)) return false
+      if (c.customColors) {
+        if (typeof c.customColors !== 'object') return false
+        if (c.customColors.primary && !isValidHex(c.customColors.primary)) return false
+        if (c.customColors.bg && !isValidHex(c.customColors.bg)) return false
+        if (c.customColors.text && !isValidHex(c.customColors.text)) return false
+      }
+      if (c.accentColor && !isValidHex(c.accentColor)) return false
+      if (c.activeGradient !== undefined && c.activeGradient !== null && typeof c.activeGradient !== 'string') return false
+      if (c.compactMode !== undefined && typeof c.compactMode !== 'boolean') return false
       if (c.mode) mode.value = c.mode
       if (c.activePreset) activePreset.value = c.activePreset
       if (c.activeGradient !== undefined) activeGradient.value = c.activeGradient
