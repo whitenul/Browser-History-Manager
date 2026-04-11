@@ -8,10 +8,12 @@ const history = useHistoryStore()
 const theme = useThemeStore()
 const ui = useUIStore()
 
-import { safeOpenUrl } from '@/utils/helpers'
+import { safeOpenUrl, isValidDomain } from '@/utils/helpers'
 
 const newBlacklistDomain = ref('')
 const clearConfirm = ref(false)
+
+const isSidebar = document.location.pathname.includes('sidebar')
 
 const settings = ref({
   defaultTimeRange: 'all',
@@ -19,12 +21,14 @@ const settings = ref({
   defaultSortMode: 'timeDesc',
   pageSize: 100,
   sessionGapMinutes: 30,
+  defaultSidebarTab: 'stats' as string,
 })
 
 onMounted(async () => {
   try {
     const result = await chrome.storage.local.get('appSettings')
     if (result.appSettings) Object.assign(settings.value, result.appSettings)
+    history.applySettings(settings.value.pageSize, settings.value.sessionGapMinutes)
   } catch { /* ignore */ }
 })
 
@@ -36,6 +40,33 @@ async function saveSettings() {
   } catch { /* ignore */ }
 }
 
+async function openSidePanel() {
+  try {
+    if (chrome?.sidePanel?.open) {
+      const win = await chrome.windows.getCurrent()
+      await chrome.sidePanel.open({ windowId: win.id! })
+      ui.notify('正在打开侧边栏...', 'success')
+    } else {
+      chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
+        if (chrome.runtime.lastError) {
+          ui.notify('请右键点击扩展图标 → "在侧边栏中打开"', 'info')
+        } else if (response?.success) {
+          ui.notify('正在打开侧边栏...', 'success')
+        } else {
+          ui.notify(response?.error || '打开失败，请右键扩展图标选择"在侧边栏中打开"', 'error')
+        }
+      })
+    }
+  } catch (err: any) {
+    const msg = err?.message || String(err)
+    if (msg.includes('user gesture')) {
+      ui.notify('请右键点击扩展图标 → "在侧边栏中打开"', 'info')
+    } else {
+      ui.notify(`打开侧边栏失败: ${msg}`, 'error')
+    }
+  }
+}
+
 async function clearAllData() {
   await chrome.storage.local.clear()
   clearConfirm.value = false
@@ -44,7 +75,10 @@ async function clearAllData() {
 
 async function addBlacklist() {
   const d = newBlacklistDomain.value.trim()
-  if (!d) return
+  if (!d || !isValidDomain(d)) {
+    ui.notify('请输入有效的域名', 'error')
+    return
+  }
   await history.addBlacklistDomain(d)
   newBlacklistDomain.value = ''
 }
@@ -97,6 +131,38 @@ function openUrl(url: string) { safeOpenUrl(url) }
           <input type="number" v-model.number="settings.sessionGapMinutes" min="5" max="120" class="setting-input" />
         </div>
         <button class="btn-save" @click="saveSettings">保存设置</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <span class="i-lucide:panel-left section-icon" />
+          界面模式
+        </div>
+        <p class="section-desc">选择扩展的显示方式，支持悬浮窗和浏览器侧边栏两种模式</p>
+        <div class="mode-cards">
+          <label :class="['mode-card', { active: !isSidebar }]">
+            <input type="radio" name="uiMode" :checked="!isSidebar" />
+            <span class="mode-card-icon"><span class="i-lucide:maximize-2" /></span>
+            <span class="mode-card-label">悬浮窗 (Popup)</span>
+            <span class="mode-card-desc">点击扩展图标打开</span>
+          </label>
+          <label :class="['mode-card', { active: isSidebar }]" @click.prevent="openSidePanel">
+            <input type="radio" name="uiMode" :checked="isSidebar" />
+            <span class="mode-card-icon"><span class="i-lucide:panel-right" /></span>
+            <span class="mode-card-label">侧边栏 (Side Panel)</span>
+            <span class="mode-card-desc">常驻浏览器右侧</span>
+          </label>
+        </div>
+        <p class="section-hint">当前模式: {{ isSidebar ? '侧边栏' : '悬浮窗' }} · 提示：右键点击扩展图标可切换显示模式</p>
+        <div v-if="!isSidebar" class="setting-row">
+          <label>侧边栏默认页面</label>
+          <select v-model="settings.defaultSidebarTab" class="setting-select">
+            <option value="history">历史记录</option>
+            <option value="stats">数据统计</option>
+            <option value="bookmarks">书签管理</option>
+            <option value="settings">设置</option>
+          </select>
+        </div>
       </div>
 
       <div class="section">
@@ -170,6 +236,29 @@ function openUrl(url: string) { safeOpenUrl(url) }
 .section-icon { font-size: 16px; color: var(--primary-color); }
 .section-icon.danger { color: #ef4444; }
 .section-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+.section-hint { font-size: 11px; color: var(--text-muted); margin: 8px 0 4px; opacity: 0.8; }
+
+.mode-cards {
+  display: flex; gap: 10px; margin-bottom: 4px;
+}
+.mode-card {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 10px; border: 2px solid var(--border-color); border-radius: var(--radius-md);
+  background: var(--app-surface); cursor: default; transition: all var(--transition-fast);
+}
+.mode-card input { display: none; }
+.mode-card.active {
+  border-color: var(--primary-color);
+  background: rgba(99,102,241,0.06);
+}
+.mode-card[onclick] { cursor: pointer; }
+.mode-card[onclick]:hover {
+  border-color: var(--primary-color);
+  background: rgba(99,102,241,0.04);
+}
+.mode-card-icon { font-size: 24px; color: var(--primary-color); }
+.mode-card-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.mode-card-desc { font-size: 11px; color: var(--text-muted); text-align: center; }
 
 .setting-row {
   display: flex; align-items: center; justify-content: space-between;

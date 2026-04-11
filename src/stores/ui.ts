@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-export type TabId = 'history' | 'stats' | 'bookmarks' | 'settings'
+export type TabId = 'tabs' | 'history' | 'stats' | 'bookmarks' | 'settings'
 
 export interface UndoAction {
   label: string
@@ -9,9 +9,16 @@ export interface UndoAction {
   timer: ReturnType<typeof setTimeout>
 }
 
+export interface FilterSnapshot {
+  type: 'time' | 'tag' | 'domain'
+  payload: Record<string, unknown>
+}
+
 export interface NavEntry {
   tab: TabId
   label: string
+  source?: string
+  filterSnapshot?: FilterSnapshot
 }
 
 export const useUIStore = defineStore('ui', () => {
@@ -39,15 +46,17 @@ export const useUIStore = defineStore('ui', () => {
 
   const navStack = ref<NavEntry[]>([])
   const canGoBack = computed(() => navStack.value.length > 0)
-  const scrollMemory = ref<Record<TabId, number>>({ history: 0, stats: 0, bookmarks: 0, settings: 0 })
+  const isNavigatingBack = ref(false)
+  const scrollMemory = ref<Record<TabId, number>>({ tabs: 0, history: 0, stats: 0, bookmarks: 0, settings: 0 })
 
   function switchTab(tab: TabId) {
     saveCurrentScroll()
     activeTab.value = tab
   }
 
-  function navigateTo(tab: TabId, label: string = '') {
+  function navigateTo(tab: TabId, label: string = '', meta?: { source?: string; filterSnapshot?: FilterSnapshot }) {
     const tabLabels: Record<TabId, string> = {
+      tabs: '页面管理',
       history: '历史记录',
       stats: '数据统计',
       bookmarks: '书签管理',
@@ -57,21 +66,26 @@ export const useUIStore = defineStore('ui', () => {
     navStack.value.push({
       tab: activeTab.value,
       label: label || tabLabels[activeTab.value],
+      source: meta?.source,
+      filterSnapshot: meta?.filterSnapshot,
     })
     if (navStack.value.length > 20) navStack.value.splice(0, navStack.value.length - 20)
+    isNavigatingBack.value = false
     activeTab.value = tab
   }
 
-  function goBack() {
+  function goBack(clearFilter = false) {
     const entry = navStack.value.pop()
     if (entry) {
       saveCurrentScroll()
+      isNavigatingBack.value = true
       activeTab.value = entry.tab
     }
   }
 
   function saveCurrentScroll() {
     const selectors: Record<TabId, string> = {
+      tabs: '.tab-manager',
       history: '.record-list',
       stats: '.stats-content',
       bookmarks: '.bookmarks-content',
@@ -186,7 +200,7 @@ export const useUIStore = defineStore('ui', () => {
     showPreview, previewRecord,
     showBookmarkPicker, bookmarkTarget,
     showCommandPalette, undoStack, showUndoToast, undoLabel,
-    navStack, canGoBack, scrollMemory,
+    navStack, canGoBack, isNavigatingBack, scrollMemory,
     switchTab, navigateTo, goBack, clearNavStack, saveCurrentScroll, getScrollPosition,
     openContextMenu, closeContextMenu,
     openDeleteConfirm, closeDeleteConfirm,

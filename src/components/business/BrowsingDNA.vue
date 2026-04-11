@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useStatsStore } from '@/stores/stats'
 import { useHistoryStore } from '@/stores/history'
 import { autoTagDetailed, TAG_COLORS, TAG_ICONS } from '@/utils/helpers'
@@ -7,42 +7,131 @@ import { autoTagDetailed, TAG_COLORS, TAG_ICONS } from '@/utils/helpers'
 const stats = useStatsStore()
 const history = useHistoryStore()
 
+const tagCloudData = ref<{ tag: string; count: number; color: string; icon: string; size: number }[]>([])
+const orbitData = ref<{ cx: number; cy: number; r: number; color: string; opacity: number }[]>([])
+
+let tagComputeFrame: number | null = null
+let orbitComputeFrame: number | null = null
+
+const TAG_CACHE = new Map<string, string[]>()
+
+function getCachedTags(url: string, title: string): string[] {
+  const key = `${url}|${title || ''}`
+  let cached = TAG_CACHE.get(key)
+  if (!cached) {
+    cached = autoTagDetailed(url, title).map(t => t.tag)
+    if (TAG_CACHE.size < 5000) {
+      TAG_CACHE.set(key, cached)
+    }
+  }
+  return cached
+}
+
+function computeTagCloud() {
+  const records = history.allRecords
+  if (records.length === 0) return
+
+  const sampleSize = Math.min(500, records.length)
+  const step = Math.max(1, Math.floor(records.length / sampleSize))
+  const tagMap = new Map<string, number>()
+
+  for (let i = 0; i < records.length; i += step) {
+    const r = records[i]
+    const tags = getCachedTags(r.url, r.title)
+    for (const t of tags) {
+      tagMap.set(t, (tagMap.get(t) || 0) + 1)
+    }
+  }
+
+  const total = Math.ceil(records.length / step)
+  tagCloudData.value = Array.from(tagMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([tag, count]) => ({
+      tag,
+      count,
+      color: TAG_COLORS[tag] || '#94a3b8',
+      icon: TAG_ICONS[tag] || 'i-lucide:tag',
+      size: Math.max(10, Math.min(18, 10 + (count / total) * 40)),
+    }))
+}
+
+function computeOrbitParticles() {
+  const records = history.allRecords
+  if (records.length === 0) return
+
+  const domainMap = new Map<string, number>()
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i]
+    domainMap.set(r.domain, (domainMap.get(r.domain) || 0) + 1)
+  }
+
+  const topDomains = Array.from(domainMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 16)
+
+  const maxCount = topDomains[0]?.[1] || 1
+  const cx = 100
+  const cy = 100
+
+  orbitData.value = topDomains.map(([, count], i) => {
+    const angle = (Math.PI * 2 * i) / 16 + 0.3
+    const dist = 30 + (count / maxCount) * 55
+    return {
+      cx: cx + dist * Math.cos(angle),
+      cy: cy + dist * Math.sin(angle),
+      r: 1.5 + (count / maxCount) * 4,
+      color: `hsl(${(i * 22.5) % 360}, 70%, 60%)`,
+      opacity: 0.35 + (count / maxCount) * 0.55,
+    }
+  })
+}
+
+onMounted(() => {
+  tagComputeFrame = requestAnimationFrame(() => {
+    computeTagCloud()
+  })
+  orbitComputeFrame = requestAnimationFrame(() => {
+    computeOrbitParticles()
+  })
+})
+
+onUnmounted(() => {
+  if (tagComputeFrame) cancelAnimationFrame(tagComputeFrame)
+  if (orbitComputeFrame) cancelAnimationFrame(orbitComputeFrame)
+})
+
 const dnaDimensions = computed(() => {
   const total = stats.overview.totalVisits || 1
   const prodRatio = stats.productivity.productiveCount / total
   const unprodRatio = stats.productivity.unproductiveCount / total
-  const nightHours = [22, 23, 0, 1, 2, 3, 4, 5]
-  const nightCount = stats.heatmap
-    .filter(c => nightHours.includes(c.hour) && c.count > 0)
-    .reduce((s, c) => s + c.count, 0)
+
+  let nightCount = 0
+  let weekendCount = 0
+  let workCount = 0
+  let morningCount = 0
+  const nightHours = new Set([22, 23, 0, 1, 2, 3, 4, 5])
+  const weekendDays = new Set([0, 6])
+  const workHours = new Set([9, 10, 11, 12, 13, 14, 15, 16, 17, 18])
+  const morningHours = new Set([6, 7, 8, 9, 10, 11])
+
+  for (const c of stats.heatmap) {
+    if (c.count > 0) {
+      if (nightHours.has(c.hour)) nightCount += c.count
+      if (weekendDays.has(c.day)) weekendCount += c.count
+      if (workHours.has(c.hour)) workCount += c.count
+      if (morningHours.has(c.hour)) morningCount += c.count
+    }
+  }
+
   const nightRatio = Math.min(1, nightCount / total)
   const diversity = Math.min(1, stats.overview.siteCount / 50)
   const intensity = Math.min(1, stats.overview.dailyAvg / 100)
   const focusScore = 1 - (stats.rhythm.sessionCount > 0 ? Math.min(1, stats.rhythm.avgSessionLength / 20) : 0)
-
-  const weekendDays = [0, 6]
-  const weekendCount = stats.heatmap
-    .filter(c => weekendDays.includes(c.day) && c.count > 0)
-    .reduce((s, c) => s + c.count, 0)
-  const weekendRatio = total > 0 ? Math.min(1, weekendCount / total) : 0
-
-  const workHours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-  const workCount = stats.heatmap
-    .filter(c => workHours.includes(c.hour) && c.count > 0)
-    .reduce((s, c) => s + c.count, 0)
-  const workRatio = total > 0 ? Math.min(1, workCount / total) : 0
-
-  const topSites = stats.topSites
-  const topSiteRatio = topSites.length > 0 ? Math.min(1, (topSites[0]?.count || 0) / total) : 0
-
-  const morningHours = [6, 7, 8, 9, 10, 11]
-  const morningCount = stats.heatmap
-    .filter(c => morningHours.includes(c.hour) && c.count > 0)
-    .reduce((s, c) => s + c.count, 0)
-  const morningRatio = total > 0 ? Math.min(1, morningCount / total) : 0
-
-  const uniqueDomains = new Set(history.allRecords.map(r => r.domain)).size
-  const explorRatio = Math.min(1, uniqueDomains / 100)
+  const workRatio = Math.min(1, workCount / total)
+  const topSiteRatio = stats.topSites.length > 0 ? Math.min(1, (stats.topSites[0]?.count || 0) / total) : 0
+  const morningRatio = Math.min(1, morningCount / total)
+  const explorRatio = Math.min(1, stats.overview.siteCount / 100)
 
   return [
     { label: '生产力', value: prodRatio, color: '#10b981' },
@@ -173,26 +262,6 @@ const personalityDesc = computed(() => {
   return descs[personalityType.value] || '你拥有独特的浏览风格'
 })
 
-const tagCloud = computed(() => {
-  const tagMap = new Map<string, number>()
-  history.allRecords.forEach(r => {
-    const tags = autoTagDetailed(r.url, r.title)
-    tags.forEach(t => {
-      tagMap.set(t.tag, (tagMap.get(t.tag) || 0) + 1)
-    })
-  })
-  return Array.from(tagMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
-    .map(([tag, count]) => ({
-      tag,
-      count,
-      color: TAG_COLORS[tag] || '#94a3b8',
-      icon: TAG_ICONS[tag] || 'i-lucide:tag',
-      size: Math.max(10, Math.min(18, 10 + (count / (history.allRecords.length || 1)) * 40)),
-    }))
-})
-
 const cx = 100
 const cy = 100
 const maxR = 80
@@ -234,25 +303,6 @@ const axisLines = computed(() => {
     }
   })
 })
-
-const orbitParticles = computed(() => {
-  const particles: { cx: number; cy: number; r: number; color: string; opacity: number }[] = []
-  const domainMap = new Map<string, number>()
-  history.allRecords.forEach(r => domainMap.set(r.domain, (domainMap.get(r.domain) || 0) + 1))
-  const topDomains = Array.from(domainMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 16)
-  topDomains.forEach(([, count], i) => {
-    const angle = (Math.PI * 2 * i) / 16 + 0.3
-    const dist = 30 + (count / (topDomains[0]?.[1] || 1)) * 55
-    particles.push({
-      cx: cx + dist * Math.cos(angle),
-      cy: cy + dist * Math.sin(angle),
-      r: 1.5 + (count / (topDomains[0]?.[1] || 1)) * 4,
-      color: `hsl(${(i * 22.5) % 360}, 70%, 60%)`,
-      opacity: 0.35 + (count / (topDomains[0]?.[1] || 1)) * 0.55,
-    })
-  })
-  return particles
-})
 </script>
 
 <template>
@@ -271,7 +321,7 @@ const orbitParticles = computed(() => {
           <line v-for="(axis, i) in axisLines" :key="i"
             :x1="cx" :y1="cy" :x2="axis.x2" :y2="axis.y2"
             stroke="var(--border-color)" stroke-width="0.5" opacity="0.3" />
-          <circle v-for="p in orbitParticles" :key="`${p.cx}-${p.cy}`"
+          <circle v-for="p in orbitData" :key="`${p.cx}-${p.cy}`"
             :cx="p.cx" :cy="p.cy" :r="p.r"
             :fill="p.color" :opacity="p.opacity" />
           <path :d="radarPath" fill="rgba(99,102,241,0.12)" stroke="#6366f1" stroke-width="1.5" />
@@ -297,13 +347,13 @@ const orbitParticles = computed(() => {
         </div>
       </div>
     </div>
-    <div v-if="tagCloud.length > 0" class="dna-tags">
+    <div v-if="tagCloudData.length > 0" class="dna-tags">
       <div class="dna-tags-title">
         <span class="i-lucide:tags dna-tags-icon" />
         标签云
       </div>
       <div class="tag-cloud">
-        <span v-for="item in tagCloud" :key="item.tag" class="tag-cloud-item" :style="{ fontSize: item.size + 'px', color: item.color }">
+        <span v-for="item in tagCloudData" :key="item.tag" class="tag-cloud-item" :style="{ fontSize: item.size + 'px', color: item.color }">
           <span :class="item.icon" class="tag-cloud-icon" />{{ item.tag }}
         </span>
       </div>

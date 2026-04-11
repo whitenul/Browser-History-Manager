@@ -35,7 +35,7 @@ export const useReadingQueueStore = defineStore('readingQueue', () => {
 
   async function saveQueue() {
     try {
-      await appCache.set(QUEUE_KEY, items.value)
+      await appCache.set(QUEUE_KEY, items.value, true)
     } catch {}
   }
 

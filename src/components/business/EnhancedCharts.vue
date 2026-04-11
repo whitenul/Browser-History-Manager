@@ -4,10 +4,18 @@ import { useHistoryStore } from '@/stores/history'
 import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
 import { autoTagDetailed, TAG_COLORS, getFaviconUrl } from '@/utils/helpers'
+import { useStatsNavigation } from '@/composables/useStatsNavigation'
 
 const history = useHistoryStore()
 const stats = useStatsStore()
 const ui = useUIStore()
+const {
+  HEAT_COLORS,
+  DAY_LABELS: dayLabels,
+  isCurrentHeatCell,
+  navigateWithTimeFilter,
+  navigateWithTagFilter,
+} = useStatsNavigation()
 
 const activeTab = ref(0)
 const trendRange = ref<'7d' | '30d'>('7d')
@@ -15,6 +23,141 @@ const hoveredHeatCell = ref<{ day: number; hour: number; count: number } | null>
 const heatTooltipPos = ref({ x: 0, y: 0 })
 const hoveredTrendIdx = ref(-1)
 const hoveredGraphNode = ref<string | null>(null)
+
+const tagDistributionData = ref<{ tag: string; count: number; percentage: number; color: string }[]>([])
+const domainGraphData = ref<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: [] })
+
+let tagDistFrame: number | null = null
+let graphFrame: number | null = null
+
+const TAG_CACHE = new Map<string, string[]>()
+
+function getCachedTags(url: string, title: string): string[] {
+  const key = `${url}|${title || ''}`
+  let cached = TAG_CACHE.get(key)
+  if (!cached) {
+    cached = autoTagDetailed(url, title).map(t => t.tag)
+    if (TAG_CACHE.size < 5000) {
+      TAG_CACHE.set(key, cached)
+    }
+  }
+  return cached
+}
+
+function computeTagDistribution() {
+  const records = history.allRecords
+  if (records.length === 0) return
+
+  const sampleSize = Math.min(500, records.length)
+  const step = Math.max(1, Math.floor(records.length / sampleSize))
+  const tagMap = new Map<string, number>()
+
+  for (let i = 0; i < records.length; i += step) {
+    const r = records[i]
+    const tags = getCachedTags(r.url, r.title)
+    for (const t of tags) {
+      tagMap.set(t, (tagMap.get(t) || 0) + 1)
+    }
+  }
+
+  const total = Array.from(tagMap.values()).reduce((s, v) => s + v, 0) || 1
+  tagDistributionData.value = Array.from(tagMap.entries())
+    .map(([tag, count]) => ({
+      tag,
+      count,
+      percentage: Math.round((count / total) * 100),
+      color: TAG_COLORS[tag] || '#64748b',
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+}
+
+function computeDomainGraph() {
+  const records = history.allRecords
+  if (records.length === 0) return
+
+  const domainMap = new Map<string, number>()
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i]
+    domainMap.set(r.domain, (domainMap.get(r.domain) || 0) + 1)
+  }
+
+  const topDomains = Array.from(domainMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+
+  const topDomainSet = new Set(topDomains.map(d => d[0]))
+  const edgeMap = new Map<string, number>()
+
+  const sorted = [...records].sort((a, b) => a.lastVisitTime - b.lastVisitTime)
+  const windowSize = 10 * 60 * 1000
+
+  for (let i = 0; i < sorted.length; i++) {
+    const r1 = sorted[i]
+    if (!topDomainSet.has(r1.domain)) continue
+
+    const maxTime = r1.lastVisitTime + windowSize
+    for (let j = i + 1; j < sorted.length && sorted[j].lastVisitTime <= maxTime; j++) {
+      const r2 = sorted[j]
+      if (r1.domain === r2.domain) continue
+      if (!topDomainSet.has(r2.domain)) continue
+
+      const key = [r1.domain, r2.domain].sort().join('|')
+      edgeMap.set(key, (edgeMap.get(key) || 0) + 1)
+    }
+  }
+
+  const edges = Array.from(edgeMap.entries())
+    .map(([key, weight]) => {
+      const [from, to] = key.split('|')
+      return { from, to, weight }
+    })
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 30)
+
+  const maxCount = topDomains[0]?.[1] || 1
+  const cx = 170
+  const cy = 130
+  const nodes = topDomains.map(([domain, count], i) => {
+    const angle = (2 * Math.PI * i) / topDomains.length - Math.PI / 2
+    const radius = 90
+    const x = cx + radius * Math.cos(angle)
+    const y = cy + radius * Math.sin(angle)
+    const size = 6 + (count / maxCount) * 14
+    return { domain, count, x, y, size }
+  })
+
+  const nodeMap = new Map(nodes.map(n => [n.domain, n]))
+  const maxEdgeWeight = edges[0]?.weight || 1
+
+  const renderedEdges = edges.map(e => {
+    const from = nodeMap.get(e.from)
+    const to = nodeMap.get(e.to)
+    if (!from || !to) return null
+    return {
+      from: e.from,
+      to: e.to,
+      x1: from.x,
+      y1: from.y,
+      x2: to.x,
+      y2: to.y,
+      thickness: 0.5 + (e.weight / maxEdgeWeight) * 2.5,
+      weight: e.weight,
+    }
+  }).filter(Boolean) as { from: string; to: string; x1: number; y1: number; x2: number; y2: number; thickness: number; weight: number }[]
+
+  domainGraphData.value = { nodes, edges: renderedEdges }
+}
+
+onMounted(() => {
+  tagDistFrame = requestAnimationFrame(() => computeTagDistribution())
+  graphFrame = requestAnimationFrame(() => computeDomainGraph())
+})
+
+onUnmounted(() => {
+  if (tagDistFrame) cancelAnimationFrame(tagDistFrame)
+  if (graphFrame) cancelAnimationFrame(graphFrame)
+})
 
 function isTab(n: number) { return activeTab.value === n }
 
@@ -25,28 +168,11 @@ const tabs = [
   { label: '域名关系', icon: 'i-lucide:git-branch' },
 ]
 
-const HEAT_COLORS = [
-  'var(--app-surface)',
-  'rgba(99,102,241,0.2)',
-  'rgba(99,102,241,0.4)',
-  'rgba(99,102,241,0.65)',
-  'rgba(99,102,241,0.9)',
-]
-
-const dayLabels = ['日', '一', '二', '三', '四', '五', '六']
-
-const currentHour = computed(() => new Date().getHours())
-const currentDay = computed(() => new Date().getDay())
-
-const isCurrentHeatCell = (cell: { day: number; hour: number }) =>
-  cell.day === currentDay.value && cell.hour === currentHour.value
-
 function onHeatCellClick(cell: { day: number; hour: number; count: number }) {
   if (cell.count === 0) return
   const dayName = dayLabels[cell.day]
   const hourStr = String(cell.hour).padStart(2, '0')
-  history.setTimeFilter(cell.day, cell.hour, cell.hour + 1, `周${dayName} ${hourStr}:00-${hourStr}:59`)
-  ui.navigateTo('history', `周${dayName} ${hourStr}:00`)
+  navigateWithTimeFilter(cell.day, cell.hour, cell.hour + 1, `周${dayName} ${hourStr}:00-${hourStr}:59`)
 }
 
 function onHeatCellHover(cell: { day: number; hour: number; count: number }, event: MouseEvent) {
@@ -67,11 +193,13 @@ const trendData = computed(() => {
   if (trendRange.value === '7d') return stats.weeklyTrend
   const now = new Date()
   const dayBuckets = new Map<string, number>()
-  history.allRecords.forEach(r => {
+  const records = history.allRecords
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i]
     const d = new Date(r.lastVisitTime)
     const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
     dayBuckets.set(key, (dayBuckets.get(key) || 0) + 1)
-  })
+  }
   return Array.from({ length: 30 }, (_, i) => {
     const d = new Date(now)
     d.setDate(d.getDate() - (29 - i))
@@ -122,28 +250,8 @@ const trendYLabels = computed(() => {
   return Array.from({ length: 5 }, (_, i) => step * i)
 })
 
-const tagDistribution = computed(() => {
-  const tagMap = new Map<string, number>()
-  history.allRecords.forEach(r => {
-    const tags = autoTagDetailed(r.url, r.title)
-    tags.forEach(t => {
-      tagMap.set(t.tag, (tagMap.get(t.tag) || 0) + 1)
-    })
-  })
-  const total = Array.from(tagMap.values()).reduce((s, v) => s + v, 0) || 1
-  return Array.from(tagMap.entries())
-    .map(([tag, count]) => ({
-      tag,
-      count,
-      percentage: Math.round((count / total) * 100),
-      color: TAG_COLORS[tag] || '#64748b',
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10)
-})
-
 const tagDonutSegments = computed(() => {
-  const data = tagDistribution.value
+  const data = tagDistributionData.value
   const total = data.reduce((s, d) => s + d.count, 0) || 1
   const cx = 80
   const cy = 80
@@ -176,85 +284,13 @@ const tagDonutSegments = computed(() => {
 })
 
 function onTagSegmentClick(tag: string) {
-  history.setTagFilter(tag, `标签: ${tag}`)
-  ui.navigateTo('history', '标签: ' + tag)
+  navigateWithTagFilter(tag, `标签: ${tag}`)
 }
-
-const domainGraph = computed(() => {
-  const domainMap = new Map<string, { count: number; records: number[] }>()
-  const sorted = [...history.allRecords].sort((a, b) => a.lastVisitTime - b.lastVisitTime)
-  sorted.forEach((r, idx) => {
-    if (!domainMap.has(r.domain)) {
-      domainMap.set(r.domain, { count: 0, records: [] })
-    }
-    const entry = domainMap.get(r.domain)!
-    entry.count++
-    entry.records.push(idx)
-  })
-  const topDomains = Array.from(domainMap.entries())
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 15)
-
-  const topDomainSet = new Set(topDomains.map(d => d[0]))
-  const edges: { from: string; to: string; weight: number }[] = []
-  const edgeMap = new Map<string, number>()
-
-  for (let i = 0; i < sorted.length; i++) {
-    for (let j = i + 1; j < sorted.length; j++) {
-      if (sorted[j].lastVisitTime - sorted[i].lastVisitTime > 10 * 60 * 1000) break
-      const d1 = sorted[i].domain
-      const d2 = sorted[j].domain
-      if (d1 === d2) continue
-      if (!topDomainSet.has(d1) || !topDomainSet.has(d2)) continue
-      const key = [d1, d2].sort().join('|')
-      edgeMap.set(key, (edgeMap.get(key) || 0) + 1)
-    }
-  }
-
-  edgeMap.forEach((weight, key) => {
-    const [from, to] = key.split('|')
-    edges.push({ from, to, weight })
-  })
-  edges.sort((a, b) => b.weight - a.weight)
-
-  const maxCount = topDomains[0]?.[1].count || 1
-  const cx = 170
-  const cy = 130
-  const nodes = topDomains.map(([domain, info], i) => {
-    const angle = (2 * Math.PI * i) / topDomains.length - Math.PI / 2
-    const radius = 90
-    const x = cx + radius * Math.cos(angle)
-    const y = cy + radius * Math.sin(angle)
-    const size = 6 + (info.count / maxCount) * 14
-    return { domain, count: info.count, x, y, size }
-  })
-
-  const nodeMap = new Map(nodes.map(n => [n.domain, n]))
-  const maxEdgeWeight = edges[0]?.weight || 1
-
-  const renderedEdges = edges.slice(0, 30).map(e => {
-    const from = nodeMap.get(e.from)
-    const to = nodeMap.get(e.to)
-    if (!from || !to) return null
-    return {
-      from: e.from,
-      to: e.to,
-      x1: from.x,
-      y1: from.y,
-      x2: to.x,
-      y2: to.y,
-      thickness: 0.5 + (e.weight / maxEdgeWeight) * 2.5,
-      weight: e.weight,
-    }
-  }).filter(Boolean) as { from: string; to: string; x1: number; y1: number; x2: number; y2: number; thickness: number; weight: number }[]
-
-  return { nodes, edges: renderedEdges }
-})
 
 function isNodeHighlighted(domain: string) {
   if (!hoveredGraphNode.value) return true
   if (domain === hoveredGraphNode.value) return true
-  return domainGraph.value.edges.some(
+  return domainGraphData.value.edges.some(
     e => (e.from === hoveredGraphNode.value && e.to === domain) ||
          (e.to === hoveredGraphNode.value && e.from === domain)
   )
@@ -265,9 +301,6 @@ function isEdgeHighlighted(edge: { from: string; to: string }) {
   return edge.from === hoveredGraphNode.value || edge.to === hoveredGraphNode.value
 }
 
-watch(() => history.allRecords.length, () => {
-  if (history.allRecords.length > 0) stats.computeStats(history.allRecords)
-}, { immediate: true })
 </script>
 
 <template>
@@ -439,7 +472,7 @@ watch(() => history.allRecords.length, () => {
               />
             </g>
             <text x="80" y="76" text-anchor="middle" fill="var(--text-primary)" font-size="16" font-weight="700">
-              {{ tagDistribution.reduce((s, d) => s + d.count, 0) }}
+              {{ tagDistributionData.reduce((s, d) => s + d.count, 0) }}
             </text>
             <text x="80" y="92" text-anchor="middle" fill="var(--text-muted)" font-size="9">
               总标签
@@ -448,7 +481,7 @@ watch(() => history.allRecords.length, () => {
         </div>
         <div class="tag-legend">
           <div
-            v-for="(item, i) in tagDistribution"
+            v-for="(item, i) in tagDistributionData"
             :key="i"
             class="tag-legend-item"
             @click="onTagSegmentClick(item.tag)"
@@ -464,7 +497,7 @@ watch(() => history.allRecords.length, () => {
       <div v-if="isTab(3)" class="graph-wrapper">
         <svg class="graph-svg" viewBox="0 0 340 260" preserveAspectRatio="xMidYMid meet">
           <line
-            v-for="(edge, i) in domainGraph.edges"
+            v-for="(edge, i) in domainGraphData.edges"
             :key="'e-' + i"
             :x1="edge.x1"
             :y1="edge.y1"
@@ -477,7 +510,7 @@ watch(() => history.allRecords.length, () => {
             style="transition: all 0.2s"
           />
           <g
-            v-for="(node, i) in domainGraph.nodes"
+            v-for="(node, i) in domainGraphData.nodes"
             :key="'n-' + i"
             class="graph-node"
             @mouseenter="hoveredGraphNode = node.domain"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
-import { formatTime, getFaviconUrl, safeOpenUrl } from '@/utils/helpers'
+import { formatTime, getFaviconUrl, safeOpenUrl, sanitizeUrl } from '@/utils/helpers'
 
 const ui = useUIStore()
 const history = useHistoryStore()
@@ -34,7 +34,7 @@ function openUrl(url?: string) {
       <div class="preview-body">
         <div class="preview-row">
           <span class="preview-label">网址</span>
-          <span class="preview-value preview-url">{{ ui.previewRecord?.url }}</span>
+          <span class="preview-value preview-url">{{ sanitizeUrl(ui.previewRecord?.url) }}</span>
         </div>
         <div class="preview-row">
           <span class="preview-label">访问时间</span>

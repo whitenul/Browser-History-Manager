@@ -6,7 +6,7 @@ import {
   groupByTimeline, groupByCustomRules, groupBySession,
   createCustomRule, matchRule, getGroupLabel, formatTime,
   formatDateTime, getFaviconUrl, highlightText, exportToCSV,
-  debounce, autoTag, safeOpenUrl, isValidDomain, type GroupResult,
+  debounce, autoTag, safeOpenUrl, isValidDomain, urlStorageKey, type GroupResult,
 } from '@/utils/helpers'
 import { appCache } from '@/utils/cache'
 
@@ -46,55 +46,60 @@ export const useHistoryStore = defineStore('history', () => {
   const blacklistSet = computed(() => new Set(blacklistedDomains.value))
 
   const filteredRecords = computed(() => {
-    let result = [...allRecords.value]
+    const source = allRecords.value
+    if (!source.length) return []
 
-    if (blacklistSet.value.size > 0) {
-      result = result.filter(r => !blacklistSet.value.has(r.domain))
-    }
+    const blSet = blacklistSet.value
+    const hasBlacklist = blSet.size > 0
+    const sk = searchKeyword.value
+    const hasSearch = !!sk
+    const kw = hasSearch ? sk.toLowerCase() : ''
+    const tf = timeFilter.value
+    const hasTimeFilter = !!tf
+    const tg = tagFilter.value
+    const hasTagFilter = !!tg
+    const df = domainFilter.value
+    const hasDomainFilter = !!df
+    const ati = activeTagId.value
+    const hasActiveTag = !!ati
 
-    if (searchKeyword.value) {
-      const kw = searchKeyword.value.toLowerCase()
-      result = result.filter(r =>
-        r.title.toLowerCase().includes(kw) ||
-        r.url.toLowerCase().includes(kw) ||
-        r.domain.toLowerCase().includes(kw)
-      )
-    }
+    const result: HistoryRecord[] = []
+    for (let i = 0; i < source.length; i++) {
+      const r = source[i]
 
-    if (timeFilter.value) {
-      const tf = timeFilter.value
-      result = result.filter(r => {
+      if (hasBlacklist && blSet.has(r.domain)) continue
+
+      if (hasSearch) {
+        const rd = r.domain.toLowerCase()
+        if (!r.title.toLowerCase().includes(kw) && !r.url.toLowerCase().includes(kw) && !rd.includes(kw)) continue
+      }
+
+      if (hasTimeFilter) {
         const d = new Date(r.lastVisitTime)
-        if (tf.dayOfWeek !== null && d.getDay() !== tf.dayOfWeek) return false
-        if (tf.hourStart !== null && tf.hourEnd !== null) {
+        if (tf!.dayOfWeek !== null && d.getDay() !== tf!.dayOfWeek) continue
+        if (tf!.hourStart !== null && tf!.hourEnd !== null) {
           const h = d.getHours()
-          if (h < tf.hourStart || h >= tf.hourEnd) return false
-        } else if (tf.hourStart !== null) {
-          if (d.getHours() !== tf.hourStart) return false
+          if (h < tf!.hourStart || h >= tf!.hourEnd) continue
+        } else if (tf!.hourStart !== null) {
+          if (d.getHours() !== tf!.hourStart) continue
         }
-        return true
-      })
-    }
+      }
 
-    if (tagFilter.value) {
-      const targetTag = tagFilter.value.tag
-      result = result.filter(r => {
+      if (hasTagFilter) {
         const customTags = recordTagsMap.value[r.url] || []
-        if (customTags.includes(targetTag)) return true
-        return autoTag(r.url, r.title).includes(targetTag)
-      })
-    }
+        if (!customTags.includes(tg!.tag) && !autoTag(r.url, r.title).includes(tg!.tag)) continue
+      }
 
-    if (domainFilter.value) {
-      const targetDomain = domainFilter.value.domain
-      result = result.filter(r => r.domain === targetDomain || r.domain.endsWith('.' + targetDomain))
-    }
+      if (hasDomainFilter) {
+        if (r.domain !== df!.domain && !r.domain.endsWith('.' + df!.domain)) continue
+      }
 
-    if (activeTagId.value) {
-      result = result.filter(r => {
+      if (hasActiveTag) {
         const tags = recordTagsMap.value[r.url] || []
-        return tags.includes(activeTagId.value!)
-      })
+        if (!tags.includes(ati!)) continue
+      }
+
+      result.push(r)
     }
 
     switch (sortMode.value) {
@@ -331,7 +336,8 @@ export const useHistoryStore = defineStore('history', () => {
 
   async function saveFavorites() {
     try {
-      await chrome.storage.local.set({ favorites: favorites.value })
+      const safeFavorites = favorites.value.map(urlStorageKey)
+      await chrome.storage.local.set({ favorites: safeFavorites })
     } catch { /* ignore */ }
   }
 
@@ -376,7 +382,11 @@ export const useHistoryStore = defineStore('history', () => {
 
   async function saveTags() {
     try {
-      await chrome.storage.local.set({ customTags: customTags.value, recordTagsMap: recordTagsMap.value })
+      const safeMap: Record<string, string[]> = {}
+      for (const [url, tags] of Object.entries(recordTagsMap.value)) {
+        safeMap[urlStorageKey(url)] = tags
+      }
+      await chrome.storage.local.set({ customTags: customTags.value, recordTagsMap: safeMap })
     } catch { /* ignore */ }
   }
 

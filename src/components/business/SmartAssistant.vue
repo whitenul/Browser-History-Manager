@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
-import { autoTag, TAG_COLORS, TAG_ICONS, formatTime, exportToCSV } from '@/utils/helpers'
+import { autoTag, TAG_COLORS, TAG_ICONS, formatTime, exportToCSV, SOCIAL_KEYWORDS, LEARNING_KEYWORDS, UNPRODUCTIVE_KEYWORDS } from '@/utils/helpers'
 
 const history = useHistoryStore()
 const stats = useStatsStore()
@@ -21,22 +21,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (hourTimer.value) clearInterval(hourTimer.value)
 })
-
-const SOCIAL_KEYWORDS = [
-  'weibo', 'twitter', 'facebook', 'instagram', 'zhihu', 'douban', 'reddit',
-  'qq', 'weixin', 'xiaohongshu', 'threads', 'mastodon',
-]
-
-const LEARNING_KEYWORDS = [
-  'coursera', 'udemy', 'khan', 'edu', 'mooc', 'leetcode', 'w3schools',
-  'runoob', 'imooc', 'xuetangx', 'juejin', 'csdn', 'segmentfault',
-]
-
-const UNPRODUCTIVE_KEYWORDS = [
-  'youtube', 'bilibili', 'netflix', 'iqiyi', 'youku', 'twitch', 'douyin',
-  'weibo', 'twitter', 'facebook', 'instagram', 'reddit', 'zhihu', 'douban',
-  'taobao', 'jd', 'amazon', 'pinduoduo', 'tmall', 'game', 'music',
-]
 
 interface TimeSuggestion {
   domain: string
@@ -62,7 +46,7 @@ const timeSuggestions = computed<TimeSuggestion[]>(() => {
   return Array.from(domainMap.entries())
     .map(([domain, info]) => ({
       domain,
-      favicon: `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+      favicon: `chrome://favicon/size/16/${domain}`,
       visitCount: info.count,
       color: info.color,
     }))

@@ -71,7 +71,7 @@ async function saveToBookmark() {
       </div>
 
       <div v-if="ui.bookmarkTarget" class="target-info">
-        <img :src="'https://icons.duckduckgo.com/ip3/' + getHostname(ui.bookmarkTarget.url) + '.ico'"
+        <img :src="'chrome://favicon/size/16/' + getHostname(ui.bookmarkTarget.url)"
           class="target-favicon" loading="lazy"
           @error="($event.target as HTMLImageElement).style.display='none'" />
         <div class="target-text">

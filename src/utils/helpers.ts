@@ -25,7 +25,7 @@ export function isValidDomain(domain: string): boolean {
 export function getFaviconUrl(url: string): string {
   try {
     const domain = new URL(url).hostname.replace(/^www\./, '')
-    return `https://icons.duckduckgo.com/ip3/${domain}.ico`
+    return `chrome://favicon/size/16/${domain}`
   } catch {
     return ''
   }
@@ -48,6 +48,49 @@ export function escapeHtml(text: string): string {
   if (!text) return ''
   const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }
   return text.replace(/[&<>"']/g, m => map[m])
+}
+
+const SENSITIVE_PARAMS = new Set([
+  'token', 'access_token', 'refresh_token', 'auth', 'api_key', 'apikey',
+  'password', 'passwd', 'secret', 'session_id', 'sessionid', 'sid',
+  'key', 'private_key', 'code', 'oauth_token', 'openid', 'credential',
+  'signature', 'sig', 'hash', 'nonce', 'state', 'sso', 'jwt',
+  'authorization', 'bearer', 'ticket', 'ctoken', 'csrf_token', 'xsrf',
+])
+
+export function sanitizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const params = new URLSearchParams(parsed.search)
+    let hasSensitive = false
+    for (const [key, value] of params) {
+      if (SENSITIVE_PARAMS.has(key.toLowerCase())) {
+        params.set(key, '***')
+        hasSensitive = true
+      }
+    }
+    if (!hasSensitive) return url
+    parsed.search = params.toString()
+    return parsed.toString()
+  } catch {
+    return url
+  }
+}
+
+export function urlStorageKey(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const params = new URLSearchParams(parsed.search)
+    for (const key of [...params.keys()]) {
+      if (SENSITIVE_PARAMS.has(key.toLowerCase())) {
+        params.delete(key)
+      }
+    }
+    parsed.search = params.toString()
+    return parsed.toString()
+  } catch {
+    return url
+  }
 }
 
 export function escapeRegExp(str: string): string {
@@ -242,7 +285,7 @@ export function exportToCSV(records: HistoryRecord[]): void {
     return escaped
   }
   const rows = records.map(r => [
-    escCSV(r.title || ''), escCSV(r.url), escCSV(r.domain),
+    escCSV(r.title || ''), escCSV(sanitizeUrl(r.url)), escCSV(r.domain),
     escCSV(new Date(r.lastVisitTime).toISOString()), String(r.visitCount || 0)
   ])
   const csv = '\ufeff' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
@@ -995,9 +1038,19 @@ export interface TagResult {
   subtags: string[]
 }
 
+const TAG_CACHE = new Map<string, string[]>()
+const TAG_CACHE_MAX = 10000
+
 export function autoTag(url: string, title: string): string[] {
+  const cacheKey = `${url}|${title}`
+  const cached = TAG_CACHE.get(cacheKey)
+  if (cached) return cached
   const results = autoTagDetailed(url, title)
-  return results.map(r => r.tag)
+  const tags = results.map(r => r.tag)
+  if (TAG_CACHE.size < TAG_CACHE_MAX) {
+    TAG_CACHE.set(cacheKey, tags)
+  }
+  return tags
 }
 
 export function autoTagDetailed(url: string, title: string): TagResult[] {
@@ -1180,3 +1233,28 @@ export const TAG_ICONS: Record<string, string> = {
   '中篇': 'i-lucide:file-text',
   '深层页面': 'i-lucide:layers',
 }
+
+export const PRODUCTIVE_KEYWORDS = new Set([
+  'github', 'stackoverflow', 'gitlab', 'npmjs', 'codepen', 'leetcode', 'csdn', 'juejin',
+  'docs', 'notion', 'confluence', 'wiki', 'docs.google', 'medium', 'dev.to',
+  'coursera', 'udemy', 'w3schools', 'mdn', 'typescript', 'python',
+  'mail', 'gmail', 'outlook', 'slack', 'teams', 'zoom', 'figma',
+  'jira', 'trello', 'asana', 'linear',
+])
+
+export const UNPRODUCTIVE_KEYWORDS = new Set([
+  'youtube', 'bilibili', 'netflix', 'iqiyi', 'youku', 'twitch', 'douyin',
+  'weibo', 'twitter', 'facebook', 'instagram', 'reddit', 'zhihu', 'douban',
+  'taobao', 'jd', 'amazon', 'pinduoduo', 'tmall', 'ebay',
+  'game', 'play', 'music', 'spotify',
+])
+
+export const SOCIAL_KEYWORDS = [
+  'weibo', 'twitter', 'facebook', 'instagram', 'zhihu', 'douban', 'reddit',
+  'qq', 'weixin', 'xiaohongshu', 'threads', 'mastodon',
+]
+
+export const LEARNING_KEYWORDS = [
+  'coursera', 'udemy', 'khan', 'edu', 'mooc', 'leetcode', 'w3schools',
+  'runoob', 'imooc', 'xuetangx', 'juejin', 'csdn', 'segmentfault',
+]
