@@ -5,7 +5,7 @@
   "description": "现代化浏览器历史记录管理工具，支持搜索、筛选、统计、书签管理",
   "minimum_chrome_version": "120",
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: chrome://; connect-src 'self'; font-src 'self' data:;"
+    "extension_pages": "script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'"
   },
   "permissions": [
     "history",
@@ -13,7 +13,9 @@
     "bookmarks",
     "sidePanel",
     "contextMenus",
-    "tabs"
+    "tabs",
+    "alarms",
+    "favicon"
   ],
   "background": {
     "service_worker": "background.js"

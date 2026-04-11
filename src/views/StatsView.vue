@@ -279,7 +279,7 @@ onUnmounted(() => {
               @click="onTopSiteClick(site.domain)"
               @contextmenu.prevent="openUrl('https://' + site.domain)"
             >
-              <img :src="site.favicon" class="site-favicon" loading="lazy" @error="($event.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22 fill=%22%2364748b%22/></svg>'">
+              <img :src="site.favicon" class="site-favicon" @error="($event.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22 fill=%22%2364748b%22/></svg>'">
               <div class="site-rank" :style="{ backgroundColor: site.color }">{{ idx + 1 }}</div>
               <div class="site-info">
                 <div class="site-domain">{{ site.domain }}</div>

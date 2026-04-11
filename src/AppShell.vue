@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, defineAsyncComponent } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useThemeStore } from '@/stores/theme'
 import { useHistoryStore } from '@/stores/history'
 import HistoryView from '@/views/HistoryView.vue'
 import StatsView from '@/views/StatsView.vue'
-import BookmarksView from '@/views/BookmarksView.vue'
-import SettingsView from '@/views/SettingsView.vue'
-import TabManagerView from '@/views/TabManagerView.vue'
-import ThemeModal from '@/components/business/ThemeModal.vue'
-import DeleteConfirmModal from '@/components/business/DeleteConfirmModal.vue'
-import TagModal from '@/components/business/TagModal.vue'
-import GroupRuleModal from '@/components/business/GroupRuleModal.vue'
-import ContextMenu from '@/components/business/ContextMenu.vue'
-import PreviewPanel from '@/components/business/PreviewPanel.vue'
-import BookmarkPickerModal from '@/components/business/BookmarkPickerModal.vue'
-import CommandPalette from '@/components/business/CommandPalette.vue'
+const BookmarksView = defineAsyncComponent(() => import('@/views/BookmarksView.vue'))
+const SettingsView = defineAsyncComponent(() => import('@/views/SettingsView.vue'))
+const TabManagerView = defineAsyncComponent(() => import('@/views/TabManagerView.vue'))
+const ThemeModal = defineAsyncComponent(() => import('@/components/business/ThemeModal.vue'))
+const DeleteConfirmModal = defineAsyncComponent(() => import('@/components/business/DeleteConfirmModal.vue'))
+const TagModal = defineAsyncComponent(() => import('@/components/business/TagModal.vue'))
+const GroupRuleModal = defineAsyncComponent(() => import('@/components/business/GroupRuleModal.vue'))
+const ContextMenu = defineAsyncComponent(() => import('@/components/business/ContextMenu.vue'))
+const PreviewPanel = defineAsyncComponent(() => import('@/components/business/PreviewPanel.vue'))
+const BookmarkPickerModal = defineAsyncComponent(() => import('@/components/business/BookmarkPickerModal.vue'))
+const CommandPalette = defineAsyncComponent(() => import('@/components/business/CommandPalette.vue'))
 
 const ui = useUIStore()
 const theme = useThemeStore()

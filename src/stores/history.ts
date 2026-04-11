@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, shallowRef, watchEffect } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
 import {
   getDomain, stringToColor, getTimeRange, groupByDomain,
@@ -11,8 +11,8 @@ import {
 import { appCache } from '@/utils/cache'
 
 export const useHistoryStore = defineStore('history', () => {
-  const allRecords = ref<HistoryRecord[]>([])
-  const displayedRecords = ref<HistoryRecord[]>([])
+  const allRecords = shallowRef<HistoryRecord[]>([])
+  const displayedRecords = shallowRef<HistoryRecord[]>([])
   const searchKeyword = ref('')
   const timeRange = ref('all')
   const groupMode = ref('none')
@@ -41,9 +41,17 @@ export const useHistoryStore = defineStore('history', () => {
   const PAGE_SIZE = ref(100)
   const SESSION_GAP = ref(30 * 60 * 1000)
 
-  const favoriteSet = computed(() => new Set(favorites.value))
-  const collapsedSet = computed(() => new Set(collapsedGroups.value))
-  const blacklistSet = computed(() => new Set(blacklistedDomains.value))
+  const _favoriteSet = ref(new Set<string>())
+  const _collapsedSet = ref(new Set<string>())
+  const _blacklistSet = ref(new Set<string>())
+
+  watchEffect(() => { _favoriteSet.value = new Set(favorites.value) })
+  watchEffect(() => { _collapsedSet.value = new Set(collapsedGroups.value) })
+  watchEffect(() => { _blacklistSet.value = new Set(blacklistedDomains.value) })
+
+  const favoriteSet = computed(() => _favoriteSet.value)
+  const collapsedSet = computed(() => _collapsedSet.value)
+  const blacklistSet = computed(() => _blacklistSet.value)
 
   const filteredRecords = computed(() => {
     const source = allRecords.value

@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'
-import { formatTime, getFaviconUrl, autoTag, TAG_COLORS, safeOpenUrl } from '@/utils/helpers'
+import { formatTime, getFaviconUrl, autoTag, TAG_COLORS, safeOpenUrl, onFaviconError } from '@/utils/helpers'
 import type { HistoryRecord } from '@/utils/helpers'
 
 const history = useHistoryStore()
@@ -324,7 +324,7 @@ function toggleExpand(key: string) {
           <div v-if="expandedSegment === seg.key && seg.records.length > 0" class="segment-detail">
             <div class="segment-detail-list">
               <div v-for="r in seg.records.slice(0, 10)" :key="r.id" class="segment-detail-item" @click="history.openRecord(r.url)">
-                <img :src="getFaviconUrl(r.url)" class="detail-favicon" @error="($event.target as HTMLImageElement).style.display = 'none'" />
+                <img :src="getFaviconUrl(r.url)" class="detail-favicon" @error="onFaviconError($event, r.url)" />
                 <span class="detail-title">{{ r.title || r.domain }}</span>
                 <span class="detail-time">{{ formatTime(r.lastVisitTime) }}</span>
               </div>

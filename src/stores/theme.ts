@@ -156,7 +156,6 @@ export const useThemeStore = defineStore('theme', () => {
     html.style.setProperty('--radius-lg', radii.lg); html.style.setProperty('--radius-xl', radii.xl)
 
     html.style.fontSize = FONT_SIZE_MAP[fontSize.value]
-    html.style.setProperty('--font-family', FONT_FAMILY_MAP[fontFamily.value])
     html.style.fontFamily = FONT_FAMILY_MAP[fontFamily.value]
 
     const speed = ANIM_SPEED_MAP[animationSpeed.value]

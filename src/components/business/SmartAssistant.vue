@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
-import { autoTag, TAG_COLORS, TAG_ICONS, formatTime, exportToCSV, SOCIAL_KEYWORDS, LEARNING_KEYWORDS, UNPRODUCTIVE_KEYWORDS } from '@/utils/helpers'
+import { autoTag, TAG_COLORS, TAG_ICONS, formatTime, exportToCSV, SOCIAL_KEYWORDS, LEARNING_KEYWORDS, UNPRODUCTIVE_KEYWORDS, getFaviconUrl } from '@/utils/helpers'
 
 const history = useHistoryStore()
 const stats = useStatsStore()
@@ -46,7 +46,7 @@ const timeSuggestions = computed<TimeSuggestion[]>(() => {
   return Array.from(domainMap.entries())
     .map(([domain, info]) => ({
       domain,
-      favicon: `chrome://favicon/size/16/${domain}`,
+      favicon: getFaviconUrl(`https://${domain}`),
       visitCount: info.count,
       color: info.color,
     }))

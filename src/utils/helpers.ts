@@ -24,11 +24,42 @@ export function isValidDomain(domain: string): boolean {
 
 export function getFaviconUrl(url: string): string {
   try {
-    const domain = new URL(url).hostname.replace(/^www\./, '')
-    return `chrome://favicon/size/16/${domain}`
+    return `/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`
   } catch {
     return ''
   }
+}
+
+export function getFaviconUrlWithHint(url: string, _favIconUrl?: string): string {
+  try {
+    return `/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`
+  } catch {
+    return ''
+  }
+}
+
+export function getFaviconFallback(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, '')
+    return generateFaviconSvg(hostname)
+  } catch {
+    return ''
+  }
+}
+
+export function onFaviconError(event: Event, url: string): void {
+  const img = event.target as HTMLImageElement
+  if (img && !img.dataset.fallback) {
+    img.dataset.fallback = '1'
+    img.src = getFaviconFallback(url)
+  }
+}
+
+function generateFaviconSvg(domain: string): string {
+  const color = stringToColor(domain)
+  const letter = (domain[0] || '?').toUpperCase()
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="${color}"/><text x="16" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" font-weight="600" fill="white">${letter}</text></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
 export function stringToColor(str: string): string {
@@ -41,7 +72,19 @@ export function stringToColor(str: string): string {
   const hue = Math.abs(hash % 360)
   const sat = 55 + Math.abs(hash % 25)
   const light = 45 + Math.abs(hash % 20)
-  return `hsl(${hue}, ${sat}%, ${light}%)`
+  return hslToHex(hue, sat, light)
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  s /= 100
+  l /= 100
+  const a = s * Math.min(l, 1 - l)
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
+    return Math.round(255 * color).toString(16).padStart(2, '0')
+  }
+  return `#${f(0)}${f(8)}${f(4)}`
 }
 
 export function escapeHtml(text: string): string {

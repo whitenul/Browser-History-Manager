@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
-import { getDomain, stringToColor, formatNumber, PRODUCTIVE_KEYWORDS, UNPRODUCTIVE_KEYWORDS } from '@/utils/helpers'
+import { getDomain, stringToColor, formatNumber, PRODUCTIVE_KEYWORDS, UNPRODUCTIVE_KEYWORDS, getFaviconUrl } from '@/utils/helpers'
 
 export interface StatOverview {
   totalVisits: number
@@ -209,6 +209,8 @@ export const useStatsStore = defineStore('stats', () => {
     const previousWeekMap = new Map<string, number>()
     const productiveDomains: string[] = []
     const unproductiveDomains: string[] = []
+    const dayBuckets = new Map<string, number>()
+    const recentRecords: HistoryRecord[] = []
     let productiveCount = 0
     let unproductiveCount = 0
     let neutralCount = 0
@@ -227,11 +229,14 @@ export const useStatsStore = defineStore('stats', () => {
 
       daySet.add(dateKey)
 
+      const dateBucketKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+      dayBuckets.set(dateBucketKey, (dayBuckets.get(dateBucketKey) || 0) + 1)
+
       let domainInfo = domainMap.get(r.domain)
       if (domainInfo) {
         domainInfo.count++
       } else {
-        domainInfo = { count: 1, favicon: `chrome://favicon/size/16/${r.domain}`, color: stringToColor(r.domain) }
+        domainInfo = { count: 1, favicon: getFaviconUrl(`https://${r.domain}`), color: stringToColor(r.domain) }
         domainMap.set(r.domain, domainInfo)
       }
 
@@ -258,6 +263,7 @@ export const useStatsStore = defineStore('stats', () => {
       if (r.lastVisitTime >= weekAgo) {
         weekVisits++
         currentWeekMap.set(r.domain, (currentWeekMap.get(r.domain) || 0) + 1)
+        recentRecords.push(r)
       } else if (r.lastVisitTime >= twoWeeksAgo) {
         previousWeekMap.set(r.domain, (previousWeekMap.get(r.domain) || 0) + 1)
       }
@@ -290,12 +296,6 @@ export const useStatsStore = defineStore('stats', () => {
       .slice(0, 10)
 
     const today = new Date()
-    const dayBuckets = new Map<string, number>()
-    for (let i = 0; i < filtered.length; i++) {
-      const d = new Date(filtered[i].lastVisitTime)
-      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-      dayBuckets.set(key, (dayBuckets.get(key) || 0) + 1)
-    }
     weeklyTrend.value = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today)
       d.setDate(d.getDate() - (6 - i))
@@ -319,7 +319,6 @@ export const useStatsStore = defineStore('stats', () => {
       return { hour, day, count, level }
     })
 
-    const recentRecords = filtered.filter(r => r.lastVisitTime >= weekAgo)
     const scored = recentRecords.map(r => {
       const freq = Math.min(domainVisitCounts.get(r.domain) || 1 / 10, 1)
       const recency = Math.max(0, 1 - (now - r.lastVisitTime) / (7 * 86400000))
@@ -417,7 +416,7 @@ export const useStatsStore = defineStore('stats', () => {
         let direction: 'rising' | 'falling' | 'stable' = 'stable'
         if (change > 20) direction = 'rising'
         else if (change < -20) direction = 'falling'
-        return { domain, currentCount: current, previousCount: previous, change, direction, favicon: `chrome://favicon/size/16/${domain}` }
+        return { domain, currentCount: current, previousCount: previous, change, direction, favicon: getFaviconUrl(`https://${domain}`) }
       })
       .filter(t => t.currentCount >= 2 || t.previousCount >= 2)
       .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
@@ -438,7 +437,7 @@ export const useStatsStore = defineStore('stats', () => {
         else if (currentSlot === 'night') reason = '深夜常浏览'
         else if (currentSlot === 'noon') reason = '午间常浏览'
         else reason = '此时段常浏览'
-        contextScores.set(domain, { score: combined, reason, favicon: `chrome://favicon/size/16/${domain}` })
+        contextScores.set(domain, { score: combined, reason, favicon: getFaviconUrl(`https://${domain}`) })
       }
     }
 

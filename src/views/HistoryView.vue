@@ -4,7 +4,7 @@ import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'
 import { useStatsStore } from '@/stores/stats'
 import { useReadingQueueStore } from '@/stores/readingQueue'
-import { formatTime, formatDateTime, getFaviconUrl, highlightText, getGroupLabel, autoTag, TAG_COLORS } from '@/utils/helpers'
+import { formatTime, formatDateTime, getFaviconUrl, highlightText, getGroupLabel, autoTag, TAG_COLORS, onFaviconError } from '@/utils/helpers'
 import type { HistoryRecord } from '@/utils/helpers'
 
 const history = useHistoryStore()
@@ -372,8 +372,8 @@ onUnmounted(() => {
                   <input type="checkbox" :checked="history.selectedRecords.has(record.id)" />
                 </label>
                 <div class="record-favicon">
-                  <img :src="getFaviconUrl(record.url)" alt="" loading="lazy"
-                    @error="($event.target as HTMLImageElement).style.display='none'; ($event.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden')" />
+                  <img :src="getFaviconUrl(record.url)" alt=""
+                    @error="onFaviconError($event, record.url)" />
                   <span class="favicon-fallback hidden" :style="{ backgroundColor: record.domainColor }">
                     {{ record.domain.charAt(0).toUpperCase() }}
                   </span>
@@ -434,8 +434,8 @@ onUnmounted(() => {
               <input type="checkbox" :checked="history.selectedRecords.has(record.id)" />
             </label>
             <div class="record-favicon">
-              <img :src="getFaviconUrl(record.url)" alt="" loading="lazy"
-                @error="($event.target as HTMLImageElement).style.display='none'; ($event.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden')" />
+              <img :src="getFaviconUrl(record.url)" alt=""
+                @error="onFaviconError($event, record.url)" />
               <span class="favicon-fallback hidden" :style="{ backgroundColor: record.domainColor }">
                 {{ record.domain.charAt(0).toUpperCase() }}
               </span>

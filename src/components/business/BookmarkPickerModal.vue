@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useUIStore } from '@/stores/ui'
+import { getFaviconUrl, onFaviconError } from '@/utils/helpers'
 
 const ui = useUIStore()
 
@@ -71,9 +72,9 @@ async function saveToBookmark() {
       </div>
 
       <div v-if="ui.bookmarkTarget" class="target-info">
-        <img :src="'chrome://favicon/size/16/' + getHostname(ui.bookmarkTarget.url)"
-          class="target-favicon" loading="lazy"
-          @error="($event.target as HTMLImageElement).style.display='none'" />
+        <img :src="getFaviconUrl(ui.bookmarkTarget.url)"
+          class="target-favicon"
+          @error="onFaviconError($event, ui.bookmarkTarget.url)" />
         <div class="target-text">
           <div class="target-title">{{ ui.bookmarkTarget.title }}</div>
           <div class="target-url">{{ getHostname(ui.bookmarkTarget.url) }}</div>

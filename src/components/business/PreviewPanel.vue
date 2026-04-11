@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
-import { formatTime, getFaviconUrl, safeOpenUrl, sanitizeUrl } from '@/utils/helpers'
+import { formatTime, getFaviconUrl, safeOpenUrl, sanitizeUrl, onFaviconError } from '@/utils/helpers'
 
 const ui = useUIStore()
 const history = useHistoryStore()
@@ -22,7 +22,7 @@ function openUrl(url?: string) {
   <div class="preview-overlay" @click="ui.closePreview()">
     <div class="preview-card" @click.stop>
       <div class="preview-header">
-        <img :src="getFaviconUrl(ui.previewRecord?.url)" class="preview-favicon" />
+        <img :src="getFaviconUrl(ui.previewRecord?.url)" class="preview-favicon" @error="onFaviconError($event, ui.previewRecord?.url || '')" />
         <div class="preview-title-wrap">
           <div class="preview-title">{{ ui.previewRecord?.title || '无标题' }}</div>
           <div class="preview-domain">{{ ui.previewRecord?.domain }}</div>

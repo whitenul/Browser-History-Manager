@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useReadingQueueStore } from '@/stores/readingQueue'
-import { getFaviconUrl, safeOpenUrl } from '@/utils/helpers'
+import { getFaviconUrl, safeOpenUrl, onFaviconError } from '@/utils/helpers'
 
 const queue = useReadingQueueStore()
 
@@ -53,8 +53,8 @@ function timeAgo(ts: number): string {
 
     <div v-else class="queue-list">
       <div v-for="item in queue.sortedItems" :key="item.url" class="queue-item">
-        <img :src="getFaviconUrl(item.url)" class="item-favicon" loading="lazy"
-          @error="($event.target as HTMLImageElement).style.display='none'" />
+        <img :src="getFaviconUrl(item.url)" class="item-favicon"
+          @error="onFaviconError($event, item.url)" />
         <div class="item-info" @click="openUrl(item.url)">
           <div class="item-title">{{ item.title || item.domain }}</div>
           <div class="item-meta">
