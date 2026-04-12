@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "浏览器历史记录管理器",
+  "name": "__MSG_name__",
   "version": "2.0.0",
-  "description": "现代化浏览器历史记录管理工具，支持搜索、筛选、统计、书签管理",
+  "description": "__MSG_description__",
+  "default_locale": "en",
   "minimum_chrome_version": "120",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'"

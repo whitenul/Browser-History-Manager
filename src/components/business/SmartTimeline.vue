@@ -4,9 +4,11 @@ import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'
 import { formatTime, getFaviconUrl, autoTag, TAG_COLORS, safeOpenUrl, onFaviconError } from '@/utils/helpers'
 import type { HistoryRecord } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const history = useHistoryStore()
 const ui = useUIStore()
+const { t } = useI18n()
 
 interface TimeSegment {
   key: string
@@ -17,19 +19,19 @@ interface TimeSegment {
   records: HistoryRecord[]
 }
 
-const PRODUCTIVE_TAGS = new Set(['技术', '开发', '文档', '学习', '云服务', '工具', 'AI'])
-const ENTERTAINMENT_TAGS = new Set(['视频', '游戏', '音乐', '社交', '阅读'])
-const NEWS_TAGS = new Set(['新闻', '博客', '论坛'])
+const PRODUCTIVE_TAGS = new Set(['tech', 'dev', 'docs', 'learning', 'cloud', 'tools', 'ai'])
+const ENTERTAINMENT_TAGS = new Set(['video', 'gaming', 'music', 'social', 'reading'])
+const NEWS_TAGS = new Set(['news', 'blog', 'forum'])
 
-const SEGMENT_DEFS: { key: string; label: string; icon: string; hourRange: [number, number]; color: string }[] = [
-  { key: 'night0', label: '夜间', icon: 'i-lucide:moon', hourRange: [0, 6], color: '#6366f1' },
-  { key: 'dawn', label: '清晨', icon: 'i-lucide:sunrise', hourRange: [6, 9], color: '#fbbf24' },
-  { key: 'morning', label: '上午', icon: 'i-lucide:sun', hourRange: [9, 12], color: '#f59e0b' },
-  { key: 'noon', label: '午间', icon: 'i-lucide:cloud-sun', hourRange: [12, 14], color: '#fb923c' },
-  { key: 'afternoon', label: '下午', icon: 'i-lucide:briefcase', hourRange: [14, 18], color: '#3b82f6' },
-  { key: 'evening', label: '傍晚', icon: 'i-lucide:sunset', hourRange: [18, 21], color: '#ec4899' },
-  { key: 'night1', label: '夜间', icon: 'i-lucide:moon', hourRange: [21, 24], color: '#8b5cf6' },
-]
+const SEGMENT_DEFS = computed(() => [
+  { key: 'night0', label: t('timeline.segments.night'), icon: 'i-lucide:moon', hourRange: [0, 6] as [number, number], color: '#6366f1' },
+  { key: 'dawn', label: t('timeline.segments.dawn'), icon: 'i-lucide:sunrise', hourRange: [6, 9] as [number, number], color: '#fbbf24' },
+  { key: 'morning', label: t('timeline.segments.morning'), icon: 'i-lucide:sun', hourRange: [9, 12] as [number, number], color: '#f59e0b' },
+  { key: 'noon', label: t('timeline.segments.noon'), icon: 'i-lucide:cloud-sun', hourRange: [12, 14] as [number, number], color: '#fb923c' },
+  { key: 'afternoon', label: t('timeline.segments.afternoon'), icon: 'i-lucide:briefcase', hourRange: [14, 18] as [number, number], color: '#3b82f6' },
+  { key: 'evening', label: t('timeline.segments.evening'), icon: 'i-lucide:sunset', hourRange: [18, 21] as [number, number], color: '#ec4899' },
+  { key: 'night1', label: t('timeline.segments.night'), icon: 'i-lucide:moon', hourRange: [21, 24] as [number, number], color: '#8b5cf6' },
+])
 
 const todayStart = computed(() => {
   const now = new Date()
@@ -49,7 +51,7 @@ const yesterdayRecords = computed(() =>
 )
 
 const segments = computed<TimeSegment[]>(() => {
-  return SEGMENT_DEFS.map(def => {
+  return SEGMENT_DEFS.value.map(def => {
     const now = new Date()
     const base = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const start = base.getTime() + def.hourRange[0] * 3600000
@@ -81,15 +83,15 @@ const storySummary = computed(() => {
 
   if (patterns.length === 0) {
     const total = todayRecords.value.length
-    if (total === 0) return '今天还没有浏览记录'
-    return `今天浏览了${total}个页面，主要在${activePeriod.value.label}时段活跃`
+    if (total === 0) return t('timeline.noRecordsToday')
+    return t('timeline.browsedPagesActive', { count: total, label: activePeriod.value.label })
   }
 
   const primary = patterns[0]
-  if (primary.type === 'deep-work') parts.push('今天主要在深度工作')
-  else if (primary.type === 'fragmented') parts.push('今天的浏览比较碎片化')
-  else if (primary.type === 'entertainment') parts.push('今天享受了不少娱乐时光')
-  else if (primary.type === 'info-gathering') parts.push('今天在获取信息')
+  if (primary.type === 'deep-work') parts.push(t('timeline.deepWork'))
+  else if (primary.type === 'fragmented') parts.push(t('timeline.fragmentedBrowsing'))
+  else if (primary.type === 'entertainment') parts.push(t('timeline.entertainmentTime'))
+  else if (primary.type === 'info-gathering') parts.push(t('timeline.infoGathering'))
 
   const activeSeg = activePeriod.value
   if (activeSeg.records.length > 0) {
@@ -98,22 +100,27 @@ const storySummary = computed(() => {
       return tags.some(t => PRODUCTIVE_TAGS.has(t))
     }).length
     if (techCount > 0 && primary.type !== 'entertainment') {
-      parts.push(`${activeSeg.label}浏览了${techCount}个技术网站`)
+      parts.push(t('timeline.techSitesBrowsed', { label: activeSeg.label, count: techCount }))
     } else {
-      parts.push(`${activeSeg.label}时段最活跃`)
+      parts.push(t('timeline.mostActivePeriod', { label: activeSeg.label }))
     }
   }
 
-  return parts.join('，')
+  return parts.join(t('timeline.summarySeparator'))
 })
 
-const yesterdayComparison = computed(() => {
+const yesterdayDiffPercent = computed(() => {
   const todayCount = todayRecords.value.length
   const yesterdayCount = yesterdayRecords.value.length
   if (yesterdayCount === 0) return null
-  const diff = ((todayCount - yesterdayCount) / yesterdayCount) * 100
-  const sign = diff >= 0 ? '多' : '少'
-  return `比昨天${sign}${Math.abs(Math.round(diff))}%`
+  return Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100)
+})
+
+const yesterdayComparison = computed(() => {
+  if (yesterdayDiffPercent.value === null) return null
+  const abs = Math.abs(yesterdayDiffPercent.value)
+  if (yesterdayDiffPercent.value >= 0) return t('timeline.vsYesterdayMore', { percent: abs })
+  return t('timeline.vsYesterdayLess', { percent: abs })
 })
 
 interface DetectedPattern {
@@ -139,7 +146,7 @@ const detectedPatterns = computed<DetectedPattern[]>(() => {
     const hourSpan = seg.hourRange[1] - seg.hourRange[0]
     if (productiveCount >= 3 && hourSpan >= 2) {
       patterns.push({
-        type: 'deep-work', label: '深度工作', icon: 'i-lucide:target',
+        type: 'deep-work', label: t('timeline.deepWorkLabel'), icon: 'i-lucide:target',
         color: '#10b981', segmentKey: seg.key,
       })
       continue
@@ -156,7 +163,7 @@ const detectedPatterns = computed<DetectedPattern[]>(() => {
         }
         if (windowDomains.size >= 5) {
           patterns.push({
-            type: 'fragmented', label: '碎片浏览', icon: 'i-lucide:shuffle',
+            type: 'fragmented', label: t('timeline.fragmentedLabel'), icon: 'i-lucide:shuffle',
             color: '#f59e0b', segmentKey: seg.key,
           })
           break
@@ -167,7 +174,7 @@ const detectedPatterns = computed<DetectedPattern[]>(() => {
 
     if (entertainmentCount >= 3) {
       patterns.push({
-        type: 'entertainment', label: '娱乐时光', icon: 'i-lucide:party-popper',
+        type: 'entertainment', label: t('timeline.entertainmentLabel'), icon: 'i-lucide:party-popper',
         color: '#ec4899', segmentKey: seg.key,
       })
       continue
@@ -175,7 +182,7 @@ const detectedPatterns = computed<DetectedPattern[]>(() => {
 
     if (newsCount >= 2 && productiveCount >= 1) {
       patterns.push({
-        type: 'info-gathering', label: '信息获取', icon: 'i-lucide:radio',
+        type: 'info-gathering', label: t('timeline.infoGatheringLabel'), icon: 'i-lucide:radio',
         color: '#06b6d4', segmentKey: seg.key,
       })
     }
@@ -209,7 +216,7 @@ function getSegmentDots(seg: TimeSegment) {
 
 function restoreSegment(seg: TimeSegment) {
   const urls = [...new Set(seg.records.map(r => r.url))]
-  ui.notifyWithUndo(`将打开${seg.label}时段的${urls.length}个页面`, () => {})
+  ui.notifyWithUndo(t('timeline.openSegmentPages', { label: seg.label, count: urls.length }), () => {})
     for (const url of urls) {
       safeOpenUrl(url, false)
     }
@@ -241,26 +248,26 @@ function toggleExpand(key: string) {
     <div class="story-card">
       <div class="story-header">
         <span class="i-lucide:book-open story-icon" />
-        <span class="story-title">今日浏览故事</span>
+        <span class="story-title">{{ t('timeline.title') }}</span>
       </div>
       <div class="story-stats">
         <div class="story-stat">
           <span class="story-stat-value">{{ todayRecords.length }}</span>
-          <span class="story-stat-label">总访问</span>
+          <span class="story-stat-label">{{ t('timeline.totalVisits') }}</span>
         </div>
         <div class="story-stat">
           <span class="story-stat-value">{{ activePeriod.label }}</span>
-          <span class="story-stat-label">最活跃</span>
+          <span class="story-stat-label">{{ t('timeline.mostActive') }}</span>
         </div>
         <div class="story-stat">
           <span class="story-stat-value story-stat-domain">{{ topDomain }}</span>
-          <span class="story-stat-label">Top域名</span>
+          <span class="story-stat-label">{{ t('timeline.topDomain') }}</span>
         </div>
         <div v-if="yesterdayComparison" class="story-stat">
-          <span class="story-stat-value" :class="yesterdayComparison.includes('多') ? 'stat-up' : 'stat-down'">
+          <span class="story-stat-value" :class="yesterdayDiffPercent !== null && yesterdayDiffPercent >= 0 ? 'stat-up' : 'stat-down'">
             {{ yesterdayComparison }}
           </span>
-          <span class="story-stat-label">对比昨天</span>
+          <span class="story-stat-label">{{ t('timeline.vsYesterday') }}</span>
         </div>
       </div>
       <div class="story-summary">{{ storySummary }}</div>
@@ -269,7 +276,7 @@ function toggleExpand(key: string) {
     <div class="patterns-section" v-if="detectedPatterns.length > 0">
       <div class="patterns-title">
         <span class="i-lucide:sparkles patterns-icon" />
-        智能识别
+        {{ t('timeline.smartDetect') }}
       </div>
       <div class="patterns-list">
         <div v-for="p in detectedPatterns" :key="p.segmentKey + p.type" class="pattern-chip" :style="{ '--chip-color': p.color }">
@@ -282,7 +289,7 @@ function toggleExpand(key: string) {
     <div class="timeline-section">
       <div class="timeline-title">
         <span class="i-lucide:clock timeline-icon" />
-        时间线
+        {{ t('timeline.timeline') }}
       </div>
       <div class="timeline-body">
         <div
@@ -315,8 +322,8 @@ function toggleExpand(key: string) {
             </div>
           </div>
           <div class="segment-compare" v-if="seg.records.length > 0 || getYesterdaySegmentCount(seg) > 0">
-            <span class="compare-label">昨日同期</span>
-            <span class="compare-value">{{ getYesterdaySegmentCount(seg) }}次</span>
+            <span class="compare-label">{{ t('timeline.yesterdaySameTime') }}</span>
+            <span class="compare-value">{{ getYesterdaySegmentCount(seg) }}{{ t('timeline.times') }}</span>
             <span v-if="seg.records.length > 0 && getYesterdaySegmentCount(seg) > 0" class="compare-diff" :class="seg.records.length >= getYesterdaySegmentCount(seg) ? 'stat-up' : 'stat-down'">
               {{ seg.records.length >= getYesterdaySegmentCount(seg) ? '+' : '' }}{{ Math.round(((seg.records.length - getYesterdaySegmentCount(seg)) / getYesterdaySegmentCount(seg)) * 100) }}%
             </span>
@@ -326,15 +333,15 @@ function toggleExpand(key: string) {
               <div v-for="r in seg.records.slice(0, 10)" :key="r.id" class="segment-detail-item" @click="history.openRecord(r.url)">
                 <img :src="getFaviconUrl(r.url)" class="detail-favicon" @error="onFaviconError($event, r.url)" />
                 <span class="detail-title">{{ r.title || r.domain }}</span>
-                <span class="detail-time">{{ formatTime(r.lastVisitTime) }}</span>
+                <span class="detail-time">{{ formatTime(r.lastVisitTime, t) }}</span>
               </div>
               <div v-if="seg.records.length > 10" class="detail-more">
-                还有{{ seg.records.length - 10 }}条记录...
+                {{ t('timeline.moreRecords', { count: seg.records.length - 10 }) }}
               </div>
             </div>
             <button class="segment-restore" @click.stop="restoreSegment(seg)">
               <span class="i-lucide:rotate-ccw" />
-              恢复
+              {{ t('timeline.restore') }}
             </button>
           </div>
         </div>

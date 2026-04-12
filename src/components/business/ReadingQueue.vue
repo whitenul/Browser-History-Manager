@@ -2,8 +2,10 @@
 import { onMounted } from 'vue'
 import { useReadingQueueStore } from '@/stores/readingQueue'
 import { getFaviconUrl, safeOpenUrl, onFaviconError } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const queue = useReadingQueueStore()
+const { t } = useI18n()
 
 onMounted(() => { queue.loadQueue() })
 
@@ -12,9 +14,9 @@ function openUrl(url: string) {
 }
 
 function priorityLabel(p: number): string {
-  if (p >= 0.8) return '高优'
-  if (p >= 0.5) return '中优'
-  return '低优'
+  if (p >= 0.8) return t('readingQueue.priority.highShort')
+  if (p >= 0.5) return t('readingQueue.priority.mediumShort')
+  return t('readingQueue.priority.lowShort')
 }
 
 function priorityColor(p: number): string {
@@ -26,11 +28,11 @@ function priorityColor(p: number): string {
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts
   const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `${mins}分钟前`
+  if (mins < 60) return t('readingQueue.minutesAgo', { count: mins })
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}小时前`
+  if (hours < 24) return t('readingQueue.hoursAgo', { count: hours })
   const days = Math.floor(hours / 24)
-  return `${days}天前`
+  return t('readingQueue.daysAgo', { count: days })
 }
 </script>
 
@@ -38,7 +40,7 @@ function timeAgo(ts: number): string {
   <div class="queue-card">
     <div class="queue-header">
       <span class="i-lucide:bookmark-plus queue-header-icon" />
-      <span class="queue-title">阅读队列</span>
+      <span class="queue-title">{{ t('readingQueue.title') }}</span>
       <span class="queue-count">{{ queue.count }}</span>
       <button v-if="queue.count > 0" class="clear-all-btn" @click="queue.clearQueue()">
         <span class="i-lucide:trash-2" />
@@ -47,8 +49,8 @@ function timeAgo(ts: number): string {
 
     <div v-if="queue.count === 0" class="queue-empty">
       <span class="i-lucide:inbox empty-icon" />
-      <div class="empty-text">暂无待读文章</div>
-      <div class="empty-hint">在历史记录中点击书签图标添加</div>
+      <div class="empty-text">{{ t('readingQueue.emptyText') }}</div>
+      <div class="empty-hint">{{ t('readingQueue.emptyHint') }}</div>
     </div>
 
     <div v-else class="queue-list">
@@ -62,7 +64,7 @@ function timeAgo(ts: number): string {
             <span class="item-time">{{ timeAgo(item.addedAt) }}</span>
           </div>
           <div v-if="item.tags.length > 0" class="item-tags">
-            <span v-for="tag in item.tags" :key="tag" class="item-tag">{{ tag }}</span>
+            <span v-for="tag in item.tags" :key="tag" class="item-tag">{{ t('tags.' + tag) }}</span>
           </div>
         </div>
         <span class="priority-badge" :style="{ color: priorityColor(item.priority), backgroundColor: priorityColor(item.priority) + '15' }">

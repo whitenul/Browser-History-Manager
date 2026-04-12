@@ -2,14 +2,16 @@
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { escapeHtml } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const history = useHistoryStore()
+const { t } = useI18n()
 
 async function confirmDelete() {
   if (ui.deleteTarget) {
     await history.deleteRecord(ui.deleteTarget)
-    ui.notify('已删除记录')
+    ui.notify(t('deleteConfirm.deleted'))
   }
   ui.closeDeleteConfirm()
 }
@@ -19,16 +21,16 @@ async function confirmDelete() {
   <div class="modal-overlay" @click.self="ui.closeDeleteConfirm()">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>确认删除</h3>
+        <h3>{{ t('deleteConfirm.title') }}</h3>
       </div>
-      <p class="modal-text">确定要删除这条历史记录吗？此操作不可撤销。</p>
+      <p class="modal-text">{{ t('deleteConfirm.recordMessage') }}</p>
       <div v-if="ui.deleteTarget" class="record-preview">
         <div class="preview-title">{{ ui.deleteTarget.title }}</div>
         <div class="preview-url">{{ ui.deleteTarget.url }}</div>
       </div>
       <div class="modal-actions">
-        <button class="btn-secondary" @click="ui.closeDeleteConfirm()">取消</button>
-        <button class="btn-danger" @click="confirmDelete()">删除</button>
+        <button class="btn-secondary" @click="ui.closeDeleteConfirm()">{{ t('deleteConfirm.cancel') }}</button>
+        <button class="btn-danger" @click="confirmDelete()">{{ t('deleteConfirm.delete') }}</button>
       </div>
     </div>
   </div>

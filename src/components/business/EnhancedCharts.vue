@@ -5,17 +5,23 @@ import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
 import { autoTagDetailed, TAG_COLORS, getFaviconUrl } from '@/utils/helpers'
 import { useStatsNavigation } from '@/composables/useStatsNavigation'
+import { useI18n } from '@/i18n'
 
 const history = useHistoryStore()
 const stats = useStatsStore()
 const ui = useUIStore()
 const {
   HEAT_COLORS,
-  DAY_LABELS: dayLabels,
   isCurrentHeatCell,
   navigateWithTimeFilter,
   navigateWithTagFilter,
 } = useStatsNavigation()
+const { t } = useI18n()
+
+const dayLabels = computed(() => [
+  t('stats.weekdays.0'), t('stats.weekdays.1'), t('stats.weekdays.2'),
+  t('stats.weekdays.3'), t('stats.weekdays.4'), t('stats.weekdays.5'), t('stats.weekdays.6'),
+])
 
 const activeTab = ref(0)
 const trendRange = ref<'7d' | '30d'>('7d')
@@ -161,18 +167,18 @@ onUnmounted(() => {
 
 function isTab(n: number) { return activeTab.value === n }
 
-const tabs = [
-  { label: '热力图', icon: 'i-lucide:grid-3x3' },
-  { label: '趋势图', icon: 'i-lucide:trending-up' },
-  { label: '标签分布', icon: 'i-lucide:pie-chart' },
-  { label: '域名关系', icon: 'i-lucide:git-branch' },
-]
+const tabs = computed(() => [
+  { label: t('charts.heatmap'), icon: 'i-lucide:grid-3x3' },
+  { label: t('charts.trend'), icon: 'i-lucide:trending-up' },
+  { label: t('charts.tagDistribution'), icon: 'i-lucide:pie-chart' },
+  { label: t('charts.domainRelation'), icon: 'i-lucide:git-branch' },
+])
 
 function onHeatCellClick(cell: { day: number; hour: number; count: number }) {
   if (cell.count === 0) return
-  const dayName = dayLabels[cell.day]
+  const dayName = dayLabels.value[cell.day]
   const hourStr = String(cell.hour).padStart(2, '0')
-  navigateWithTimeFilter(cell.day, cell.hour, cell.hour + 1, `周${dayName} ${hourStr}:00-${hourStr}:59`)
+  navigateWithTimeFilter(cell.day, cell.hour, cell.hour + 1, t('charts.heatCellTime', { day: dayName, hour: hourStr }))
 }
 
 function onHeatCellHover(cell: { day: number; hour: number; count: number }, event: MouseEvent) {
@@ -190,7 +196,12 @@ function onHeatCellLeave() {
 }
 
 const trendData = computed(() => {
-  if (trendRange.value === '7d') return stats.weeklyTrend
+  if (trendRange.value === '7d') {
+    return stats.weeklyTrend.map(item => ({
+      label: t('stats.weekPrefix') + dayLabels.value[item.dayIndex],
+      count: item.count,
+    }))
+  }
   const now = new Date()
   const dayBuckets = new Map<string, number>()
   const records = history.allRecords
@@ -284,7 +295,7 @@ const tagDonutSegments = computed(() => {
 })
 
 function onTagSegmentClick(tag: string) {
-  navigateWithTagFilter(tag, `标签: ${tag}`)
+  navigateWithTagFilter(tag, t('charts.tagFilterLabel', { tag: t('tags.' + tag) }))
 }
 
 function isNodeHighlighted(domain: string) {
@@ -347,9 +358,9 @@ function isEdgeHighlighted(edge: { from: string; to: string }) {
           :style="{ left: heatTooltipPos.x + 'px', top: heatTooltipPos.y + 'px' }"
         >
           <div class="heat-tooltip-title">
-            周{{ dayLabels[hoveredHeatCell.day] }} {{ String(hoveredHeatCell.hour).padStart(2, '0') }}:00-{{ String(hoveredHeatCell.hour).padStart(2, '0') }}:59
+            {{ t('charts.heatCellTime', { day: dayLabels[hoveredHeatCell.day], hour: String(hoveredHeatCell.hour).padStart(2, '0') }) }}
           </div>
-          <div class="heat-tooltip-count">{{ hoveredHeatCell.count }} 次访问</div>
+          <div class="heat-tooltip-count">{{ t('charts.visitCount', { count: hoveredHeatCell.count }) }}</div>
         </div>
       </div>
 
@@ -359,12 +370,12 @@ function isEdgeHighlighted(edge: { from: string; to: string }) {
             class="range-btn"
             :class="{ active: trendRange === '7d' }"
             @click="trendRange = '7d'"
-          >7天</button>
+          >{{ t('charts.days7') }}</button>
           <button
             class="range-btn"
             :class="{ active: trendRange === '30d' }"
             @click="trendRange = '30d'"
-          >30天</button>
+          >{{ t('charts.days30') }}</button>
         </div>
         <svg class="trend-svg" viewBox="0 0 340 140" preserveAspectRatio="xMidYMid meet">
           <defs>
@@ -475,7 +486,7 @@ function isEdgeHighlighted(edge: { from: string; to: string }) {
               {{ tagDistributionData.reduce((s, d) => s + d.count, 0) }}
             </text>
             <text x="80" y="92" text-anchor="middle" fill="var(--text-muted)" font-size="9">
-              总标签
+              {{ t('charts.totalTags') }}
             </text>
           </svg>
         </div>
@@ -487,7 +498,7 @@ function isEdgeHighlighted(edge: { from: string; to: string }) {
             @click="onTagSegmentClick(item.tag)"
           >
             <span class="tag-legend-dot" :style="{ backgroundColor: item.color }" />
-            <span class="tag-legend-name">{{ item.tag }}</span>
+            <span class="tag-legend-name">{{ t('tags.' + item.tag) }}</span>
             <span class="tag-legend-count">{{ item.count }}</span>
             <span class="tag-legend-pct">{{ item.percentage }}%</span>
           </div>
@@ -542,12 +553,12 @@ function isEdgeHighlighted(edge: { from: string; to: string }) {
               font-size="8"
               font-weight="600"
               style="pointer-events: none"
-            >{{ node.count }}次</text>
+            >{{ t('charts.visitTimes', { count: node.count }) }}</text>
           </g>
         </svg>
         <div class="graph-hint">
           <span class="i-lucide:info" />
-          悬停节点查看关联，10分钟内共访的域名相连
+          {{ t('charts.graphHint') }}
         </div>
       </div>
     </div>

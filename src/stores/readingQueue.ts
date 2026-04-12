@@ -64,8 +64,8 @@ export const useReadingQueueStore = defineStore('readingQueue', () => {
 
     ARTICLE_KEYWORDS.forEach(kw => { if (titleLower.includes(kw)) score += 0.1 })
     TECH_KEYWORDS.forEach(kw => { if (domain.includes(kw)) score += 0.15 })
-    if (tags.includes('长文')) score += 0.1
-    if (tags.includes('技术')) score += 0.1
+    if (tags.includes('longArticle')) score += 0.1
+    if (tags.includes('tech')) score += 0.1
     return Math.min(1, score)
   }
 

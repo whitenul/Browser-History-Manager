@@ -5,31 +5,37 @@ import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
 import { getFaviconUrl, safeOpenUrl } from '@/utils/helpers'
 import { useStatsNavigation } from '@/composables/useStatsNavigation'
+import { useI18n } from '@/i18n'
 
 const history = useHistoryStore()
 const stats = useStatsStore()
 const ui = useUIStore()
+const { t } = useI18n()
 const {
   HEAT_COLORS,
-  DAY_LABELS: dayLabels,
   isCurrentHeatCell,
   navigateWithTimeFilter,
   navigateWithDomainFilter,
 } = useStatsNavigation()
 
-const timeRangeOptions = [
-  { value: 'all', label: '全部' },
-  { value: 'today', label: '今天' },
-  { value: '3days', label: '3天' },
-  { value: 'week', label: '7天' },
-  { value: 'month', label: '30天' },
-]
+const dayLabels = computed(() => [
+  t('stats.weekdays.0'), t('stats.weekdays.1'), t('stats.weekdays.2'),
+  t('stats.weekdays.3'), t('stats.weekdays.4'), t('stats.weekdays.5'), t('stats.weekdays.6'),
+])
+
+const timeRangeOptions = computed(() => [
+  { value: 'all', label: t('common.all') },
+  { value: 'today', label: t('common.today') },
+  { value: '3days', label: t('history.filter.last3Days') },
+  { value: 'week', label: t('history.filter.last7Days') },
+  { value: 'month', label: t('history.filter.last30Days') },
+])
 
 function onHeatCellClick(cell: { day: number; hour: number; count: number }) {
   if (cell.count === 0) return
-  const dayName = dayLabels[cell.day]
+  const dayName = dayLabels.value[cell.day]
   const hourStr = String(cell.hour).padStart(2, '0')
-  navigateWithTimeFilter(cell.day, cell.hour, cell.hour + 1, `周${dayName} ${hourStr}:00-${hourStr}:59`)
+  navigateWithTimeFilter(cell.day, cell.hour, cell.hour + 1, `${t('stats.weekPrefix')}${dayName} ${hourStr}:00-${hourStr}:59`)
 }
 
 function onTopSiteClick(domain: string) {
@@ -176,7 +182,7 @@ onUnmounted(() => {
     <div class="stats-header">
       <div class="stats-title">
         <span class="i-lucide:bar-chart-3 stats-title-icon" />
-        <span>数据统计</span>
+        <span>{{ t('stats.overview') }}</span>
       </div>
       <div class="time-range-selector">
         <button
@@ -194,7 +200,7 @@ onUnmounted(() => {
     <div class="stats-content">
       <div v-if="stats.isLoading" class="loading-overlay">
         <div class="loading-spinner" />
-        <span>正在计算统计数据...</span>
+        <span>{{ t('stats.loading') }}</span>
       </div>
 
       <div class="overview-cards">
@@ -204,7 +210,7 @@ onUnmounted(() => {
           </div>
           <div class="overview-info">
             <div class="overview-value">{{ stats.overview.totalVisits.toLocaleString() }}</div>
-            <div class="overview-label">总访问</div>
+            <div class="overview-label">{{ t('stats.totalVisits') }}</div>
           </div>
         </div>
         <div class="overview-card">
@@ -213,7 +219,7 @@ onUnmounted(() => {
           </div>
           <div class="overview-info">
             <div class="overview-value">{{ stats.overview.weekVisits.toLocaleString() }}</div>
-            <div class="overview-label">本周访问</div>
+            <div class="overview-label">{{ t('stats.weeklyVisits') }}</div>
           </div>
         </div>
         <div class="overview-card">
@@ -222,7 +228,7 @@ onUnmounted(() => {
           </div>
           <div class="overview-info">
             <div class="overview-value">{{ stats.overview.dailyAvg }}</div>
-            <div class="overview-label">日均访问</div>
+            <div class="overview-label">{{ t('stats.dailyAvgVisits') }}</div>
           </div>
         </div>
         <div class="overview-card">
@@ -231,7 +237,7 @@ onUnmounted(() => {
           </div>
           <div class="overview-info">
             <div class="overview-value">{{ stats.overview.siteCount }}</div>
-            <div class="overview-label">访问站点</div>
+            <div class="overview-label">{{ t('stats.visitedSites') }}</div>
           </div>
         </div>
       </div>
@@ -239,7 +245,7 @@ onUnmounted(() => {
       <div class="stats-section heat-section">
         <div class="section-header">
           <span class="i-lucide:grid-3x3 section-icon" />
-          <span>访问热力图</span>
+          <span>{{ t('stats.heatmap') }}</span>
         </div>
         <div class="heatmap-wrapper">
           <div class="heatmap">
@@ -257,7 +263,7 @@ onUnmounted(() => {
                   'hour-mark': cell.hour % 6 === 0,
                 }"
                 :style="{ backgroundColor: HEAT_COLORS[cell.level] }"
-                :title="`周${dayLabels[cell.day]} ${cell.hour}:00 - ${cell.count}次`"
+                :title="t('stats.heatCellTitle', { day: dayLabels[cell.day], hour: cell.hour, count: cell.count })"
                 @click="onHeatCellClick(cell)"
               />
             </div>
@@ -269,7 +275,7 @@ onUnmounted(() => {
         <div class="stats-section top-sites-section">
           <div class="section-header">
             <span class="i-lucide:crown section-icon" />
-            <span>热门站点</span>
+            <span>{{ t('stats.topSitesTitle') }}</span>
           </div>
           <div class="top-sites-list">
             <div
@@ -283,7 +289,7 @@ onUnmounted(() => {
               <div class="site-rank" :style="{ backgroundColor: site.color }">{{ idx + 1 }}</div>
               <div class="site-info">
                 <div class="site-domain">{{ site.domain }}</div>
-                <div class="site-count">{{ site.count }} 次访问</div>
+                <div class="site-count">{{ t('stats.visitsCount', { count: site.count }) }}</div>
               </div>
             </div>
           </div>
@@ -293,8 +299,8 @@ onUnmounted(() => {
           <div class="stats-section productivity-section">
             <div class="section-header">
               <span class="i-lucide:zap section-icon" />
-              <span>生产力评分</span>
-              <span class="prod-level" :class="stats.productivity.level">{{ stats.productivity.level }}</span>
+              <span>{{ t('stats.productivity') }}</span>
+              <span class="prod-level" :class="stats.productivity.level">{{ t('stats.prodLevel.' + stats.productivity.level) }}</span>
             </div>
             <div class="prod-score">
               <div class="prod-ring">
@@ -315,17 +321,17 @@ onUnmounted(() => {
               <div class="prod-breakdown">
                 <div class="prod-row">
                   <span class="prod-dot productive" />
-                  <span>高效</span>
+                  <span>{{ t('stats.productive') }}</span>
                   <span class="prod-count">{{ stats.productivity.productiveCount }}</span>
                 </div>
                 <div class="prod-row">
                   <span class="prod-dot unproductive" />
-                  <span>娱乐</span>
+                  <span>{{ t('stats.entertainment') }}</span>
                   <span class="prod-count">{{ stats.productivity.unproductiveCount }}</span>
                 </div>
                 <div class="prod-row">
                   <span class="prod-dot neutral" />
-                  <span>中性</span>
+                  <span>{{ t('stats.neutral') }}</span>
                   <span class="prod-count">{{ stats.productivity.neutralCount }}</span>
                 </div>
               </div>
@@ -335,21 +341,21 @@ onUnmounted(() => {
           <div class="stats-section rhythm-section">
             <div class="section-header">
               <span class="i-lucide:clock section-icon" />
-              <span>浏览节奏</span>
-              <span class="rhythm-pattern">{{ stats.rhythm.pattern }}</span>
+              <span>{{ t('stats.browsingRhythm') }}</span>
+              <span class="rhythm-pattern">{{ t('stats.rhythmTypes.' + stats.rhythm.pattern) }}</span>
             </div>
             <div class="rhythm-info">
               <div class="rhythm-item">
                 <span class="i-lucide:sun rhythm-icon" />
-                <span>高峰: {{ stats.rhythm.peakHour }}:00</span>
+                <span>{{ t('stats.peak') }}: {{ stats.rhythm.peakHour }}:00</span>
               </div>
               <div class="rhythm-item">
                 <span class="i-lucide:calendar-days rhythm-icon" />
-                <span>周{{ dayLabels[stats.rhythm.peakDay] }}</span>
+                <span>{{ t('stats.weekPrefix') }}{{ dayLabels[stats.rhythm.peakDay] }}</span>
               </div>
               <div class="rhythm-item">
                 <span class="i-lucide:layers rhythm-icon" />
-                <span>会话: {{ stats.rhythm.avgSessionLength }} 条</span>
+                <span>{{ t('stats.session') }}: {{ stats.rhythm.avgSessionLength }} {{ t('stats.recordsUnit') }}</span>
               </div>
             </div>
           </div>
@@ -643,10 +649,10 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-.prod-level.高效 { background: rgba(16,185,129,0.15); color: #10b981; }
-.prod-level.良好 { background: rgba(99,102,241,0.15); color: #6366f1; }
-.prod-level.一般 { background: rgba(245,158,11,0.15); color: #f59e0b; }
-.prod-level.需改善 { background: rgba(239,68,68,0.15); color: #ef4444; }
+.prod-level.excellent { background: rgba(16,185,129,0.15); color: #10b981; }
+.prod-level.good { background: rgba(99,102,241,0.15); color: #6366f1; }
+.prod-level.fair { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.prod-level.poor { background: rgba(239,68,68,0.15); color: #ef4444; }
 
 .prod-breakdown {
   flex: 1;

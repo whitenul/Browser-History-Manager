@@ -2,8 +2,10 @@
 import { onMounted, defineComponent, h, type VNode, PropType } from 'vue'
 import { useBookmarksStore } from '@/stores/bookmarks'
 import { getFaviconUrl, safeOpenUrl } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const store = useBookmarksStore()
+const { t } = useI18n()
 const LEVEL_PAD = [12, 28, 44, 60]
 
 function countDescendants(node: any): number {
@@ -36,7 +38,7 @@ function renderNode(node: any, level: number): VNode {
         loading: 'lazy',
         onError(e: Event) { (e.target as HTMLImageElement).style.display = 'none' },
       }),
-      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;color:var(--text-primary);' }, node.title),
+      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;color:var(--text-primary);' }, node.title.startsWith('bookmarks.') ? t(node.title) : node.title),
     ])
   }
 
@@ -54,7 +56,7 @@ function renderNode(node: any, level: number): VNode {
         style: `width:16px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:12px;transition:transform .2s ease;flex-shrink:0;${isExpanded ? 'transform:rotate(90deg)' : ''}`,
       }, '\u25B8'),
       h('span', { class: 'i-lucide i-lucide-folder', style: 'width:14px;height:14px;margin-right:6px;color:#fbbf24;flex-shrink:0;display:inline-flex;align-items:center;' }),
-      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;font-weight:500;color:var(--text-primary);' }, node.title || '未命名'),
+      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;font-weight:500;color:var(--text-primary);' }, node.title ? (node.title.startsWith('bookmarks.') ? t(node.title) : node.title) : t('bookmarks.unnamed')),
       childCount > 0 ? h('span', { style: 'font-size:11px;color:var(--text-muted);background:var(--primary-light);padding:1px 7px;border-radius:10px;margin-left:8px;flex-shrink:0;' }, String(childCount)) : null,
     ].filter(Boolean)),
     node.children && node.children.length > 0
@@ -85,13 +87,13 @@ onMounted(() => store.loadBookmarks())
           type="text"
           :value="store.searchKeyword"
           @input="store.setSearch(($event.target as HTMLInputElement).value)"
-          placeholder="搜索书签..."
+          :placeholder="t('bookmarks.searchPlaceholder')"
         />
       </div>
     </div>
 
-    <div v-if="store.isLoading" class="bm-loading"><div class="spin" />加载中...</div>
-    <div v-else-if="!store.filteredBookmarks.length" class="bm-empty">暂无书签</div>
+    <div v-if="store.isLoading" class="bm-loading"><div class="spin" />{{ t('bookmarks.loading') }}</div>
+    <div v-else-if="!store.filteredBookmarks.length" class="bm-empty">{{ t('bookmarks.empty') }}</div>
     <div v-else class="tree-container">
       <BmNode
         v-for="node in store.filteredBookmarks"

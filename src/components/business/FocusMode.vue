@@ -3,22 +3,24 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useStatsStore } from '@/stores/stats'
 import { useHistoryStore } from '@/stores/history'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const stats = useStatsStore()
 const history = useHistoryStore()
+const { t } = useI18n()
 
 const isActive = ref(false)
 const remainingSeconds = ref(0)
 const totalSeconds = ref(0)
 const timer = ref<ReturnType<typeof setInterval> | null>(null)
 
-const durationOptions = [
-  { label: '25分钟', value: 25 },
-  { label: '45分钟', value: 45 },
-  { label: '60分钟', value: 60 },
-  { label: '90分钟', value: 90 },
-]
+const durationOptions = computed(() => [
+  { label: t('focusMode.timerOptions.25'), value: 25 },
+  { label: t('focusMode.timerOptions.45'), value: 45 },
+  { label: t('focusMode.timerOptions.60'), value: 60 },
+  { label: t('focusMode.timerOptions.90'), value: 90 },
+])
 
 const selectedDuration = ref(25)
 
@@ -65,9 +67,9 @@ function stopFocus(completed: boolean = false) {
   })
 
   if (completed) {
-    ui.notify('🎉 专注时间结束！休息一下吧', 'success')
+    ui.notify(t('focusMode.notification'), 'success')
   } else {
-    ui.notifyWithUndo('已退出专注模式', () => {
+    ui.notifyWithUndo(t('focusMode.exitNotification'), () => {
       blockedDomains.value.forEach(d => history.addBlacklistDomain(d))
     })
   }
@@ -82,21 +84,21 @@ onUnmounted(() => {
   <div class="focus-card">
     <div class="focus-header">
       <span class="i-lucide:target focus-header-icon" />
-      <span class="focus-title">专注模式</span>
-      <span v-if="isActive" class="focus-badge active">进行中</span>
+      <span class="focus-title">{{ t('focusMode.title') }}</span>
+      <span v-if="isActive" class="focus-badge active">{{ t('focusMode.active') }}</span>
     </div>
 
     <div v-if="!isActive" class="focus-setup">
-      <div class="focus-desc">屏蔽低效网站，专注工作</div>
+      <div class="focus-desc">{{ t('focusMode.description') }}</div>
       <div v-if="blockedDomains.length > 0" class="focus-blocked-preview">
         <span class="i-lucide:shield-ban" />
-        将屏蔽 {{ blockedDomains.length }} 个低效网站：
+        {{ t('focusMode.willBlock', { count: blockedDomains.length }) }}
         <span v-for="d in blockedDomains.slice(0, 3)" :key="d" class="blocked-tag">{{ d }}</span>
-        <span v-if="blockedDomains.length > 3">等{{ blockedDomains.length }}个</span>
+        <span v-if="blockedDomains.length > 3">{{ t('focusMode.etcCount', { count: blockedDomains.length }) }}</span>
       </div>
       <div v-else class="focus-blocked-preview">
         <span class="i-lucide:info" />
-        暂无低效网站数据，请先浏览一段时间
+        {{ t('focusMode.noData') }}
       </div>
       <div class="duration-options">
         <button
@@ -111,7 +113,7 @@ onUnmounted(() => {
       </div>
       <button class="start-btn" :disabled="blockedDomains.length === 0" @click="startFocus">
         <span class="i-lucide:play" />
-        开始专注
+        {{ t('focusMode.start') }}
       </button>
     </div>
 
@@ -127,11 +129,11 @@ onUnmounted(() => {
       </div>
       <div class="focus-blocked-info">
         <span class="i-lucide:shield-check" />
-        已屏蔽 {{ blockedDomains.length }} 个低效网站
+        {{ t('focusMode.blockedInfo', { count: blockedDomains.length }) }}
       </div>
       <button class="stop-btn" @click="stopFocus(false)">
         <span class="i-lucide:square" />
-        结束专注
+        {{ t('focusMode.stop') }}
       </button>
     </div>
   </div>

@@ -47,7 +47,7 @@ export const useBookmarksStore = defineStore('bookmarks', () => {
     }
     return {
       id: node.id,
-      title: node.title || domain || '未命名',
+      title: node.title || domain || 'bookmarks.unnamed',
       url: node.url,
       domain,
       isFolder: !node.url,

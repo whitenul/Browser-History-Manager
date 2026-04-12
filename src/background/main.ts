@@ -6,7 +6,7 @@ async function ensureContextMenu() {
     await chrome.contextMenus.removeAll()
     await chrome.contextMenus.create({
       id: 'openSidePanel',
-      title: '在侧边栏中打开',
+      title: chrome.i18n.getMessage('contextMenuOpenSidePanel') || 'Open in Side Panel',
       contexts: ['action']
     })
   } catch { /* ignore */ }

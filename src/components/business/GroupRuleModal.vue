@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const history = useHistoryStore()
+const { t } = useI18n()
 
 const ruleName = ref('')
 const rulePattern = ref('')
@@ -12,13 +14,13 @@ const ruleType = ref('domain')
 const editingId = ref<string | null>(null)
 const regexError = ref('')
 
-const TYPE_OPTIONS = [
-  { value: 'domain', label: '域名匹配', hint: '精确匹配域名或子域名，如 github.com' },
-  { value: 'path', label: '路径包含', hint: 'URL 中包含指定字符串' },
-  { value: 'regex', label: '正则表达式', hint: '使用正则表达式匹配完整 URL' },
-]
+const TYPE_OPTIONS = computed(() => [
+  { value: 'domain', label: t('groupRule.typeDomain'), hint: t('groupRule.typeDomainHint') },
+  { value: 'path', label: t('groupRule.typePath'), hint: t('groupRule.typePathHint') },
+  { value: 'regex', label: t('groupRule.typeRegex'), hint: t('groupRule.typeRegexHint') },
+])
 
-const selectedTypeHint = computed(() => TYPE_OPTIONS.find(o => o.value === ruleType.value)?.hint || '')
+const selectedTypeHint = computed(() => TYPE_OPTIONS.value.find(o => o.value === ruleType.value)?.hint || '')
 
 const isDuplicate = computed(() => {
   const name = ruleName.value.trim()
@@ -59,7 +61,7 @@ function validateRegex() {
     new RegExp(rulePattern.value.trim())
     return true
   } catch (e) {
-    regexError.value = '正则表达式语法无效'
+    regexError.value = t('groupRule.regexInvalid')
     return false
   }
 }
@@ -129,7 +131,7 @@ function clearAllRules() {
 }
 
 function getTypeLabel(type: string) {
-  return TYPE_OPTIONS.find(o => o.value === type)?.label || type
+  return TYPE_OPTIONS.value.find(o => o.value === type)?.label || type
 }
 </script>
 
@@ -137,16 +139,16 @@ function getTypeLabel(type: string) {
   <div class="modal-overlay" @click.self="ui.showGroupRuleModal = false">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>分组规则管理</h3>
+        <h3>{{ t('groupRule.modalTitle') }}</h3>
         <button class="close-btn" @click="ui.showGroupRuleModal = false">
           <span class="i-lucide:x" />
         </button>
       </div>
 
       <div class="rule-form">
-        <input v-model="ruleName" type="text" placeholder="规则名称（如：工作网站）" class="rule-input"
+        <input v-model="ruleName" type="text" :placeholder="t('groupRule.ruleNamePlaceholder')" class="rule-input"
           :class="{ error: isDuplicate }" maxlength="20" />
-        <span v-if="isDuplicate" class="field-error">规则名称已存在</span>
+        <span v-if="isDuplicate" class="field-error">{{ t('groupRule.ruleNameDuplicate') }}</span>
 
         <select v-model="ruleType" class="rule-select">
           <option v-for="opt in TYPE_OPTIONS" :key="opt.value" :value="opt.value">
@@ -155,33 +157,33 @@ function getTypeLabel(type: string) {
         </select>
         <span class="type-hint">{{ selectedTypeHint }}</span>
 
-        <input v-model="rulePattern" type="text" placeholder="匹配内容" class="rule-input"
+        <input v-model="rulePattern" type="text" :placeholder="t('groupRule.matchContentPlaceholder')" class="rule-input"
           :class="{ error: !!regexError }" @input="validateRegex" />
         <span v-if="regexError" class="field-error">{{ regexError }}</span>
 
         <div v-if="rulePattern.trim() && matchPreview.total >= 0" class="match-preview">
           <span class="i-lucide:search preview-icon" />
-          <span>将匹配 <strong>{{ matchPreview.total }}</strong> 条记录</span>
+          <span>{{ t('groupRule.matchWillMatch') }} <strong>{{ matchPreview.total }}</strong> {{ t('groupRule.matchRecords') }}</span>
           <span v-if="matchPreview.sample.length" class="preview-samples">
-            （{{ matchPreview.sample.join('、') }}{{ matchPreview.total > 3 ? ' 等' : '' }}）
+            （{{ matchPreview.sample.join(t('groupRule.matchPreviewSeparator')) }}{{ matchPreview.total > 3 ? t('groupRule.matchPreviewEtc') : '' }}）
           </span>
         </div>
 
         <div class="form-actions">
           <button class="btn-primary" @click="addRule" :disabled="!ruleName.trim() || !rulePattern.trim() || isDuplicate || !!regexError">
-            {{ editingId ? '保存修改' : '添加规则' }}
+            {{ editingId ? t('groupRule.saveEdit') : t('groupRule.addRule') }}
           </button>
-          <button v-if="editingId" class="btn-secondary" @click="cancelEdit">取消</button>
+          <button v-if="editingId" class="btn-secondary" @click="cancelEdit">{{ t('groupRule.cancel') }}</button>
         </div>
       </div>
 
       <div class="rule-list-header">
-        <span class="list-title">已有规则（{{ history.customRules.length }}）</span>
-        <button v-if="history.customRules.length" class="clear-all-btn" @click="clearAllRules">全部清除</button>
+        <span class="list-title">{{ t('groupRule.existingRules', { count: history.customRules.length }) }}</span>
+        <button v-if="history.customRules.length" class="clear-all-btn" @click="clearAllRules">{{ t('groupRule.clearAll') }}</button>
       </div>
 
       <div class="rule-list">
-        <div v-if="!history.customRules.length" class="empty-hint">暂无分组规则</div>
+        <div v-if="!history.customRules.length" class="empty-hint">{{ t('groupRule.emptyHint') }}</div>
         <div v-for="(rule, idx) in history.customRules" :key="rule.id" class="rule-row" :class="{ editing: editingId === rule.id }">
           <div class="rule-order">
             <button class="order-btn" :disabled="idx === 0" @click="moveRuleUp(idx)">
@@ -195,10 +197,10 @@ function getTypeLabel(type: string) {
             <span class="rule-name">{{ rule.name }}</span>
             <span class="rule-pattern">{{ rule.pattern }} · {{ getTypeLabel(rule.type) }}</span>
           </div>
-          <button class="edit-btn" @click="editRule(rule)" title="编辑">
+          <button class="edit-btn" @click="editRule(rule)" :title="t('groupRule.editTitle')">
             <span class="i-lucide:pencil" />
           </button>
-          <button class="remove-btn" @click="history.removeCustomRule(rule.id)" title="删除">
+          <button class="remove-btn" @click="history.removeCustomRule(rule.id)" :title="t('groupRule.deleteTitle')">
             <span class="i-lucide:trash-2" />
           </button>
         </div>

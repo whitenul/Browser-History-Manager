@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useI18n } from '@/i18n'
 import { useThemeStore, PRESET_THEMES, GRADIENT_THEMES } from '@/stores/theme'
 import type { RadiusStyle, FontSize, FontFamily, HeaderStyle, CardStyle, AnimationSpeed, ScrollbarStyle, BackgroundPattern } from '@/stores/theme'
 
+const { t } = useI18n()
 const theme = useThemeStore()
 const activeSection = ref<'color' | 'layout' | 'typo' | 'effects' | 'advanced'>('color')
 const customPrimary = ref(theme.customColors?.primary || '#4f46e5')
@@ -12,74 +14,74 @@ const customAccent = ref(theme.accentColor || '#f59e0b')
 const importText = ref('')
 const showImportArea = ref(false)
 
-const sections = [
-  { id: 'color' as const, label: '配色', icon: 'i-lucide:palette' },
-  { id: 'layout' as const, label: '布局', icon: 'i-lucide:layout' },
-  { id: 'typo' as const, label: '排版', icon: 'i-lucide:type' },
-  { id: 'effects' as const, label: '效果', icon: 'i-lucide:sparkles' },
-  { id: 'advanced' as const, label: '高级', icon: 'i-lucide:settings-2' },
-]
+const sections = computed(() => [
+  { id: 'color' as const, label: t('theme.color'), icon: 'i-lucide:palette' },
+  { id: 'layout' as const, label: t('theme.layout'), icon: 'i-lucide:layout' },
+  { id: 'typo' as const, label: t('theme.typography'), icon: 'i-lucide:type' },
+  { id: 'effects' as const, label: t('theme.effects'), icon: 'i-lucide:sparkles' },
+  { id: 'advanced' as const, label: t('theme.advanced'), icon: 'i-lucide:settings-2' },
+])
 
-const modeOptions = [
-  { value: 'auto' as const, label: '跟随系统', icon: 'i-lucide:monitor' },
-  { value: 'light' as const, label: '浅色', icon: 'i-lucide:sun' },
-  { value: 'dark' as const, label: '深色', icon: 'i-lucide:moon' },
-]
+const modeOptions = computed(() => [
+  { value: 'auto' as const, label: t('theme.modeOptions.auto'), icon: 'i-lucide:monitor' },
+  { value: 'light' as const, label: t('theme.modeOptions.light'), icon: 'i-lucide:sun' },
+  { value: 'dark' as const, label: t('theme.modeOptions.dark'), icon: 'i-lucide:moon' },
+])
 
-const headerOptions: { value: HeaderStyle; label: string; desc: string }[] = [
-  { value: 'solid', label: '实色', desc: '纯色填充' },
-  { value: 'gradient', label: '渐变', desc: '渐变过渡' },
-  { value: 'glass', label: '毛玻璃', desc: '半透明模糊' },
-  { value: 'minimal', label: '极简', desc: '无背景色' },
-]
+const headerOptions = computed<{ value: HeaderStyle; label: string; desc: string }[]>(() => [
+  { value: 'solid', label: t('theme.headerOptions.solid'), desc: t('theme.headerDescOptions.solid') },
+  { value: 'gradient', label: t('theme.headerOptions.gradient'), desc: t('theme.headerDescOptions.gradient') },
+  { value: 'glass', label: t('theme.headerOptions.glass'), desc: t('theme.headerDescOptions.glass') },
+  { value: 'minimal', label: t('theme.headerOptions.minimal'), desc: t('theme.headerDescOptions.minimal') },
+])
 
-const cardOptions: { value: CardStyle; label: string; desc: string }[] = [
-  { value: 'flat', label: '扁平', desc: '无边框无阴影' },
-  { value: 'bordered', label: '描边', desc: '细边框' },
-  { value: 'shadowed', label: '阴影', desc: '柔和投影' },
-  { value: 'elevated', label: '悬浮', desc: '强投影+边框' },
-]
+const cardOptions = computed<{ value: CardStyle; label: string; desc: string }[]>(() => [
+  { value: 'flat', label: t('theme.cardOptions.flat'), desc: t('theme.cardDescOptions.flat') },
+  { value: 'bordered', label: t('theme.cardOptions.bordered'), desc: t('theme.cardDescOptions.bordered') },
+  { value: 'shadowed', label: t('theme.cardOptions.shadowed'), desc: t('theme.cardDescOptions.shadowed') },
+  { value: 'elevated', label: t('theme.cardOptions.elevated'), desc: t('theme.cardDescOptions.elevated') },
+])
 
-const radiusOptions: { value: RadiusStyle; label: string; preview: string }[] = [
-  { value: 'none', label: '直角', preview: '0px' },
-  { value: 'small', label: '小', preview: '4px' },
-  { value: 'medium', label: '中', preview: '8px' },
-  { value: 'large', label: '大', preview: '16px' },
-]
+const radiusOptions = computed<{ value: RadiusStyle; label: string; preview: string }[]>(() => [
+  { value: 'none', label: t('theme.radiusOptions.none'), preview: '0px' },
+  { value: 'small', label: t('theme.radiusOptions.small'), preview: '4px' },
+  { value: 'medium', label: t('theme.radiusOptions.medium'), preview: '8px' },
+  { value: 'large', label: t('theme.radiusOptions.large'), preview: '16px' },
+])
 
-const fontOptions: { value: FontSize; label: string; size: string }[] = [
-  { value: 'small', label: '小', size: '11px' },
-  { value: 'medium', label: '中', size: '13px' },
-  { value: 'large', label: '大', size: '15px' },
-]
+const fontOptions = computed<{ value: FontSize; label: string; size: string }[]>(() => [
+  { value: 'small', label: t('theme.fontSizeOptions.small'), size: '11px' },
+  { value: 'medium', label: t('theme.fontSizeOptions.medium'), size: '13px' },
+  { value: 'large', label: t('theme.fontSizeOptions.large'), size: '15px' },
+])
 
-const fontFamilyOptions: { value: FontFamily; label: string; preview: string }[] = [
-  { value: 'system', label: '系统默认', preview: 'Aa' },
-  { value: 'serif', label: '衬线体', preview: 'Aa' },
-  { value: 'mono', label: '等宽体', preview: 'Aa' },
-  { value: 'rounded', label: '圆体', preview: 'Aa' },
-]
+const fontFamilyOptions = computed<{ value: FontFamily; label: string; preview: string }[]>(() => [
+  { value: 'system', label: t('theme.fontFamilyOptions.system'), preview: 'Aa' },
+  { value: 'serif', label: t('theme.fontFamilyOptions.serif'), preview: 'Aa' },
+  { value: 'mono', label: t('theme.fontFamilyOptions.mono'), preview: 'Aa' },
+  { value: 'rounded', label: t('theme.fontFamilyOptions.rounded'), preview: 'Aa' },
+])
 
-const animOptions: { value: AnimationSpeed; label: string }[] = [
-  { value: 'off', label: '关闭' },
-  { value: 'slow', label: '慢' },
-  { value: 'normal', label: '正常' },
-  { value: 'fast', label: '快' },
-]
+const animOptions = computed<{ value: AnimationSpeed; label: string }[]>(() => [
+  { value: 'off', label: t('theme.animationOptions.none') },
+  { value: 'slow', label: t('theme.animationOptions.slow') },
+  { value: 'normal', label: t('theme.animationOptions.normal') },
+  { value: 'fast', label: t('theme.animationOptions.fast') },
+])
 
-const scrollOptions: { value: ScrollbarStyle; label: string }[] = [
-  { value: 'thin', label: '纤细' },
-  { value: 'default', label: '标准' },
-  { value: 'hidden', label: '隐藏' },
-]
+const scrollOptions = computed<{ value: ScrollbarStyle; label: string }[]>(() => [
+  { value: 'thin', label: t('theme.scrollbarOptions.thin') },
+  { value: 'default', label: t('theme.scrollbarOptions.standard') },
+  { value: 'hidden', label: t('theme.scrollbarOptions.hidden') },
+])
 
-const patternOptions: { value: BackgroundPattern; label: string }[] = [
-  { value: 'none', label: '无' },
-  { value: 'dots', label: '点阵' },
-  { value: 'grid', label: '网格' },
-  { value: 'diagonal', label: '斜线' },
-  { value: 'noise', label: '噪点' },
-]
+const patternOptions = computed<{ value: BackgroundPattern; label: string }[]>(() => [
+  { value: 'none', label: t('theme.patternOptions.none') },
+  { value: 'dots', label: t('theme.patternOptions.dots') },
+  { value: 'grid', label: t('theme.patternOptions.grid') },
+  { value: 'diagonal', label: t('theme.patternOptions.diagonal') },
+  { value: 'noise', label: t('theme.patternOptions.noise') },
+])
 
 function applyCustom() { theme.setCustomColors({ primary: customPrimary.value, bg: customBg.value, text: customText.value }) }
 function applyAccent() { theme.setAccentColor(customAccent.value) }
@@ -102,7 +104,7 @@ function doImport() {
       <div class="theme-modal" @click.stop>
         <div class="modal-header">
           <span class="i-lucide:palette header-icon" />
-          <span class="header-title">主题设置</span>
+          <span class="header-title">{{ t('theme.title') }}</span>
           <button class="close-btn" @click="close"><span class="i-lucide:x" /></button>
         </div>
 
@@ -115,44 +117,44 @@ function doImport() {
         <div class="modal-body">
           <!-- 配色 -->
           <div v-if="activeSection === 'color'">
-            <div class="sub-label">外观模式</div>
+            <div class="sub-label">{{ t('theme.mode') }}</div>
             <div class="mode-row">
               <button v-for="opt in modeOptions" :key="opt.value" class="mode-btn" :class="{ active: theme.mode === opt.value }" @click="theme.setMode(opt.value)">
                 <span :class="opt.icon" />{{ opt.label }}
               </button>
             </div>
-            <div class="sub-label">主题色板</div>
+            <div class="sub-label">{{ t('theme.presetPalette') }}</div>
             <div class="preset-grid">
               <button v-for="p in PRESET_THEMES" :key="p.id" class="preset-card" :class="{ active: theme.activePreset === p.id && !theme.activeGradient && !theme.customColors }" @click="theme.setPreset(p.id)">
                 <div class="preset-preview" :style="{ backgroundColor: p.light['--primary-color'] }"><span class="preset-icon">{{ p.icon }}</span></div>
-                <span class="preset-name">{{ p.name }}</span>
+                <span class="preset-name">{{ t(p.name) }}</span>
               </button>
             </div>
-            <div class="sub-label">渐变主题</div>
+            <div class="sub-label">{{ t('theme.gradientThemes') }}</div>
             <div class="gradient-grid">
               <button v-for="g in GRADIENT_THEMES" :key="g.name" class="gradient-card" :class="{ active: theme.activeGradient === g.gradient }" @click="theme.setGradient(g.gradient)">
                 <div class="gradient-preview" :style="{ background: g.gradient }" />
-                <span class="gradient-name">{{ g.name }}</span>
+                <span class="gradient-name">{{ t(g.name) }}</span>
               </button>
             </div>
-            <div class="sub-label">自定义颜色</div>
+            <div class="sub-label">{{ t('theme.customColors') }}</div>
             <div class="color-row">
-              <label class="color-field"><span class="color-label">主色调</span><div class="color-input-wrap"><input type="color" v-model="customPrimary" class="color-input" /><span class="color-hex">{{ customPrimary }}</span></div></label>
-              <label class="color-field"><span class="color-label">背景色</span><div class="color-input-wrap"><input type="color" v-model="customBg" class="color-input" /><span class="color-hex">{{ customBg }}</span></div></label>
-              <label class="color-field"><span class="color-label">文字色</span><div class="color-input-wrap"><input type="color" v-model="customText" class="color-input" /><span class="color-hex">{{ customText }}</span></div></label>
+              <label class="color-field"><span class="color-label">{{ t('theme.primaryColor') }}</span><div class="color-input-wrap"><input type="color" v-model="customPrimary" class="color-input" /><span class="color-hex">{{ customPrimary }}</span></div></label>
+              <label class="color-field"><span class="color-label">{{ t('theme.bgColor') }}</span><div class="color-input-wrap"><input type="color" v-model="customBg" class="color-input" /><span class="color-hex">{{ customBg }}</span></div></label>
+              <label class="color-field"><span class="color-label">{{ t('theme.textColor') }}</span><div class="color-input-wrap"><input type="color" v-model="customText" class="color-input" /><span class="color-hex">{{ customText }}</span></div></label>
             </div>
-            <button class="apply-btn" @click="applyCustom"><span class="i-lucide:check" />应用自定义颜色</button>
-            <div class="sub-label" style="margin-top:12px">强调色</div>
+            <button class="apply-btn" @click="applyCustom"><span class="i-lucide:check" />{{ t('theme.applyCustomColors') }}</button>
+            <div class="sub-label" style="margin-top:12px">{{ t('theme.accentColor') }}</div>
             <div class="accent-row">
-              <label class="color-field"><span class="color-label">强调色</span><div class="color-input-wrap"><input type="color" v-model="customAccent" class="color-input" /><span class="color-hex">{{ customAccent }}</span></div></label>
-              <button class="apply-btn sm" @click="applyAccent">应用</button>
-              <button v-if="theme.accentColor" class="reset-btn sm" @click="clearAccent">清除</button>
+              <label class="color-field"><span class="color-label">{{ t('theme.accentColor') }}</span><div class="color-input-wrap"><input type="color" v-model="customAccent" class="color-input" /><span class="color-hex">{{ customAccent }}</span></div></label>
+              <button class="apply-btn sm" @click="applyAccent">{{ t('theme.apply') }}</button>
+              <button v-if="theme.accentColor" class="reset-btn sm" @click="clearAccent">{{ t('theme.clear') }}</button>
             </div>
           </div>
 
           <!-- 布局 -->
           <div v-if="activeSection === 'layout'">
-            <div class="sub-label">头部风格</div>
+            <div class="sub-label">{{ t('theme.headerStyle') }}</div>
             <div class="option-grid-4">
               <button v-for="opt in headerOptions" :key="opt.value" class="option-card" :class="{ active: theme.headerStyle === opt.value }" @click="theme.setHeaderStyle(opt.value)">
                 <div class="option-preview header-preview" :class="opt.value" />
@@ -160,7 +162,7 @@ function doImport() {
                 <span class="option-desc">{{ opt.desc }}</span>
               </button>
             </div>
-            <div class="sub-label">卡片风格</div>
+            <div class="sub-label">{{ t('theme.cardStyle') }}</div>
             <div class="option-grid-4">
               <button v-for="opt in cardOptions" :key="opt.value" class="option-card" :class="{ active: theme.cardStyle === opt.value }" @click="theme.setCardStyle(opt.value)">
                 <div class="option-preview card-preview" :class="opt.value" />
@@ -168,29 +170,29 @@ function doImport() {
                 <span class="option-desc">{{ opt.desc }}</span>
               </button>
             </div>
-            <div class="sub-label">圆角风格</div>
+            <div class="sub-label">{{ t('theme.radiusStyle') }}</div>
             <div class="option-grid-4">
               <button v-for="opt in radiusOptions" :key="opt.value" class="option-card" :class="{ active: theme.radiusStyle === opt.value }" @click="theme.setRadiusStyle(opt.value)">
                 <div class="option-preview radius-preview" :style="{ borderRadius: opt.preview }" />
                 <span class="option-label">{{ opt.label }}</span>
               </button>
             </div>
-            <div class="sub-label">紧凑模式</div>
+            <div class="sub-label">{{ t('theme.compactMode') }}</div>
             <button class="toggle-btn" :class="{ active: theme.compactMode }" @click="theme.toggleCompact()">
-              <span class="i-lucide:minimize-2" />紧凑模式<span class="toggle-status">{{ theme.compactMode ? '开' : '关' }}</span>
+              <span class="i-lucide:minimize-2" />{{ t('theme.compactMode') }}<span class="toggle-status">{{ theme.compactMode ? t('theme.on') : t('theme.off') }}</span>
             </button>
           </div>
 
           <!-- 排版 -->
           <div v-if="activeSection === 'typo'">
-            <div class="sub-label">字体大小</div>
+            <div class="sub-label">{{ t('theme.fontSize') }}</div>
             <div class="option-grid-3">
               <button v-for="opt in fontOptions" :key="opt.value" class="option-card" :class="{ active: theme.fontSize === opt.value }" @click="theme.setFontSize(opt.value)">
                 <span class="font-preview" :style="{ fontSize: opt.size }">Aa</span>
                 <span class="option-label">{{ opt.label }}</span>
               </button>
             </div>
-            <div class="sub-label">字体族</div>
+            <div class="sub-label">{{ t('theme.fontFamily') }}</div>
             <div class="option-grid-4">
               <button v-for="opt in fontFamilyOptions" :key="opt.value" class="option-card" :class="{ active: theme.fontFamily === opt.value }" @click="theme.setFontFamily(opt.value)">
                 <span class="font-preview" :style="{ fontFamily: opt.value === 'system' ? 'system-ui' : opt.value === 'serif' ? 'Georgia, serif' : opt.value === 'mono' ? 'Consolas, monospace' : 'system-ui' }">{{ opt.preview }}</span>
@@ -201,21 +203,21 @@ function doImport() {
 
           <!-- 效果 -->
           <div v-if="activeSection === 'effects'">
-            <div class="sub-label">动画速度</div>
+            <div class="sub-label">{{ t('theme.animationSpeed') }}</div>
             <div class="option-grid-4">
               <button v-for="opt in animOptions" :key="opt.value" class="option-card" :class="{ active: theme.animationSpeed === opt.value }" @click="theme.setAnimationSpeed(opt.value)">
                 <span class="anim-icon" :class="{ off: opt.value === 'off', slow: opt.value === 'slow', fast: opt.value === 'fast' }">⟳</span>
                 <span class="option-label">{{ opt.label }}</span>
               </button>
             </div>
-            <div class="sub-label">滚动条</div>
+            <div class="sub-label">{{ t('theme.scrollbarStyle') }}</div>
             <div class="option-grid-3">
               <button v-for="opt in scrollOptions" :key="opt.value" class="option-card" :class="{ active: theme.scrollbarStyle === opt.value }" @click="theme.setScrollbarStyle(opt.value)">
                 <div class="scrollbar-preview" :class="opt.value" />
                 <span class="option-label">{{ opt.label }}</span>
               </button>
             </div>
-            <div class="sub-label">背景纹理</div>
+            <div class="sub-label">{{ t('theme.backgroundPattern') }}</div>
             <div class="option-grid-5">
               <button v-for="opt in patternOptions" :key="opt.value" class="option-card" :class="{ active: theme.backgroundPattern === opt.value }" @click="theme.setBackgroundPattern(opt.value)">
                 <div class="pattern-preview" :class="opt.value" />
@@ -226,17 +228,17 @@ function doImport() {
 
           <!-- 高级 -->
           <div v-if="activeSection === 'advanced'">
-            <div class="sub-label">导入/导出</div>
+            <div class="sub-label">{{ t('theme.importExport') }}</div>
             <div class="action-row">
-              <button class="action-btn" @click="doExport"><span class="i-lucide:download" />导出配置</button>
-              <button class="action-btn" @click="showImportArea = !showImportArea"><span class="i-lucide:upload" />导入配置</button>
+              <button class="action-btn" @click="doExport"><span class="i-lucide:download" />{{ t('theme.exportConfig') }}</button>
+              <button class="action-btn" @click="showImportArea = !showImportArea"><span class="i-lucide:upload" />{{ t('theme.importConfig') }}</button>
             </div>
             <div v-if="showImportArea" class="import-area">
-              <textarea v-model="importText" class="import-textarea" placeholder="粘贴主题配置 JSON..." rows="4" />
-              <button class="apply-btn" @click="doImport"><span class="i-lucide:check" />应用导入</button>
+              <textarea v-model="importText" class="import-textarea" :placeholder="t('theme.importPlaceholder')" rows="4" />
+              <button class="apply-btn" @click="doImport"><span class="i-lucide:check" />{{ t('theme.applyImport') }}</button>
             </div>
-            <div class="sub-label" style="margin-top:16px">重置</div>
-            <button class="danger-btn" @click="theme.resetAll()"><span class="i-lucide:rotate-ccw" />重置所有主题设置</button>
+            <div class="sub-label" style="margin-top:16px">{{ t('theme.reset') }}</div>
+            <button class="danger-btn" @click="theme.resetAll()"><span class="i-lucide:rotate-ccw" />{{ t('theme.resetAllSettings') }}</button>
           </div>
         </div>
       </div>

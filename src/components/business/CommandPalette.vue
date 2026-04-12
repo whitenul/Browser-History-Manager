@@ -5,11 +5,13 @@ import { useHistoryStore } from '@/stores/history'
 import { useStatsStore } from '@/stores/stats'
 import { useThemeStore } from '@/stores/theme'
 import { getFaviconUrl, safeOpenUrl, isValidDomain } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const history = useHistoryStore()
 const stats = useStatsStore()
 const theme = useThemeStore()
+const { t } = useI18n()
 
 const query = ref('')
 const selectedIndex = ref(0)
@@ -28,49 +30,49 @@ const allCommands = computed<Command[]>(() => {
   const cmds: Command[] = []
 
   cmds.push(
-    { id: 'nav-history', label: '切换到历史记录', icon: 'i-lucide:clock', category: '导航', shortcut: 'Alt+1', action: () => ui.switchTab('history') },
-    { id: 'nav-stats', label: '切换到数据统计', icon: 'i-lucide:bar-chart-3', category: '导航', shortcut: 'Alt+2', action: () => ui.switchTab('stats') },
-    { id: 'nav-bookmarks', label: '切换到书签管理', icon: 'i-lucide:bookmark', category: '导航', shortcut: 'Alt+3', action: () => ui.switchTab('bookmarks') },
-    { id: 'nav-settings', label: '切换到设置', icon: 'i-lucide:settings', category: '导航', shortcut: 'Alt+4', action: () => ui.switchTab('settings') },
+    { id: 'nav-history', label: t('commandPalette.commands.switchToHistory'), icon: 'i-lucide:clock', category: t('commandPalette.categories.navigation'), shortcut: 'Alt+1', action: () => ui.switchTab('history') },
+    { id: 'nav-stats', label: t('commandPalette.commands.switchToStats'), icon: 'i-lucide:bar-chart-3', category: t('commandPalette.categories.navigation'), shortcut: 'Alt+2', action: () => ui.switchTab('stats') },
+    { id: 'nav-bookmarks', label: t('commandPalette.commands.switchToBookmarks'), icon: 'i-lucide:bookmark', category: t('commandPalette.categories.navigation'), shortcut: 'Alt+3', action: () => ui.switchTab('bookmarks') },
+    { id: 'nav-settings', label: t('commandPalette.commands.switchToSettings'), icon: 'i-lucide:settings', category: t('commandPalette.categories.navigation'), shortcut: 'Alt+4', action: () => ui.switchTab('settings') },
   )
 
   cmds.push(
-    { id: 'filter-today', label: '筛选：今日', icon: 'i-lucide:calendar', category: '筛选', action: () => { history.setTimeRange('today'); ui.navigateTo('history', '筛选: 今日') } },
-    { id: 'filter-3days', label: '筛选：近3天', icon: 'i-lucide:calendar', category: '筛选', action: () => { history.setTimeRange('3days'); ui.navigateTo('history', '筛选: 近3天') } },
-    { id: 'filter-week', label: '筛选：近7天', icon: 'i-lucide:calendar', category: '筛选', action: () => { history.setTimeRange('week'); ui.navigateTo('history', '筛选: 近7天') } },
-    { id: 'filter-month', label: '筛选：近30天', icon: 'i-lucide:calendar', category: '筛选', action: () => { history.setTimeRange('month'); ui.navigateTo('history', '筛选: 近30天') } },
-    { id: 'filter-all', label: '筛选：全部', icon: 'i-lucide:calendar', category: '筛选', action: () => { history.setTimeRange('all'); ui.navigateTo('history', '筛选: 全部') } },
+    { id: 'filter-today', label: t('commandPalette.commands.filterToday'), icon: 'i-lucide:calendar', category: t('commandPalette.categories.filter'), action: () => { history.setTimeRange('today'); ui.navigateTo('history', t('commandPalette.commands.filterToday')) } },
+    { id: 'filter-3days', label: t('commandPalette.commands.filter3Days'), icon: 'i-lucide:calendar', category: t('commandPalette.categories.filter'), action: () => { history.setTimeRange('3days'); ui.navigateTo('history', t('commandPalette.commands.filter3Days')) } },
+    { id: 'filter-week', label: t('commandPalette.commands.filter7Days'), icon: 'i-lucide:calendar', category: t('commandPalette.categories.filter'), action: () => { history.setTimeRange('week'); ui.navigateTo('history', t('commandPalette.commands.filter7Days')) } },
+    { id: 'filter-month', label: t('commandPalette.commands.filter30Days'), icon: 'i-lucide:calendar', category: t('commandPalette.categories.filter'), action: () => { history.setTimeRange('month'); ui.navigateTo('history', t('commandPalette.commands.filter30Days')) } },
+    { id: 'filter-all', label: t('commandPalette.commands.filterAll'), icon: 'i-lucide:calendar', category: t('commandPalette.categories.filter'), action: () => { history.setTimeRange('all'); ui.navigateTo('history', t('commandPalette.commands.filterAll')) } },
   )
 
   cmds.push(
-    { id: 'group-none', label: '分组：不分组', icon: 'i-lucide:list', category: '分组', action: () => { history.setGroupMode('none'); ui.navigateTo('history', '分组: 不分组') } },
-    { id: 'group-domain', label: '分组：按域名', icon: 'i-lucide:globe', category: '分组', action: () => { history.setGroupMode('domain'); ui.navigateTo('history', '分组: 按域名') } },
-    { id: 'group-timeline', label: '分组：按时间', icon: 'i-lucide:clock', category: '分组', action: () => { history.setGroupMode('timeline'); ui.navigateTo('history', '分组: 按时间') } },
-    { id: 'group-session', label: '分组：按会话', icon: 'i-lucide:layers', category: '分组', action: () => { history.setGroupMode('session'); ui.navigateTo('history', '分组: 按会话') } },
-    { id: 'group-custom', label: '分组：自定义规则', icon: 'i-lucide:filter', category: '分组', action: () => { history.setGroupMode('custom'); ui.navigateTo('history', '分组: 自定义') } },
+    { id: 'group-none', label: t('commandPalette.commands.groupNone'), icon: 'i-lucide:list', category: t('commandPalette.categories.group'), action: () => { history.setGroupMode('none'); ui.navigateTo('history', t('commandPalette.commands.groupNone')) } },
+    { id: 'group-domain', label: t('commandPalette.commands.groupDomain'), icon: 'i-lucide:globe', category: t('commandPalette.categories.group'), action: () => { history.setGroupMode('domain'); ui.navigateTo('history', t('commandPalette.commands.groupDomain')) } },
+    { id: 'group-timeline', label: t('commandPalette.commands.groupTimeline'), icon: 'i-lucide:clock', category: t('commandPalette.categories.group'), action: () => { history.setGroupMode('timeline'); ui.navigateTo('history', t('commandPalette.commands.groupTimeline')) } },
+    { id: 'group-session', label: t('commandPalette.commands.groupSession'), icon: 'i-lucide:layers', category: t('commandPalette.categories.group'), action: () => { history.setGroupMode('session'); ui.navigateTo('history', t('commandPalette.commands.groupSession')) } },
+    { id: 'group-custom', label: t('commandPalette.commands.groupCustom'), icon: 'i-lucide:filter', category: t('commandPalette.categories.group'), action: () => { history.setGroupMode('custom'); ui.navigateTo('history', t('commandPalette.commands.groupCustom')) } },
   )
 
   cmds.push(
-    { id: 'sort-newest', label: '排序：最新优先', icon: 'i-lucide:arrow-down-narrow-wide', category: '排序', action: () => { history.setSortMode('timeDesc'); ui.navigateTo('history', '排序: 最新') } },
-    { id: 'sort-oldest', label: '排序：最旧优先', icon: 'i-lucide:arrow-up-narrow-wide', category: '排序', action: () => { history.setSortMode('timeAsc'); ui.navigateTo('history', '排序: 最旧') } },
-    { id: 'sort-most', label: '排序：最常访问', icon: 'i-lucide:trending-up', category: '排序', action: () => { history.setSortMode('visitDesc'); ui.navigateTo('history', '排序: 最常') } },
-    { id: 'sort-least', label: '排序：最少访问', icon: 'i-lucide:trending-down', category: '排序', action: () => { history.setSortMode('visitAsc'); ui.navigateTo('history', '排序: 最少') } },
+    { id: 'sort-newest', label: t('commandPalette.commands.sortNewest'), icon: 'i-lucide:arrow-down-narrow-wide', category: t('commandPalette.categories.sort'), action: () => { history.setSortMode('timeDesc'); ui.navigateTo('history', t('commandPalette.commands.sortNewest')) } },
+    { id: 'sort-oldest', label: t('commandPalette.commands.sortOldest'), icon: 'i-lucide:arrow-up-narrow-wide', category: t('commandPalette.categories.sort'), action: () => { history.setSortMode('timeAsc'); ui.navigateTo('history', t('commandPalette.commands.sortOldest')) } },
+    { id: 'sort-most', label: t('commandPalette.commands.sortMost'), icon: 'i-lucide:trending-up', category: t('commandPalette.categories.sort'), action: () => { history.setSortMode('visitDesc'); ui.navigateTo('history', t('commandPalette.commands.sortMost')) } },
+    { id: 'sort-least', label: t('commandPalette.commands.sortLeast'), icon: 'i-lucide:trending-down', category: t('commandPalette.categories.sort'), action: () => { history.setSortMode('visitAsc'); ui.navigateTo('history', t('commandPalette.commands.sortLeast')) } },
   )
 
   cmds.push(
-    { id: 'action-select', label: '进入多选模式', icon: 'i-lucide:check-square', category: '操作', action: () => { history.toggleSelectMode(); ui.navigateTo('history', '多选模式') } },
-    { id: 'action-export', label: '导出 CSV', icon: 'i-lucide:download', category: '操作', action: () => history.doExport() },
-    { id: 'action-theme', label: '主题设置', icon: 'i-lucide:palette', category: '操作', action: () => theme.toggleThemeModal() },
-    { id: 'action-blacklist', label: '管理域名黑名单', icon: 'i-lucide:ban', category: '操作', action: () => ui.navigateTo('settings', '黑名单管理') },
+    { id: 'action-select', label: t('commandPalette.commands.selectMode'), icon: 'i-lucide:check-square', category: t('commandPalette.categories.actions'), action: () => { history.toggleSelectMode(); ui.navigateTo('history', t('commandPalette.commands.selectMode')) } },
+    { id: 'action-export', label: t('commandPalette.commands.exportCsv'), icon: 'i-lucide:download', category: t('commandPalette.categories.actions'), action: () => history.doExport() },
+    { id: 'action-theme', label: t('commandPalette.commands.themeSettings'), icon: 'i-lucide:palette', category: t('commandPalette.categories.actions'), action: () => theme.toggleThemeModal() },
+    { id: 'action-blacklist', label: t('commandPalette.commands.manageBlacklist'), icon: 'i-lucide:ban', category: t('commandPalette.categories.actions'), action: () => ui.navigateTo('settings', t('commandPalette.commands.manageBlacklist')) },
   )
 
   if (stats.contextualRecs.length > 0) {
     stats.contextualRecs.forEach((rec, i) => {
       cmds.push({
         id: `ctx-${i}`,
-        label: `此时段推荐：${rec.domain}`,
+        label: t('commandPalette.commands.ctxRecommend', { domain: rec.domain }),
         icon: 'i-lucide:compass',
-        category: '智能推荐',
+        category: t('commandPalette.categories.smartRecommend'),
         action: () => { if (isValidDomain(rec.domain)) safeOpenUrl('https://' + rec.domain) },
       })
     })
@@ -80,10 +82,10 @@ const allCommands = computed<Command[]>(() => {
     stats.topSites.slice(0, 5).forEach((site, i) => {
       cmds.push({
         id: `top-${i}`,
-        label: `热门网站：${site.domain} (${site.count}次)`,
+        label: t('commandPalette.commands.hotSite', { domain: site.domain, count: site.count }),
         icon: 'i-lucide:trophy',
-        category: '热门',
-        action: () => { history.setDomainFilter(site.domain, `域名: ${site.domain}`); ui.navigateTo('history', '搜索: ' + site.domain) },
+        category: t('commandPalette.categories.hot'),
+        action: () => { history.setDomainFilter(site.domain, site.domain); ui.navigateTo('history', site.domain) },
       })
     })
   }
@@ -91,12 +93,12 @@ const allCommands = computed<Command[]>(() => {
   if (stats.productivity.topUnproductive.length > 0) {
     cmds.push({
       id: 'block-unproductive',
-      label: `一键屏蔽低效网站 (${stats.productivity.topUnproductive.length}个)`,
+      label: t('commandPalette.commands.blockUnproductive', { count: stats.productivity.topUnproductive.length }),
       icon: 'i-lucide:shield-ban',
-      category: '智能推荐',
+      category: t('commandPalette.categories.smartRecommend'),
       action: () => {
         stats.productivity.topUnproductive.forEach(d => history.addBlacklistDomain(d))
-        ui.notify(`已屏蔽 ${stats.productivity.topUnproductive.length} 个低效网站`, 'success')
+        ui.notify(t('commandPalette.blockedSites', { count: stats.productivity.topUnproductive.length }), 'success')
       },
     })
   }
@@ -116,7 +118,15 @@ const filteredCommands = computed(() => {
 
 const groupedCommands = computed(() => {
   const groups: Record<string, Command[]> = {}
-  const order = ['导航', '筛选', '分组', '排序', '操作', '智能推荐', '热门']
+  const order = [
+    t('commandPalette.categories.navigation'),
+    t('commandPalette.categories.filter'),
+    t('commandPalette.categories.group'),
+    t('commandPalette.categories.sort'),
+    t('commandPalette.categories.actions'),
+    t('commandPalette.categories.smartRecommend'),
+    t('commandPalette.categories.hot'),
+  ]
   for (const cmd of filteredCommands.value) {
     if (!groups[cmd.category]) groups[cmd.category] = []
     groups[cmd.category].push(cmd)
@@ -204,7 +214,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
               ref="inputRef"
               v-model="query"
               class="cmd-input"
-              placeholder="输入命令、搜索网站、筛选条件..."
+              :placeholder="t('commandPalette.placeholder')"
             />
             <kbd class="cmd-esc">ESC</kbd>
           </div>
@@ -225,13 +235,13 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
               </button>
             </template>
             <div v-if="!filteredCommands.length" class="cmd-empty">
-              未找到匹配命令
+              {{ t('commandPalette.noMatch') }}
             </div>
           </div>
           <div class="cmd-footer">
-            <span><kbd>↑↓</kbd> 导航</span>
-            <span><kbd>Enter</kbd> 执行</span>
-            <span><kbd>Esc</kbd> 关闭</span>
+            <span><kbd>↑↓</kbd> {{ t('commandPalette.navigate') }}</span>
+            <span><kbd>Enter</kbd> {{ t('commandPalette.execute') }}</span>
+            <span><kbd>Esc</kbd> {{ t('commandPalette.close') }}</span>
           </div>
         </div>
       </div>

@@ -159,16 +159,16 @@ export function throttle<T extends (...args: any[]) => any>(fn: T, limit: number
   }
 }
 
-export function formatTime(timestamp: number): string {
+export function formatTime(timestamp: number, t?: (key: string, params?: Record<string, string | number>) => string): string {
   const diff = Date.now() - timestamp
   const seconds = Math.floor(diff / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)
-  if (days > 0) return `${days}天前`
-  if (hours > 0) return `${hours}小时前`
-  if (minutes > 0) return `${minutes}分钟前`
-  return '刚刚'
+  if (days > 0) return t ? t('common.time.daysAgo', { count: days }) : `${days} days ago`
+  if (hours > 0) return t ? t('common.time.hoursAgo', { count: hours }) : `${hours} hours ago`
+  if (minutes > 0) return t ? t('common.time.minutesAgo', { count: minutes }) : `${minutes} minutes ago`
+  return t ? t('common.time.justNow') : 'just now'
 }
 
 export function formatDate(timestamp: number): string {
@@ -181,8 +181,8 @@ export function formatDateTime(timestamp: number): string {
   return `${formatDate(timestamp)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export function formatNumber(n: number): string {
-  if (n >= 10000) return (n / 10000).toFixed(1) + '万'
+export function formatNumber(n: number, t?: (key: string, params?: Record<string, string | number>) => string): string {
+  if (n >= 10000) return t ? t('common.number.tenThousand', { count: (n / 10000).toFixed(1) }) : (n / 10000).toFixed(1) + '0k'
   if (n >= 1000) return (n / 1000).toFixed(1) + 'k'
   return String(n)
 }
@@ -244,16 +244,18 @@ export interface GroupResult {
 }
 
 const GROUP_LABELS: Record<string, string> = {
-  today: '今天',
-  yesterday: '昨天',
-  last7days: '近7天',
-  last30days: '近30天',
-  older: '更早',
-  _other: '其他',
+  today: 'common.time.today',
+  yesterday: 'common.time.yesterday',
+  last7days: 'common.time.last7days',
+  last30days: 'common.time.last30days',
+  older: 'common.time.older',
+  _other: 'common.time.other',
 }
 
-export function getGroupLabel(key: string): string {
-  return GROUP_LABELS[key] || key
+export function getGroupLabel(key: string, t?: (key: string, params?: Record<string, string | number>) => string): string {
+  const i18nKey = GROUP_LABELS[key]
+  if (i18nKey && t) return t(i18nKey)
+  return i18nKey || key
 }
 
 export function groupByDomain(records: HistoryRecord[]): GroupResult {
@@ -319,9 +321,15 @@ export function groupBySession(records: HistoryRecord[], gapMs: number = 30 * 60
   return { groups, order }
 }
 
-export function exportToCSV(records: HistoryRecord[]): void {
+export function exportToCSV(records: HistoryRecord[], t?: (key: string, params?: Record<string, string | number>) => string): void {
   if (!records.length) return
-  const headers = ['标题', '网址', '域名', '最后访问时间', '访问次数']
+  const headers = [
+    t ? t('common.csv.title') : 'Title',
+    t ? t('common.csv.url') : 'URL',
+    t ? t('common.csv.domain') : 'Domain',
+    t ? t('common.csv.lastVisitTime') : 'Last Visit Time',
+    t ? t('common.csv.visitCount') : 'Visit Count',
+  ]
   const escCSV = (v: string) => {
     let escaped = v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v
     if (/^[=+\-@\t\r]/.test(escaped)) escaped = "'" + escaped
@@ -354,8 +362,8 @@ interface TagRule {
 
 const TAG_RULES: TagRule[] = [
   {
-    tag: '社交',
-    subtags: ['即时通讯', '社区论坛', '职业社交', '图片社交'],
+    tag: 'social',
+    subtags: ['instantMessaging', 'communityForum', 'professionalSocial', 'photoSocial'],
     domains: [
       'twitter.com', 'x.com', 'weibo.com', 'facebook.com', 'instagram.com', 'reddit.com',
       'douban.com', 'linkedin.com', 'mastodon.social', 'threads.net', 'tumblr.com',
@@ -379,8 +387,8 @@ const TAG_RULES: TagRule[] = [
     priority: 8,
   },
   {
-    tag: '视频',
-    subtags: ['短视频', '长视频', '直播', '流媒体'],
+    tag: 'video',
+    subtags: ['shortVideo', 'longVideo', 'liveStream', 'streaming'],
     domains: [
       'youtube.com', 'bilibili.com', 'netflix.com', 'vimeo.com', 'tiktok.com', 'douyin.com',
       'hulu.com', 'disneyplus.com', 'primevideo.com', 'hbomax.com', 'iqiyi.com', 'youku.com',
@@ -405,8 +413,8 @@ const TAG_RULES: TagRule[] = [
     priority: 9,
   },
   {
-    tag: '技术',
-    subtags: ['前端', '后端', '移动端', 'DevOps', '数据库', '安全', '开源'],
+    tag: 'tech',
+    subtags: ['frontend', 'backend', 'mobile', 'devops', 'database', 'security', 'opensource'],
     domains: [
       'github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com',
       'developer.mozilla.org', 'npmjs.com', 'pypi.org', 'crates.io', 'rubygems.org',
@@ -456,8 +464,8 @@ const TAG_RULES: TagRule[] = [
     priority: 9,
   },
   {
-    tag: '文档',
-    subtags: ['协作', '知识库', 'API文档', '笔记'],
+    tag: 'docs',
+    subtags: ['collaboration', 'knowledgeBase', 'apiDocs', 'notes'],
     domains: [
       'docs.google.com', 'notion.so', 'notion.site', 'confluence', 'wiki',
       'readthedocs.io', 'gitbook.com', 'docusaurus.io', 'mkdocs.org',
@@ -482,8 +490,8 @@ const TAG_RULES: TagRule[] = [
     priority: 7,
   },
   {
-    tag: '购物',
-    subtags: ['电商', '比价', '二手', '品牌'],
+    tag: 'shopping',
+    subtags: ['ecommerce', 'priceComparison', 'secondhand', 'brand'],
     domains: [
       'taobao.com', 'jd.com', 'amazon.com', 'pinduoduo.com', 'tmall.com', 'ebay.com',
       'suning.com', 'vip.com', 'kaola.com', 'mi.com', 'apple.com/shop',
@@ -510,8 +518,8 @@ const TAG_RULES: TagRule[] = [
     priority: 8,
   },
   {
-    tag: '新闻',
-    subtags: ['科技', '财经', '国际', '社会'],
+    tag: 'news',
+    subtags: ['techNews', 'financeNews', 'international', 'society'],
     domains: [
       'news.ycombinator.com', 'bbc.com', 'cnn.com', 'sina.com.cn', '163.com', 'thepaper.cn',
       'reuters.com', 'apnews.com', 'nytimes.com', 'washingtonpost.com', 'theguardian.com',
@@ -536,8 +544,8 @@ const TAG_RULES: TagRule[] = [
     priority: 7,
   },
   {
-    tag: '设计',
-    subtags: ['UI/UX', '平面', '3D', '动效', '素材'],
+    tag: 'design',
+    subtags: ['uiux', 'graphic', '3d', 'motion', 'assets'],
     domains: [
       'dribbble.com', 'behance.net', 'figma.com', 'canva.com', 'unsplash.com', 'pinterest.com',
       'adobe.com', 'sketch.com', 'invisionapp.com', 'framer.com', 'spline.design',
@@ -564,8 +572,8 @@ const TAG_RULES: TagRule[] = [
     priority: 7,
   },
   {
-    tag: '学习',
-    subtags: ['课程', '学术', '语言', '编程学习'],
+    tag: 'learning',
+    subtags: ['courses', 'academic', 'language', 'codingLearning'],
     domains: [
       'coursera.org', 'udemy.com', 'khan', 'edu.cn', 'mooc',
       'edx.org', 'mit.edu', 'stanford.edu', 'harvard.edu', 'ocw.mit.edu',
@@ -592,7 +600,7 @@ const TAG_RULES: TagRule[] = [
     priority: 8,
   },
   {
-    tag: '邮件',
+    tag: 'email',
     domains: [
       'mail.google.com', 'outlook.com', 'outlook.live.com', 'mail.qq.com', 'mail.163.com',
       'mail.yahoo.com', 'proton.me', 'protonmail.com', 'zoho.com/mail',
@@ -605,8 +613,8 @@ const TAG_RULES: TagRule[] = [
     priority: 6,
   },
   {
-    tag: '音乐',
-    subtags: ['流媒体', '播客', '歌词'],
+    tag: 'music',
+    subtags: ['streaming', 'podcast', 'lyrics'],
     domains: [
       'spotify.com', 'music.163.com', 'soundcloud.com', 'apple.com/music',
       'music.apple.com', 'tidal.com', 'deezer.com', 'pandora.com',
@@ -627,8 +635,8 @@ const TAG_RULES: TagRule[] = [
     priority: 7,
   },
   {
-    tag: 'AI',
-    subtags: ['对话', '图像生成', '模型', 'AI工具'],
+    tag: 'ai',
+    subtags: ['chat', 'imageGeneration', 'model', 'aiTools'],
     domains: [
       'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'huggingface.co',
       'midjourney.com', 'perplexity.ai', 'poe.com', 'character.ai',
@@ -660,8 +668,8 @@ const TAG_RULES: TagRule[] = [
     priority: 10,
   },
   {
-    tag: '游戏',
-    subtags: ['PC', '主机', '手游', '攻略', '电竞'],
+    tag: 'gaming',
+    subtags: ['pc', 'console', 'mobileGame', 'guide', 'esports'],
     domains: [
       'store.steampowered.com', 'steampowered.com', 'epicgames.com', 'playstation.com',
       'xbox.com', 'twitch.tv', 'nintendo.com', 'gog.com', 'origin.com',
@@ -691,8 +699,8 @@ const TAG_RULES: TagRule[] = [
     priority: 8,
   },
   {
-    tag: '金融',
-    subtags: ['股票', '加密货币', '基金', '银行'],
+    tag: 'finance',
+    subtags: ['stocks', 'crypto', 'funds', 'banking'],
     domains: [
       'bloomberg.com', 'finance.yahoo.com', 'xueqiu.com', 'eastmoney.com',
       'coinmarketcap.com', 'binance.com', 'okx.com', 'huobi.com',
@@ -718,8 +726,8 @@ const TAG_RULES: TagRule[] = [
     priority: 8,
   },
   {
-    tag: '博客',
-    subtags: ['技术博客', '个人博客', '专栏'],
+    tag: 'blog',
+    subtags: ['techBlog', 'personalBlog', 'column'],
     domains: [
       'medium.com', 'substack.com', 'wordpress.com', 'ghost.org',
       'dev.to', 'hashnode.dev', 'hackernoon.com',
@@ -737,8 +745,8 @@ const TAG_RULES: TagRule[] = [
     priority: 5,
   },
   {
-    tag: '论坛',
-    subtags: ['技术社区', '兴趣社区', '问答'],
+    tag: 'forum',
+    subtags: ['techCommunity', 'interestCommunity', 'qna'],
     domains: [
       'v2ex.com', 'reddit.com', 'tieba.baidu.com',
       'douban.com/group', 'nga.cn', 'nga.178.com', 'colg.cn',
@@ -755,8 +763,8 @@ const TAG_RULES: TagRule[] = [
     priority: 6,
   },
   {
-    tag: '工具',
-    subtags: ['开发工具', '效率工具', '转换工具'],
+    tag: 'tools',
+    subtags: ['devTools', 'productivityTools', 'converterTools'],
     domains: [
       'translate.google.com', 'deepl.com', 'grammarly.com',
       '1password.com', 'bitwarden.com', 'lastpass.com',
@@ -785,8 +793,8 @@ const TAG_RULES: TagRule[] = [
     priority: 6,
   },
   {
-    tag: '云服务',
-    subtags: ['云平台', '监控', 'CDN', 'Serverless'],
+    tag: 'cloud',
+    subtags: ['cloudPlatform', 'monitoring', 'cdn', 'serverless'],
     domains: [
       'console.aws.amazon.com', 'console.cloud.google.com', 'portal.azure.com',
       'dash.cloudflare.com', 'app.vercel.com', 'app.netlify.com',
@@ -811,8 +819,8 @@ const TAG_RULES: TagRule[] = [
     priority: 7,
   },
   {
-    tag: '健康',
-    subtags: ['医疗', '健身', '心理', '饮食'],
+    tag: 'health',
+    subtags: ['medical', 'fitness', 'mental', 'diet'],
     domains: [
       'webmd.com', 'mayoclinic.org', 'healthline.com', 'nih.gov',
       'who.int', 'cdc.gov', 'medlineplus.gov',
@@ -833,8 +841,8 @@ const TAG_RULES: TagRule[] = [
     priority: 5,
   },
   {
-    tag: '旅行',
-    subtags: ['机票', '酒店', '攻略', '签证'],
+    tag: 'travel',
+    subtags: ['flights', 'hotels', 'travelGuide', 'visa'],
     domains: [
       'booking.com', 'airbnb.com', 'tripadvisor.com', 'expedia.com',
       'ctrip.com', 'qunar.com', 'mafengwo.cn', 'tuniu.com',
@@ -852,8 +860,8 @@ const TAG_RULES: TagRule[] = [
     priority: 5,
   },
   {
-    tag: '美食',
-    subtags: ['外卖', '菜谱', '餐厅', '饮品'],
+    tag: 'food',
+    subtags: ['delivery', 'recipes', 'restaurant', 'drinks'],
     domains: [
       'meituan.com', 'ele.me', 'dianping.com',
       'yelp.com', 'opentable.com', 'just-eat.com', 'deliveroo.com',
@@ -870,8 +878,8 @@ const TAG_RULES: TagRule[] = [
     priority: 5,
   },
   {
-    tag: '政府',
-    subtags: ['政务', '交通', '税务', '社保'],
+    tag: 'government',
+    subtags: ['governmentAffairs', 'transportation', 'tax', 'socialSecurity'],
     domains: [
       'gov.cn', 'gov.uk', 'usa.gov', 'whitehouse.gov',
       'nhs.uk', 'irs.gov', 'ssa.gov',
@@ -887,7 +895,7 @@ const TAG_RULES: TagRule[] = [
     priority: 4,
   },
   {
-    tag: '搜索',
+    tag: 'search',
     domains: [
       'google.com', 'google.com.hk', 'baidu.com', 'bing.com', 'sogou.com',
       'so.com', 'duckduckgo.com', 'yandex.com', 'ecosia.org',
@@ -900,8 +908,8 @@ const TAG_RULES: TagRule[] = [
     priority: 3,
   },
   {
-    tag: '阅读',
-    subtags: ['小说', '资讯', 'RSS'],
+    tag: 'reading',
+    subtags: ['novel', 'info', 'rss'],
     domains: [
       'readwise.io', 'pocket.com', 'instapaper.com', 'readability.com',
       'feedly.com', 'inoreader.com', 'theoldreader.com', 'miniflux',
@@ -919,8 +927,8 @@ const TAG_RULES: TagRule[] = [
     priority: 5,
   },
   {
-    tag: '开发',
-    subtags: ['IDE', 'CI/CD', '测试'],
+    tag: 'dev',
+    subtags: ['ide', 'cicd', 'testing'],
     domains: [
       'github.com', 'gitlab.com', 'bitbucket.org',
       'code.visualstudio.com', 'jetbrains.com', 'eclipse.org',
@@ -941,8 +949,8 @@ const TAG_RULES: TagRule[] = [
     priority: 7,
   },
   {
-    tag: '摄影',
-    subtags: ['图库', '后期', '器材'],
+    tag: 'photography',
+    subtags: ['gallery', 'postProcessing', 'equipment'],
     domains: [
       'flickr.com', '500px.com', 'unsplash.com', 'pexels.com', 'pixabay.com',
       'adobe.com/lightroom', 'captureone.com', 'darkroom.co',
@@ -959,8 +967,8 @@ const TAG_RULES: TagRule[] = [
     priority: 4,
   },
   {
-    tag: '教育',
-    subtags: ['K12', '大学', '考研', '职业培训'],
+    tag: 'education',
+    subtags: ['k12', 'university', 'gradExam', 'vocational'],
     domains: [
       'edu.cn', 'mooc.cn', 'chaoxing.com', 'xueersi.com',
       'zhangmen.com', 'yuanfudao.com', 'hujiang.com',
@@ -980,8 +988,8 @@ const TAG_RULES: TagRule[] = [
     priority: 6,
   },
   {
-    tag: '体育',
-    subtags: ['足球', '篮球', '电竞', '健身'],
+    tag: 'sports',
+    subtags: ['football', 'basketball', 'esports', 'fitness'],
     domains: [
       'espn.com', 'sports.yahoo.com', 'skysports.com', 'bbc.com/sport',
       'nba.com', 'fifa.com', 'uefa.com',
@@ -999,8 +1007,8 @@ const TAG_RULES: TagRule[] = [
     priority: 4,
   },
   {
-    tag: '汽车',
-    subtags: ['购车', '评测', '维修', '新能源'],
+    tag: 'automotive',
+    subtags: ['carPurchase', 'review', 'maintenance', 'newEnergy'],
     domains: [
       'autohome.com.cn', 'dongchedi.com', 'yiche.com',
       'pcauto.com.cn', 'xcar.com.cn', 'cheshi.com',
@@ -1017,8 +1025,8 @@ const TAG_RULES: TagRule[] = [
     priority: 4,
   },
   {
-    tag: '房产',
-    subtags: ['租房', '买房', '装修'],
+    tag: 'realestate',
+    subtags: ['renting', 'buying', 'renovation'],
     domains: [
       'lianjia.com', 'ke.com', 'anjuke.com', 'fang.com',
       'ziroom.com', 'danke.com', 'mogoroom.com',
@@ -1035,7 +1043,7 @@ const TAG_RULES: TagRule[] = [
     priority: 4,
   },
   {
-    tag: '法律',
+    tag: 'law',
     domains: [
       'court.gov.cn', 'wenshu.court.gov.cn', 'chinacourt.org',
       'lawyer.com', 'legalzoom.com', 'avvo.com',
@@ -1050,8 +1058,8 @@ const TAG_RULES: TagRule[] = [
     priority: 3,
   },
   {
-    tag: '招聘',
-    subtags: ['求职', '简历', '面试'],
+    tag: 'jobs',
+    subtags: ['jobSearch', 'resume', 'interview'],
     domains: [
       'zhipin.com', 'liepin.com', '51job.com', 'zhaopin.com',
       'linkedin.com/jobs', 'indeed.com', 'glassdoor.com',
@@ -1154,24 +1162,24 @@ export function autoTagDetailed(url: string, title: string): TagResult[] {
 
   const hour = new Date().getHours()
   if (hour >= 22 || hour < 6) {
-    tagMap.set('深夜', { confidence: 0.9, subtags: [] })
+    tagMap.set('lateNight', { confidence: 0.9, subtags: [] })
   } else if (hour >= 6 && hour < 9) {
-    tagMap.set('早间', { confidence: 0.7, subtags: [] })
+    tagMap.set('earlyMorning', { confidence: 0.7, subtags: [] })
   } else if (hour >= 9 && hour < 12) {
-    tagMap.set('上午', { confidence: 0.5, subtags: [] })
+    tagMap.set('morningPeriod', { confidence: 0.5, subtags: [] })
   } else if (hour >= 14 && hour < 18) {
-    tagMap.set('下午', { confidence: 0.5, subtags: [] })
+    tagMap.set('afternoonPeriod', { confidence: 0.5, subtags: [] })
   }
 
   if (title) {
-    if (title.length > 80) tagMap.set('长文', { confidence: 0.9, subtags: [] })
-    else if (title.length > 40) tagMap.set('中篇', { confidence: 0.6, subtags: [] })
+    if (title.length > 80) tagMap.set('longArticle', { confidence: 0.9, subtags: [] })
+    else if (title.length > 40) tagMap.set('mediumArticle', { confidence: 0.6, subtags: [] })
   }
 
   let urlPath = '/'
   try { urlPath = new URL(url).pathname } catch { /* ignore invalid URLs */ }
   const depth = urlPath.split('/').filter(Boolean).length
-  if (depth >= 5) tagMap.set('深层页面', { confidence: 0.4, subtags: [] })
+  if (depth >= 5) tagMap.set('deepPage', { confidence: 0.4, subtags: [] })
 
   const sorted = Array.from(tagMap.entries())
     .sort((a, b) => b[1].confidence - a[1].confidence)
@@ -1196,85 +1204,85 @@ export function getTagSubtags(tag: string): string[] {
 }
 
 export const TAG_COLORS: Record<string, string> = {
-  '社交': '#3b82f6',
-  '视频': '#ef4444',
-  '技术': '#10b981',
-  '文档': '#6366f1',
-  '购物': '#f59e0b',
-  '新闻': '#06b6d4',
-  '设计': '#ec4899',
-  '学习': '#8b5cf6',
-  '邮件': '#64748b',
-  '音乐': '#14b8a6',
-  'AI': '#a855f7',
-  '游戏': '#22c55e',
-  '金融': '#eab308',
-  '博客': '#0ea5e9',
-  '论坛': '#f97316',
-  '工具': '#8b5cf6',
-  '云服务': '#6366f1',
-  '健康': '#10b981',
-  '旅行': '#14b8a6',
-  '美食': '#f43f5e',
-  '政府': '#475569',
-  '搜索': '#3b82f6',
-  '阅读': '#818cf8',
-  '开发': '#06b6d4',
-  '摄影': '#f472b6',
-  '教育': '#a78bfa',
-  '体育': '#22d3ee',
-  '汽车': '#fb923c',
-  '房产': '#34d399',
-  '法律': '#94a3b8',
-  '招聘': '#2dd4bf',
-  '深夜': '#475569',
-  '早间': '#fbbf24',
-  '上午': '#fcd34d',
-  '下午': '#fb923c',
-  '长文': '#78716c',
-  '中篇': '#a8a29e',
-  '深层页面': '#6b7280',
+  'social': '#3b82f6',
+  'video': '#ef4444',
+  'tech': '#10b981',
+  'docs': '#6366f1',
+  'shopping': '#f59e0b',
+  'news': '#06b6d4',
+  'design': '#ec4899',
+  'learning': '#8b5cf6',
+  'email': '#64748b',
+  'music': '#14b8a6',
+  'ai': '#a855f7',
+  'gaming': '#22c55e',
+  'finance': '#eab308',
+  'blog': '#0ea5e9',
+  'forum': '#f97316',
+  'tools': '#8b5cf6',
+  'cloud': '#6366f1',
+  'health': '#10b981',
+  'travel': '#14b8a6',
+  'food': '#f43f5e',
+  'government': '#475569',
+  'search': '#3b82f6',
+  'reading': '#818cf8',
+  'dev': '#06b6d4',
+  'photography': '#f472b6',
+  'education': '#a78bfa',
+  'sports': '#22d3ee',
+  'automotive': '#fb923c',
+  'realestate': '#34d399',
+  'law': '#94a3b8',
+  'jobs': '#2dd4bf',
+  'lateNight': '#475569',
+  'earlyMorning': '#fbbf24',
+  'morningPeriod': '#fcd34d',
+  'afternoonPeriod': '#fb923c',
+  'longArticle': '#78716c',
+  'mediumArticle': '#a8a29e',
+  'deepPage': '#6b7280',
 }
 
 export const TAG_ICONS: Record<string, string> = {
-  '社交': 'i-lucide:users',
-  '视频': 'i-lucide:play-circle',
-  '技术': 'i-lucide:code-2',
-  '文档': 'i-lucide:file-text',
-  '购物': 'i-lucide:shopping-bag',
-  '新闻': 'i-lucide:newspaper',
-  '设计': 'i-lucide:palette',
-  '学习': 'i-lucide:graduation-cap',
-  '邮件': 'i-lucide:mail',
-  '音乐': 'i-lucide:music',
-  'AI': 'i-lucide:brain',
-  '游戏': 'i-lucide:gamepad-2',
-  '金融': 'i-lucide:trending-up',
-  '博客': 'i-lucide:pen-line',
-  '论坛': 'i-lucide:message-circle',
-  '工具': 'i-lucide:wrench',
-  '云服务': 'i-lucide:cloud',
-  '健康': 'i-lucide:heart-pulse',
-  '旅行': 'i-lucide:plane',
-  '美食': 'i-lucide:utensils',
-  '政府': 'i-lucide:landmark',
-  '搜索': 'i-lucide:search',
-  '阅读': 'i-lucide:book-open',
-  '开发': 'i-lucide:terminal',
-  '摄影': 'i-lucide:camera',
-  '教育': 'i-lucide:school',
-  '体育': 'i-lucide:trophy',
-  '汽车': 'i-lucide:car',
-  '房产': 'i-lucide:home',
-  '法律': 'i-lucide:scale',
-  '招聘': 'i-lucide:briefcase',
-  '深夜': 'i-lucide:moon',
-  '早间': 'i-lucide:sunrise',
-  '上午': 'i-lucide:sun',
-  '下午': 'i-lucide:cloud-sun',
-  '长文': 'i-lucide:scroll-text',
-  '中篇': 'i-lucide:file-text',
-  '深层页面': 'i-lucide:layers',
+  'social': 'i-lucide:users',
+  'video': 'i-lucide:play-circle',
+  'tech': 'i-lucide:code-2',
+  'docs': 'i-lucide:file-text',
+  'shopping': 'i-lucide:shopping-bag',
+  'news': 'i-lucide:newspaper',
+  'design': 'i-lucide:palette',
+  'learning': 'i-lucide:graduation-cap',
+  'email': 'i-lucide:mail',
+  'music': 'i-lucide:music',
+  'ai': 'i-lucide:brain',
+  'gaming': 'i-lucide:gamepad-2',
+  'finance': 'i-lucide:trending-up',
+  'blog': 'i-lucide:pen-line',
+  'forum': 'i-lucide:message-circle',
+  'tools': 'i-lucide:wrench',
+  'cloud': 'i-lucide:cloud',
+  'health': 'i-lucide:heart-pulse',
+  'travel': 'i-lucide:plane',
+  'food': 'i-lucide:utensils',
+  'government': 'i-lucide:landmark',
+  'search': 'i-lucide:search',
+  'reading': 'i-lucide:book-open',
+  'dev': 'i-lucide:terminal',
+  'photography': 'i-lucide:camera',
+  'education': 'i-lucide:school',
+  'sports': 'i-lucide:trophy',
+  'automotive': 'i-lucide:car',
+  'realestate': 'i-lucide:home',
+  'law': 'i-lucide:scale',
+  'jobs': 'i-lucide:briefcase',
+  'lateNight': 'i-lucide:moon',
+  'earlyMorning': 'i-lucide:sunrise',
+  'morningPeriod': 'i-lucide:sun',
+  'afternoonPeriod': 'i-lucide:cloud-sun',
+  'longArticle': 'i-lucide:scroll-text',
+  'mediumArticle': 'i-lucide:file-text',
+  'deepPage': 'i-lucide:layers',
 }
 
 export const PRODUCTIVE_KEYWORDS = new Set([

@@ -508,7 +508,7 @@ export const useHistoryStore = defineStore('history', () => {
     if (timeFilter.value) return timeFilter.value.label
     if (tagFilter.value) return tagFilter.value.label
     if (domainFilter.value) return domainFilter.value.label
-    if (searchKeyword.value) return `搜索: ${searchKeyword.value}`
+    if (searchKeyword.value) return searchKeyword.value
     return ''
   })
 

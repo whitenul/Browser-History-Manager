@@ -4,10 +4,12 @@ import { useHistoryStore } from '@/stores/history'
 import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
 import { autoTag, TAG_COLORS, TAG_ICONS, formatTime, exportToCSV, SOCIAL_KEYWORDS, LEARNING_KEYWORDS, UNPRODUCTIVE_KEYWORDS, getFaviconUrl } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const history = useHistoryStore()
 const stats = useStatsStore()
 const ui = useUIStore()
+const { t } = useI18n()
 
 const currentHour = ref(new Date().getHours())
 const hourTimer = ref<ReturnType<typeof setInterval> | null>(null)
@@ -77,7 +79,7 @@ const habitAlerts = computed<HabitAlert[]>(() => {
   if (socialDomains.size >= 3) {
     alerts.push({
       id: 'social-overuse',
-      message: '你已经连续浏览社交媒体超过1小时',
+      message: t('assistant.socialOveruse'),
       icon: 'i-lucide:alert-triangle',
       color: '#f59e0b',
       bgColor: 'rgba(245,158,11,0.1)',
@@ -87,7 +89,7 @@ const habitAlerts = computed<HabitAlert[]>(() => {
   if (stats.rhythm.peakHour === currentHour.value) {
     alerts.push({
       id: 'peak-hour',
-      message: '现在是你的高效工作时间',
+      message: t('assistant.peakHour'),
       icon: 'i-lucide:zap',
       color: '#10b981',
       bgColor: 'rgba(16,185,129,0.1)',
@@ -118,7 +120,7 @@ const habitAlerts = computed<HabitAlert[]>(() => {
   if (unvisitedLearning) {
     alerts.push({
       id: 'learning-reminder',
-      message: `今天还没访问你的常用学习网站 ${unvisitedLearning}`,
+      message: t('assistant.learningReminder', { domain: unvisitedLearning }),
       icon: 'i-lucide:book-open',
       color: '#8b5cf6',
       bgColor: 'rgba(139,92,246,0.1)',
@@ -146,7 +148,7 @@ const habitAlerts = computed<HabitAlert[]>(() => {
   if (avgDomains > 0 && todayUniqueDomains < avgDomains * 0.7) {
     alerts.push({
       id: 'breadth-decline',
-      message: '你的浏览广度下降了',
+      message: t('assistant.breadthDecline'),
       icon: 'i-lucide:trending-down',
       color: '#ef4444',
       bgColor: 'rgba(239,68,68,0.1)',
@@ -210,7 +212,7 @@ function suggestGroupLabel(domains: string[]): string {
     tagCount.set(t, (tagCount.get(t) || 0) + 1)
   }
   const topTag = Array.from(tagCount.entries()).sort((a, b) => b[1] - a[1])[0]
-  return topTag ? topTag[0] : '自定义'
+  return topTag ? topTag[0] : t('assistant.customLabel')
 }
 
 function openSuggestion(domain: string) {
@@ -220,7 +222,7 @@ function openSuggestion(domain: string) {
 function createGroup(suggestion: GroupSuggestion) {
   const pattern = suggestion.domains[0]
   history.addCustomRule(suggestion.label, pattern, 'domain')
-  ui.notify(`已创建"${suggestion.label}"分组`, 'success')
+  ui.notify(t('assistant.groupCreated', { label: suggestion.label }), 'success')
 }
 
 function openTopSite() {
@@ -232,13 +234,13 @@ function openTopSite() {
 function blockUnproductive() {
   const domainsToBlock = stats.productivity.topUnproductive.slice(0, 3)
   if (domainsToBlock.length === 0) {
-    ui.notify('暂无低效网站数据', 'info')
+    ui.notify(t('assistant.noUnproductiveData'), 'info')
     return
   }
   for (const d of domainsToBlock) {
     history.addBlacklistDomain(d)
   }
-  ui.notifyWithUndo(`已屏蔽 ${domainsToBlock.length} 个低效网站`, () => {
+  ui.notifyWithUndo(t('assistant.blockedSites', { count: domainsToBlock.length }), () => {
     for (const d of domainsToBlock) {
       history.removeBlacklistDomain(d)
     }
@@ -250,13 +252,13 @@ function clearToday() {
   todayStart.setHours(0, 0, 0, 0)
   const todayRecords = history.allRecords.filter(r => r.lastVisitTime >= todayStart.getTime())
   if (todayRecords.length === 0) {
-    ui.notify('今天没有浏览记录', 'info')
+    ui.notify(t('assistant.noRecordsToday'), 'info')
     return
   }
   const backup = [...history.allRecords]
   history.allRecords = history.allRecords.filter(r => r.lastVisitTime < todayStart.getTime())
   history.applyFilters()
-  ui.notifyWithUndo(`已清理今天 ${todayRecords.length} 条记录`, () => {
+  ui.notifyWithUndo(t('assistant.clearedRecords', { count: todayRecords.length }), () => {
     history.allRecords = backup
     history.applyFilters()
   })
@@ -267,11 +269,11 @@ function exportTodayReport() {
   todayStart.setHours(0, 0, 0, 0)
   const todayRecords = history.allRecords.filter(r => r.lastVisitTime >= todayStart.getTime())
   if (todayRecords.length === 0) {
-    ui.notify('今天没有浏览记录', 'info')
+    ui.notify(t('assistant.noRecordsToday'), 'info')
     return
   }
-  exportToCSV(todayRecords)
-  ui.notify('今日报告已导出', 'success')
+  exportToCSV(todayRecords, t)
+  ui.notify(t('assistant.reportExported'), 'success')
 }
 </script>
 
@@ -279,13 +281,13 @@ function exportTodayReport() {
   <div class="smart-assistant">
     <div class="sa-header">
       <span class="i-lucide:brain sa-header-icon" />
-      <span class="sa-title">智能助手</span>
+      <span class="sa-title">{{ t('assistant.title') }}</span>
     </div>
 
     <div v-if="timeSuggestions.length > 0" class="sa-section">
       <div class="sa-section-title">
         <span class="i-lucide:lightbulb" />
-        <span>此刻推荐</span>
+        <span>{{ t('assistant.nowRecommend') }}</span>
       </div>
       <div class="suggestion-list">
         <div
@@ -296,9 +298,9 @@ function exportTodayReport() {
           <img :src="item.favicon" class="suggestion-favicon" @error="($event.target as HTMLImageElement).style.display = 'none'" />
           <div class="suggestion-info">
             <span class="suggestion-domain">{{ item.domain }}</span>
-            <span class="suggestion-count">{{ item.visitCount }}次访问</span>
+            <span class="suggestion-count">{{ item.visitCount }}{{ t('assistant.visitTimes') }}</span>
           </div>
-          <button class="suggestion-open" @click="openSuggestion(item.domain)">打开</button>
+          <button class="suggestion-open" @click="openSuggestion(item.domain)">{{ t('assistant.open') }}</button>
         </div>
       </div>
     </div>
@@ -306,7 +308,7 @@ function exportTodayReport() {
     <div v-if="habitAlerts.length > 0" class="sa-section">
       <div class="sa-section-title">
         <span class="i-lucide:bell" />
-        <span>习惯提醒</span>
+        <span>{{ t('assistant.habitReminder') }}</span>
       </div>
       <div class="alert-list">
         <div
@@ -324,7 +326,7 @@ function exportTodayReport() {
     <div v-if="groupSuggestions.length > 0" class="sa-section">
       <div class="sa-section-title">
         <span class="i-lucide:layers" />
-        <span>智能分组建议</span>
+        <span>{{ t('assistant.smartGroupSuggestion') }}</span>
       </div>
       <div class="group-list">
         <div
@@ -344,14 +346,14 @@ function exportTodayReport() {
               </span>
             </div>
             <div class="group-desc">
-              检测到你经常同时访问
-              <strong>{{ suggestion.domains[0] }}</strong> 和
-              <strong>{{ suggestion.domains[1] }}</strong>，建议创建「{{ suggestion.label }}」分组
+              {{ t('assistant.detectedCoVisit') }}
+              <strong>{{ suggestion.domains[0] }}</strong> {{ t('assistant.and') }}
+              <strong>{{ suggestion.domains[1] }}</strong>{{ t('assistant.suggestCreateGroup', { label: t('tags.' + suggestion.label) }) }}
             </div>
           </div>
           <button class="group-create-btn" @click="createGroup(suggestion)">
             <span class="i-lucide:plus" />
-            创建分组
+            {{ t('assistant.createGroup') }}
           </button>
         </div>
       </div>
@@ -360,24 +362,24 @@ function exportTodayReport() {
     <div class="sa-section">
       <div class="sa-section-title">
         <span class="i-lucide:zap" />
-        <span>快捷操作</span>
+        <span>{{ t('assistant.quickActions') }}</span>
       </div>
       <div class="action-row">
         <button class="action-btn" @click="openTopSite">
           <span class="i-lucide:globe" />
-          <span>打开最常用</span>
+          <span>{{ t('assistant.openMostUsed') }}</span>
         </button>
         <button class="action-btn action-btn--warn" @click="blockUnproductive">
           <span class="i-lucide:shield-ban" />
-          <span>屏蔽低效</span>
+          <span>{{ t('assistant.blockUnproductive') }}</span>
         </button>
         <button class="action-btn action-btn--danger" @click="clearToday">
           <span class="i-lucide:trash-2" />
-          <span>清理今天</span>
+          <span>{{ t('assistant.clearToday') }}</span>
         </button>
         <button class="action-btn action-btn--primary" @click="exportTodayReport">
           <span class="i-lucide:download" />
-          <span>导出报告</span>
+          <span>{{ t('assistant.exportReport') }}</span>
         </button>
       </div>
     </div>

@@ -11,8 +11,6 @@ export const HEAT_COLORS = [
   'rgba(99,102,241,0.9)',
 ] as const
 
-export const DAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'] as const
-
 export function useStatsNavigation() {
   const history = useHistoryStore()
   const stats = useStatsStore()
@@ -48,7 +46,6 @@ export function useStatsNavigation() {
 
   return {
     HEAT_COLORS,
-    DAY_LABELS,
     isCurrentHeatCell,
     navigateWithTimeFilter,
     navigateWithTagFilter,

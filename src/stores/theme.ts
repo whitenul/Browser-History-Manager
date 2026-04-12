@@ -20,28 +20,28 @@ export interface PresetTheme {
 }
 
 export const PRESET_THEMES: PresetTheme[] = [
-  { id: 'indigo', name: '靛蓝', icon: '💎', light: { '--primary-color': '#4f46e5', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--primary-light': 'rgba(79,70,229,0.08)' }, dark: { '--primary-color': '#818cf8', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(129,140,248,0.12)' } },
-  { id: 'emerald', name: '翡翠', icon: '🌿', light: { '--primary-color': '#059669', '--app-header-bg': '#059669', '--app-header-text': '#ffffff', '--primary-light': 'rgba(5,150,105,0.08)' }, dark: { '--primary-color': '#34d399', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(52,211,153,0.12)' } },
-  { id: 'rose', name: '玫瑰', icon: '🌹', light: { '--primary-color': '#e11d48', '--app-header-bg': '#e11d48', '--app-header-text': '#ffffff', '--primary-light': 'rgba(225,29,72,0.08)' }, dark: { '--primary-color': '#fb7185', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,113,133,0.12)' } },
-  { id: 'amber', name: '琥珀', icon: '🔥', light: { '--primary-color': '#d97706', '--app-header-bg': '#d97706', '--app-header-text': '#ffffff', '--primary-light': 'rgba(217,119,6,0.08)' }, dark: { '--primary-color': '#fbbf24', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,191,36,0.12)' } },
-  { id: 'cyan', name: '青蓝', icon: '🌊', light: { '--primary-color': '#0891b2', '--app-header-bg': '#0891b2', '--app-header-text': '#ffffff', '--primary-light': 'rgba(8,145,178,0.08)' }, dark: { '--primary-color': '#22d3ee', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(34,211,238,0.12)' } },
-  { id: 'violet', name: '紫罗兰', icon: '🔮', light: { '--primary-color': '#7c3aed', '--app-header-bg': '#7c3aed', '--app-header-text': '#ffffff', '--primary-light': 'rgba(124,58,237,0.08)' }, dark: { '--primary-color': '#a78bfa', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(167,139,250,0.12)' } },
-  { id: 'slate', name: '石墨', icon: '🪨', light: { '--primary-color': '#475569', '--app-header-bg': '#334155', '--app-header-text': '#ffffff', '--primary-light': 'rgba(71,85,105,0.08)' }, dark: { '--primary-color': '#94a3b8', '--app-header-bg': '#0f172a', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(148,163,184,0.12)' } },
-  { id: 'pink', name: '粉樱', icon: '🌸', light: { '--primary-color': '#db2777', '--app-header-bg': '#db2777', '--app-header-text': '#ffffff', '--primary-light': 'rgba(219,39,119,0.08)' }, dark: { '--primary-color': '#f472b6', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(244,114,182,0.12)' } },
+  { id: 'indigo', name: 'theme.presets.indigo', icon: '💎', light: { '--primary-color': '#4f46e5', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--primary-light': 'rgba(79,70,229,0.08)' }, dark: { '--primary-color': '#818cf8', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(129,140,248,0.12)' } },
+  { id: 'emerald', name: 'theme.presets.emerald', icon: '🌿', light: { '--primary-color': '#059669', '--app-header-bg': '#059669', '--app-header-text': '#ffffff', '--primary-light': 'rgba(5,150,105,0.08)' }, dark: { '--primary-color': '#34d399', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(52,211,153,0.12)' } },
+  { id: 'rose', name: 'theme.presets.rose', icon: '🌹', light: { '--primary-color': '#e11d48', '--app-header-bg': '#e11d48', '--app-header-text': '#ffffff', '--primary-light': 'rgba(225,29,72,0.08)' }, dark: { '--primary-color': '#fb7185', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,113,133,0.12)' } },
+  { id: 'amber', name: 'theme.presets.amber', icon: '🔥', light: { '--primary-color': '#d97706', '--app-header-bg': '#d97706', '--app-header-text': '#ffffff', '--primary-light': 'rgba(217,119,6,0.08)' }, dark: { '--primary-color': '#fbbf24', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,191,36,0.12)' } },
+  { id: 'cyan', name: 'theme.presets.cyan', icon: '🌊', light: { '--primary-color': '#0891b2', '--app-header-bg': '#0891b2', '--app-header-text': '#ffffff', '--primary-light': 'rgba(8,145,178,0.08)' }, dark: { '--primary-color': '#22d3ee', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(34,211,238,0.12)' } },
+  { id: 'violet', name: 'theme.presets.violet', icon: '🔮', light: { '--primary-color': '#7c3aed', '--app-header-bg': '#7c3aed', '--app-header-text': '#ffffff', '--primary-light': 'rgba(124,58,237,0.08)' }, dark: { '--primary-color': '#a78bfa', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(167,139,250,0.12)' } },
+  { id: 'slate', name: 'theme.presets.slate', icon: '🪨', light: { '--primary-color': '#475569', '--app-header-bg': '#334155', '--app-header-text': '#ffffff', '--primary-light': 'rgba(71,85,105,0.08)' }, dark: { '--primary-color': '#94a3b8', '--app-header-bg': '#0f172a', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(148,163,184,0.12)' } },
+  { id: 'pink', name: 'theme.presets.pink', icon: '🌸', light: { '--primary-color': '#db2777', '--app-header-bg': '#db2777', '--app-header-text': '#ffffff', '--primary-light': 'rgba(219,39,119,0.08)' }, dark: { '--primary-color': '#f472b6', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(244,114,182,0.12)' } },
 ]
 
 export interface GradientTheme { name: string; gradient: string; primary: string }
 
 export const GRADIENT_THEMES: GradientTheme[] = [
-  { name: '海洋', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', primary: '#667eea' },
-  { name: '日落', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', primary: '#f5576c' },
-  { name: '森林', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', primary: '#11998e' },
-  { name: '夜晚', gradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)', primary: '#4ca1af' },
-  { name: '火焰', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)', primary: '#f12711' },
-  { name: '极光', gradient: 'linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)', primary: '#00c9ff' },
-  { name: '薰衣草', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', primary: '#a18cd1' },
-  { name: '冰川', gradient: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)', primary: '#5b86e5' },
-  { name: '沙漠', gradient: 'linear-gradient(135deg, #c2956a 0%, #e0c097 100%)', primary: '#c2956a' },
+  { name: 'theme.gradients.ocean', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', primary: '#667eea' },
+  { name: 'theme.gradients.sunset', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', primary: '#f5576c' },
+  { name: 'theme.gradients.forest', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', primary: '#11998e' },
+  { name: 'theme.gradients.night', gradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)', primary: '#4ca1af' },
+  { name: 'theme.gradients.flame', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)', primary: '#f12711' },
+  { name: 'theme.gradients.aurora', gradient: 'linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)', primary: '#00c9ff' },
+  { name: 'theme.gradients.lavender', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', primary: '#a18cd1' },
+  { name: 'theme.gradients.glacier', gradient: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)', primary: '#5b86e5' },
+  { name: 'theme.gradients.desert', gradient: 'linear-gradient(135deg, #c2956a 0%, #e0c097 100%)', primary: '#c2956a' },
 ]
 
 const LIGHT_VARS = { '--app-bg': '#f8fafc', '--app-surface': '#ffffff', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--text-primary': '#0f172a', '--text-secondary': '#334155', '--text-muted': '#64748b', '--border-color': '#e2e8f0', '--primary-color': '#4f46e5', '--primary-light': 'rgba(79,70,229,0.08)' }

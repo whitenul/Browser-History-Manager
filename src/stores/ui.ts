@@ -56,11 +56,11 @@ export const useUIStore = defineStore('ui', () => {
 
   function navigateTo(tab: TabId, label: string = '', meta?: { source?: string; filterSnapshot?: FilterSnapshot }) {
     const tabLabels: Record<TabId, string> = {
-      tabs: '页面管理',
-      history: '历史记录',
-      stats: '数据统计',
-      bookmarks: '书签管理',
-      settings: '设置',
+      tabs: 'nav.tabs',
+      history: 'nav.history',
+      stats: 'nav.stats',
+      bookmarks: 'nav.bookmarks',
+      settings: 'nav.settings',
     }
     saveCurrentScroll()
     navStack.value.push({

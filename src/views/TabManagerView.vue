@@ -3,9 +3,11 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useTabOptimizerStore } from '@/stores/tabOptimizer'
 import { getFaviconUrlWithHint, onFaviconError } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const optimizer = useTabOptimizerStore()
+const { t } = useI18n()
 
 interface TabInfo {
   id: number
@@ -49,14 +51,14 @@ async function loadTabs() {
       hasTabsPermission.value = false
     }
 
-    tabs.value = detailedTabs.map((t, idx) => ({
-      id: t.id!,
-      title: t.title || (hasTabsPermission.value ? '无标题' : `标签 ${idx + 1}`),
-      url: t.url || '',
-      favIconUrl: t.favIconUrl || '',
-      active: t.active,
-      discarded: t.discarded ?? false,
-      pinned: t.pinned ?? false,
+    tabs.value = detailedTabs.map((tab, idx) => ({
+      id: tab.id!,
+      title: tab.title || (hasTabsPermission.value ? t('tabs.noTitle') : t('tabs.tabIndex', { index: idx + 1 })),
+      url: tab.url || '',
+      favIconUrl: tab.favIconUrl || '',
+      active: tab.active,
+      discarded: tab.discarded ?? false,
+      pinned: tab.pinned ?? false,
     }))
     activeTab.value = tabs.value.find(t => t.active) || null
   } catch { /* ignore */ }
@@ -84,9 +86,9 @@ async function refreshCurrentTab() {
 function copyCurrentUrl() {
   if (!activeTab.value?.url) return
   navigator.clipboard.writeText(activeTab.value.url).then(() => {
-    ui.notify('URL 已复制', 'success')
+    ui.notify(t('tabs.urlCopied'), 'success')
   }).catch(() => {
-    ui.notify('复制失败', 'error')
+    ui.notify(t('tabs.copyFailed'), 'error')
   })
 }
 
@@ -96,21 +98,21 @@ async function openNewTab() {
 
 async function handleSuspendIdle() {
   const count = await optimizer.suspendIdleTabs()
-  suspendResult.value = count > 0 ? `已挂起 ${count} 个空闲标签，节省约 ${count * 50}MB` : '没有可挂起的空闲标签'
+  suspendResult.value = count > 0 ? t('tabs.suspendedResult', { count, mb: count * 50 }) : t('tabs.noIdleToSuspend')
   await loadTabs()
   setTimeout(() => { suspendResult.value = '' }, 3000)
 }
 
 async function handleCloseDuplicates() {
   const count = await optimizer.closeDuplicateTabs()
-  suspendResult.value = count > 0 ? `已关闭 ${count} 个重复标签，节省约 ${count * 50}MB` : '没有发现重复标签'
+  suspendResult.value = count > 0 ? t('tabs.closedDuplicatesResult', { count, mb: count * 50 }) : t('tabs.noDuplicatesFound')
   await loadTabs()
   setTimeout(() => { suspendResult.value = '' }, 3000)
 }
 
 async function handleSuspendAll() {
   const count = await optimizer.suspendAllInactive()
-  suspendResult.value = count > 0 ? `已挂起 ${count} 个非活动标签，节省约 ${count * 50}MB` : '没有可挂起的标签'
+  suspendResult.value = count > 0 ? t('tabs.suspendedAllResult', { count, mb: count * 50 }) : t('tabs.noTabsToSuspend')
   await loadTabs()
   setTimeout(() => { suspendResult.value = '' }, 3000)
 }
@@ -147,7 +149,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   <div class="tab-manager">
     <div v-if="loading" class="tm-loading">
       <div class="tm-spinner" />
-      <span>加载标签页...</span>
+      <span>{{ t('tabs.loading') }}</span>
     </div>
 
     <template v-else>
@@ -155,18 +157,18 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
         <div class="tm-current-info">
           <img :src="activeTab ? resolveFavicon(activeTab) : ''" class="tm-current-favicon" @error="activeTab && onFaviconError($event, activeTab.url)" />
           <div class="tm-current-detail">
-            <div class="tm-current-title">{{ activeTab?.title || '未知页面' }}</div>
+            <div class="tm-current-title">{{ activeTab?.title || t('tabs.unknownPage') }}</div>
             <div class="tm-current-url">{{ getDomain(activeTab?.url || '') }}</div>
           </div>
         </div>
         <div class="tm-actions">
-          <button class="tm-action-btn" title="刷新当前页" @click="refreshCurrentTab">
+          <button class="tm-action-btn" :title="t('tabs.refreshCurrent')" @click="refreshCurrentTab">
             <span class="i-lucide:refresh-cw" />
           </button>
-          <button class="tm-action-btn" title="复制 URL" @click="copyCurrentUrl">
+          <button class="tm-action-btn" :title="t('tabs.copyUrl')" @click="copyCurrentUrl">
             <span class="i-lucide:copy" />
           </button>
-          <button class="tm-action-btn" title="新建标签页" @click="openNewTab">
+          <button class="tm-action-btn" :title="t('tabs.newTab')" @click="openNewTab">
             <span class="i-lucide:plus" />
           </button>
         </div>
@@ -174,16 +176,16 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 
       <div class="tm-optimizer-toggle" @click="showOptimizer = !showOptimizer">
         <span class="i-lucide:zap tm-section-icon" />
-        <span>内存优化</span>
-        <span class="tm-optimizer-badge">{{ optimizer.potentialSavingsMB }}MB 可节省</span>
+        <span>{{ t('tabs.memoryOptimize') }}</span>
+        <span class="tm-optimizer-badge">{{ t('tabs.savingsAvailable', { mb: optimizer.potentialSavingsMB }) }}</span>
         <span :class="['i-lucide:chevron-down tm-toggle-arrow', { rotated: showOptimizer }]" />
       </div>
 
       <div v-if="showOptimizer" class="tm-optimizer-panel">
         <div class="tm-mem-bar">
           <div class="tm-mem-label">
-            <span>活动标签 {{ activeTabCount }} / {{ tabs.length }}</span>
-            <span>约 {{ optimizer.estimatedMemoryMB }}MB</span>
+            <span>{{ t('tabs.activeTabsCount', { active: activeTabCount, total: tabs.length }) }}</span>
+            <span>{{ t('tabs.aboutMemory', { mb: optimizer.estimatedMemoryMB }) }}</span>
           </div>
           <div class="tm-mem-track">
             <div class="tm-mem-fill" :style="{ width: `${Math.min(100, (activeTabCount / Math.max(tabs.length, 1)) * 100)}%` }" />
@@ -193,29 +195,29 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
         <div v-if="optimizer.duplicateGroups.length > 0" class="tm-opt-section">
           <div class="tm-opt-header">
             <span class="i-lucide:copy" />
-            <span>重复标签 ({{ optimizer.duplicateGroups.length }}组)</span>
+            <span>{{ t('tabs.duplicateTabsCount', { count: optimizer.duplicateGroups.length }) }}</span>
           </div>
           <button class="tm-opt-btn tm-opt-btn--warn" @click="handleCloseDuplicates">
             <span class="i-lucide:x-circle" />
-            关闭重复标签 (节省 {{ optimizer.duplicateGroups.reduce((s, g) => s + g.savedMemory, 0) }}MB)
+            {{ t('tabs.closeDuplicatesSave', { mb: optimizer.duplicateGroups.reduce((s, g) => s + g.savedMemory, 0) }) }}
           </button>
         </div>
 
         <div v-if="optimizer.idleTabs.length > 0" class="tm-opt-section">
           <div class="tm-opt-header">
             <span class="i-lucide:moon" />
-            <span>空闲标签 ({{ optimizer.idleTabs.length }}个)</span>
+            <span>{{ t('tabs.idleTabsCount', { count: optimizer.idleTabs.length }) }}</span>
           </div>
           <button class="tm-opt-btn tm-opt-btn--primary" @click="handleSuspendIdle">
             <span class="i-lucide:snowflake" />
-            挂起空闲标签 (节省 {{ optimizer.idleTabs.length * 50 }}MB)
+            {{ t('tabs.suspendIdleSave', { mb: optimizer.idleTabs.length * 50 }) }}
           </button>
         </div>
 
         <div class="tm-opt-section">
           <button class="tm-opt-btn" @click="handleSuspendAll">
             <span class="i-lucide:cloud-snow" />
-            挂起所有非活动标签
+            {{ t('tabs.suspendAllInactive') }}
           </button>
         </div>
 
@@ -224,9 +226,9 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 
       <div class="tm-section-header">
         <span class="i-lucide:layers tm-section-icon" />
-        <span>所有标签页 ({{ tabs.length }})</span>
-        <span v-if="discardedCount > 0" class="tm-suspended-badge">{{ discardedCount }} 已挂起</span>
-        <span v-if="!hasTabsPermission" class="tm-perm-hint">仅基础功能</span>
+        <span>{{ t('tabs.allTabs') }} ({{ tabs.length }})</span>
+        <span v-if="discardedCount > 0" class="tm-suspended-badge">{{ t('tabs.suspendedCount', { count: discardedCount }) }}</span>
+        <span v-if="!hasTabsPermission" class="tm-perm-hint">{{ t('tabs.basicFeaturesOnly') }}</span>
       </div>
 
       <div class="tm-tab-list">
@@ -241,17 +243,17 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
             <div class="tm-tab-title">{{ tab.title }}</div>
             <div class="tm-tab-domain">{{ getDomain(tab.url) }}</div>
           </div>
-          <span v-if="tab.discarded" class="tm-discarded-tag">已挂起</span>
+          <span v-if="tab.discarded" class="tm-discarded-tag">{{ t('tabs.discarded') }}</span>
           <span v-if="tab.pinned" class="i-lucide:pin tm-pin-icon" />
           <button
             class="tm-tab-close"
-            title="关闭标签页"
+            :title="t('tabs.closeTabTitle')"
             @click="closeTab(tab.id, $event)"
           >
             <span class="i-lucide:x" />
           </button>
         </button>
-        <div v-if="!tabs.length" class="tm-empty">暂无打开的标签页</div>
+        <div v-if="!tabs.length" class="tm-empty">{{ t('tabs.noOpenTabs') }}</div>
       </div>
     </template>
   </div>

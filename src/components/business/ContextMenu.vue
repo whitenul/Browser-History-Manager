@@ -2,9 +2,11 @@
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { safeOpenUrl } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const history = useHistoryStore()
+const { t } = useI18n()
 
 function handleAction(action: string) {
   const record = ui.contextMenuTarget
@@ -12,7 +14,7 @@ function handleAction(action: string) {
   switch (action) {
     case 'open': history.openRecord(record.url); break
     case 'newTab': safeOpenUrl(record.url, false); break
-    case 'copyUrl': navigator.clipboard.writeText(record.url); ui.notify('已复制链接', 'info'); break
+    case 'copyUrl': navigator.clipboard.writeText(record.url); ui.notify(t('contextMenu.copiedUrl'), 'info'); break
     case 'favorite': history.toggleFavorite(record.url); break
     case 'tag': ui.openTagModal(record.url); break
     case 'preview': ui.openPreview(record); break
@@ -26,27 +28,27 @@ function handleAction(action: string) {
   <div class="ctx-overlay" @click="ui.closeContextMenu()" @contextmenu.prevent="ui.closeContextMenu()">
     <div class="ctx-menu" :style="{ left: ui.contextMenuPos.x + 'px', top: ui.contextMenuPos.y + 'px' }" @click.stop>
       <button class="ctx-item" @click="handleAction('open')">
-        <span class="i-lucide:external-link ctx-icon" />打开链接
+        <span class="i-lucide:external-link ctx-icon" />{{ t('contextMenu.openLink') }}
       </button>
       <button class="ctx-item" @click="handleAction('newTab')">
-        <span class="i-lucide:plus-circle ctx-icon" />新标签页打开
+        <span class="i-lucide:plus-circle ctx-icon" />{{ t('contextMenu.openInNewTab') }}
       </button>
       <button class="ctx-item" @click="handleAction('copyUrl')">
-        <span class="i-lucide:copy ctx-icon" />复制链接
+        <span class="i-lucide:copy ctx-icon" />{{ t('contextMenu.copyUrl') }}
       </button>
       <div class="ctx-divider" />
       <button class="ctx-item" @click="handleAction('favorite')">
-        <span class="i-lucide:star ctx-icon" />切换收藏
+        <span class="i-lucide:star ctx-icon" />{{ t('contextMenu.toggleFavorite') }}
       </button>
       <button class="ctx-item" @click="handleAction('tag')">
-        <span class="i-lucide:tag ctx-icon" />管理标签
+        <span class="i-lucide:tag ctx-icon" />{{ t('contextMenu.manageTags') }}
       </button>
       <button class="ctx-item" @click="handleAction('preview')">
-        <span class="i-lucide:eye ctx-icon" />预览
+        <span class="i-lucide:eye ctx-icon" />{{ t('contextMenu.preview') }}
       </button>
       <div class="ctx-divider" />
       <button class="ctx-item danger" @click="handleAction('delete')">
-        <span class="i-lucide:trash-2 ctx-icon" />删除
+        <span class="i-lucide:trash-2 ctx-icon" />{{ t('contextMenu.delete') }}
       </button>
     </div>
   </div>

@@ -3,12 +3,13 @@ import { ref, onMounted } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
+import { useI18n } from '@/i18n'
+import { safeOpenUrl, isValidDomain } from '@/utils/helpers'
 
+const { t } = useI18n()
 const history = useHistoryStore()
 const theme = useThemeStore()
 const ui = useUIStore()
-
-import { safeOpenUrl, isValidDomain } from '@/utils/helpers'
 
 const newBlacklistDomain = ref('')
 const clearConfirm = ref(false)
@@ -36,7 +37,7 @@ async function saveSettings() {
   try {
     await chrome.storage.local.set({ appSettings: settings.value })
     history.applySettings(settings.value.pageSize, settings.value.sessionGapMinutes)
-    ui.notify('设置已保存', 'success')
+    ui.notify(t('settings.saved'), 'success')
   } catch { /* ignore */ }
 }
 
@@ -45,24 +46,24 @@ async function openSidePanel() {
     if (chrome?.sidePanel?.open) {
       const win = await chrome.windows.getCurrent()
       await chrome.sidePanel.open({ windowId: win.id! })
-      ui.notify('正在打开侧边栏...', 'success')
+      ui.notify(t('settings.openingSidebar'), 'success')
     } else {
       chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
         if (chrome.runtime.lastError) {
-          ui.notify('请右键点击扩展图标 → "在侧边栏中打开"', 'info')
+          ui.notify(t('settings.openSidebarHint'), 'info')
         } else if (response?.success) {
-          ui.notify('正在打开侧边栏...', 'success')
+          ui.notify(t('settings.openingSidebar'), 'success')
         } else {
-          ui.notify(response?.error || '打开失败，请右键扩展图标选择"在侧边栏中打开"', 'error')
+          ui.notify(response?.error || t('settings.openSidebarFailed'), 'error')
         }
       })
     }
   } catch (err: any) {
     const msg = err?.message || String(err)
     if (msg.includes('user gesture')) {
-      ui.notify('请右键点击扩展图标 → "在侧边栏中打开"', 'info')
+      ui.notify(t('settings.openSidebarHint'), 'info')
     } else {
-      ui.notify(`打开侧边栏失败: ${msg}`, 'error')
+      ui.notify(t('settings.sidebarOpenFailed', { msg }), 'error')
     }
   }
 }
@@ -70,13 +71,13 @@ async function openSidePanel() {
 async function clearAllData() {
   await chrome.storage.local.clear()
   clearConfirm.value = false
-  ui.notify('所有数据已清除', 'info')
+  ui.notify(t('settings.allDataCleared'), 'info')
 }
 
 async function addBlacklist() {
   const d = newBlacklistDomain.value.trim()
   if (!d || !isValidDomain(d)) {
-    ui.notify('请输入有效的域名', 'error')
+    ui.notify(t('settings.invalidDomain'), 'error')
     return
   }
   await history.addBlacklistDomain(d)
@@ -92,75 +93,75 @@ function openUrl(url: string) { safeOpenUrl(url) }
       <div class="section">
         <div class="section-title">
           <span class="i-lucide:sliders section-icon" />
-          默认行为
+          {{ t('settings.defaultBehavior') }}
         </div>
         <div class="setting-row">
-          <label>默认时间范围</label>
+          <label>{{ t('settings.defaultTimeRange') }}</label>
           <select v-model="settings.defaultTimeRange" class="setting-select">
-            <option value="today">今日</option>
-            <option value="3days">近3天</option>
-            <option value="week">近7天</option>
-            <option value="month">近30天</option>
-            <option value="all">全部</option>
+            <option value="today">{{ t('settings.timeRange.today') }}</option>
+            <option value="3days">{{ t('settings.timeRange.last3days') }}</option>
+            <option value="week">{{ t('settings.timeRange.last7days') }}</option>
+            <option value="month">{{ t('settings.timeRange.last30days') }}</option>
+            <option value="all">{{ t('settings.timeRange.all') }}</option>
           </select>
         </div>
         <div class="setting-row">
-          <label>默认分组方式</label>
+          <label>{{ t('settings.defaultGroupMode') }}</label>
           <select v-model="settings.defaultGroupMode" class="setting-select">
-            <option value="none">不分组</option>
-            <option value="domain">按域名</option>
-            <option value="timeline">按时间</option>
-            <option value="session">按会话</option>
+            <option value="none">{{ t('settings.groupMode.none') }}</option>
+            <option value="domain">{{ t('settings.groupMode.domain') }}</option>
+            <option value="timeline">{{ t('settings.groupMode.timeline') }}</option>
+            <option value="session">{{ t('settings.groupMode.session') }}</option>
           </select>
         </div>
         <div class="setting-row">
-          <label>默认排序</label>
+          <label>{{ t('settings.defaultSortMode') }}</label>
           <select v-model="settings.defaultSortMode" class="setting-select">
-            <option value="timeDesc">最新优先</option>
-            <option value="timeAsc">最旧优先</option>
-            <option value="visitDesc">最常访问</option>
-            <option value="visitAsc">最少访问</option>
+            <option value="timeDesc">{{ t('settings.sortMode.timeDesc') }}</option>
+            <option value="timeAsc">{{ t('settings.sortMode.timeAsc') }}</option>
+            <option value="visitDesc">{{ t('settings.sortMode.visitDesc') }}</option>
+            <option value="visitAsc">{{ t('settings.sortMode.visitAsc') }}</option>
           </select>
         </div>
         <div class="setting-row">
-          <label>每页显示数量</label>
+          <label>{{ t('settings.pageSize') }}</label>
           <input type="number" v-model.number="settings.pageSize" min="20" max="500" class="setting-input" />
         </div>
         <div class="setting-row">
-          <label>会话间隔（分钟）</label>
+          <label>{{ t('settings.sessionGap') }}</label>
           <input type="number" v-model.number="settings.sessionGapMinutes" min="5" max="120" class="setting-input" />
         </div>
-        <button class="btn-save" @click="saveSettings">保存设置</button>
+        <button class="btn-save" @click="saveSettings">{{ t('settings.saveSettings') }}</button>
       </div>
 
       <div class="section">
         <div class="section-title">
           <span class="i-lucide:panel-left section-icon" />
-          界面模式
+          {{ t('settings.uiMode') }}
         </div>
-        <p class="section-desc">选择扩展的显示方式，支持悬浮窗和浏览器侧边栏两种模式</p>
+        <p class="section-desc">{{ t('settings.uiModeDesc') }}</p>
         <div class="mode-cards">
           <label :class="['mode-card', { active: !isSidebar }]">
             <input type="radio" name="uiMode" :checked="!isSidebar" />
             <span class="mode-card-icon"><span class="i-lucide:maximize-2" /></span>
-            <span class="mode-card-label">悬浮窗 (Popup)</span>
-            <span class="mode-card-desc">点击扩展图标打开</span>
+            <span class="mode-card-label">{{ t('settings.popupMode') }}</span>
+            <span class="mode-card-desc">{{ t('settings.popupModeDesc') }}</span>
           </label>
           <label :class="['mode-card', { active: isSidebar }]" @click.prevent="openSidePanel">
             <input type="radio" name="uiMode" :checked="isSidebar" />
             <span class="mode-card-icon"><span class="i-lucide:panel-right" /></span>
-            <span class="mode-card-label">侧边栏 (Side Panel)</span>
-            <span class="mode-card-desc">常驻浏览器右侧</span>
+            <span class="mode-card-label">{{ t('settings.sidePanelMode') }}</span>
+            <span class="mode-card-desc">{{ t('settings.sidePanelModeDesc') }}</span>
           </label>
         </div>
-        <p class="section-hint">当前模式: {{ isSidebar ? '侧边栏' : '悬浮窗' }} · 提示：右键点击扩展图标可切换显示模式</p>
+        <p class="section-hint">{{ t('settings.currentMode') }}: {{ isSidebar ? t('settings.sidebar') : t('settings.popup') }} · {{ t('settings.switchModeHint') }}</p>
         <div v-if="!isSidebar" class="setting-row">
-          <label>侧边栏默认页面</label>
+          <label>{{ t('settings.defaultSidebarTab') }}</label>
           <select v-model="settings.defaultSidebarTab" class="setting-select">
-            <option value="history">历史记录</option>
-            <option value="stats">数据统计</option>
-            <option value="bookmarks">书签管理</option>
-            <option value="settings">设置</option>
+            <option value="history">{{ t('settings.sidebarTabHistory') }}</option>
+            <option value="stats">{{ t('settings.sidebarTabStats') }}</option>
+            <option value="bookmarks">{{ t('settings.sidebarTabBookmarks') }}</option>
+            <option value="settings">{{ t('settings.sidebarTabSettings') }}</option>
           </select>
         </div>
       </div>
@@ -168,16 +169,16 @@ function openUrl(url: string) { safeOpenUrl(url) }
       <div class="section">
         <div class="section-title">
           <span class="i-lucide:ban section-icon" />
-          域名黑名单
+          {{ t('settings.blacklist') }}
         </div>
-        <p class="section-desc">黑名单中的域名将不会出现在历史记录和统计中</p>
+        <p class="section-desc">{{ t('settings.blacklistDesc') }}</p>
         <div class="blacklist-form">
-          <input v-model="newBlacklistDomain" type="text" placeholder="输入域名（如 example.com）" class="setting-input"
+          <input v-model="newBlacklistDomain" type="text" :placeholder="t('settings.blacklistPlaceholder')" class="setting-input"
             @keydown.enter="addBlacklist" />
-          <button class="btn-add" @click="addBlacklist">添加</button>
+          <button class="btn-add" @click="addBlacklist">{{ t('common.add') }}</button>
         </div>
         <div class="blacklist-list">
-          <div v-if="!history.blacklistedDomains.length" class="empty-hint">暂无黑名单域名</div>
+          <div v-if="!history.blacklistedDomains.length" class="empty-hint">{{ t('settings.emptyBlacklist') }}</div>
           <div v-for="d in history.blacklistedDomains" :key="d" class="blacklist-item">
             <span class="i-lucide:globe item-icon" />
             <span class="item-domain">{{ d }}</span>
@@ -191,12 +192,12 @@ function openUrl(url: string) { safeOpenUrl(url) }
       <div class="section">
         <div class="section-title">
           <span class="i-lucide:info section-icon" />
-          关于
+          {{ t('settings.about') }}
         </div>
         <div class="about-card">
-          <div class="about-name">浏览器历史记录管理器</div>
+          <div class="about-name">{{ t('settings.appName') }}</div>
           <div class="about-version">v2.0.0</div>
-          <div class="about-desc">现代化浏览器历史记录管理工具，支持搜索、筛选、统计、书签管理</div>
+          <div class="about-desc">{{ t('settings.appDesc') }}</div>
           <div class="about-tech">Vue 3 · TypeScript · Pinia · UnoCSS · Vite</div>
         </div>
       </div>
@@ -204,14 +205,14 @@ function openUrl(url: string) { safeOpenUrl(url) }
       <div class="section danger-zone">
         <div class="section-title">
           <span class="i-lucide:alert-triangle section-icon danger" />
-          危险操作
+          {{ t('settings.dangerZone') }}
         </div>
-        <button v-if="!clearConfirm" class="btn-danger" @click="clearConfirm = true">清除所有本地数据</button>
+        <button v-if="!clearConfirm" class="btn-danger" @click="clearConfirm = true">{{ t('settings.clearAllData') }}</button>
         <div v-else class="confirm-clear">
-          <p class="confirm-text">此操作不可撤销，确定要清除所有数据吗？</p>
+          <p class="confirm-text">{{ t('settings.clearAllConfirm') }}</p>
           <div class="confirm-actions">
-            <button class="btn-cancel" @click="clearConfirm = false">取消</button>
-            <button class="btn-danger" @click="clearAllData">确认清除</button>
+            <button class="btn-cancel" @click="clearConfirm = false">{{ t('common.cancel') }}</button>
+            <button class="btn-danger" @click="clearAllData">{{ t('settings.confirmClear') }}</button>
           </div>
         </div>
       </div>

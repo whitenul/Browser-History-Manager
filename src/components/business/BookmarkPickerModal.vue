@@ -2,8 +2,10 @@
 import { ref, onMounted } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { getFaviconUrl, onFaviconError } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
+const { t } = useI18n()
 
 function getHostname(url: string) {
   try { return new URL(url).hostname } catch { return url }
@@ -28,7 +30,7 @@ onMounted(async () => {
       const result: BmFolder[] = []
       for (const child of node.children) {
         if (child.id === '0') continue
-        const folder: BmFolder = { id: child.id, title: child.title || '未命名', depth }
+        const folder: BmFolder = { id: child.id, title: child.title || t('bookmarkPicker.unnamedFolder'), depth }
         if (child.children) folder.children = extract(child, depth + 1)
         result.push(folder)
       }
@@ -50,11 +52,11 @@ async function saveToBookmark() {
       title: ui.bookmarkTarget.title,
       url: ui.bookmarkTarget.url,
     })
-    ui.notify('已添加到书签', 'success')
+    ui.notify(t('bookmarkPicker.addedSuccess'), 'success')
     ui.closeBookmarkPicker()
   } catch (e) {
     console.error('Bookmark create failed:', e)
-    ui.notify('添加失败', 'error')
+    ui.notify(t('bookmarkPicker.addFailed'), 'error')
   } finally {
     saving.value = false
   }
@@ -65,7 +67,7 @@ async function saveToBookmark() {
   <div class="modal-overlay" @click.self="ui.closeBookmarkPicker()">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>添加到书签</h3>
+        <h3>{{ t('bookmarkPicker.modalTitle') }}</h3>
         <button class="close-btn" @click="ui.closeBookmarkPicker()">
           <span class="i-lucide:x" />
         </button>
@@ -81,7 +83,7 @@ async function saveToBookmark() {
         </div>
       </div>
 
-      <div class="folder-label">选择目标文件夹</div>
+      <div class="folder-label">{{ t('bookmarkPicker.title') }}</div>
       <div class="folder-tree">
         <BmFolderItem
           v-for="f in folders"
@@ -93,9 +95,9 @@ async function saveToBookmark() {
       </div>
 
       <div class="footer-actions">
-        <button class="btn-cancel" @click="ui.closeBookmarkPicker()">取消</button>
+        <button class="btn-cancel" @click="ui.closeBookmarkPicker()">{{ t('bookmarkPicker.cancel') }}</button>
         <button class="btn-save" :disabled="!selectedId || saving" @click="saveToBookmark()">
-          {{ saving ? '保存中...' : '保存到书签' }}
+          {{ saving ? t('bookmarkPicker.saving') : t('bookmarkPicker.saveToBookmark') }}
         </button>
       </div>
     </div>

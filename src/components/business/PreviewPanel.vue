@@ -2,14 +2,16 @@
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { formatTime, getFaviconUrl, safeOpenUrl, sanitizeUrl, onFaviconError } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const history = useHistoryStore()
+const { t } = useI18n()
 
 function copyUrl() {
   if (ui.previewRecord?.url) {
     navigator.clipboard.writeText(ui.previewRecord.url)
-    ui.notify('已复制', 'info')
+    ui.notify(t('preview.copied'), 'info')
   }
 }
 
@@ -24,7 +26,7 @@ function openUrl(url?: string) {
       <div class="preview-header">
         <img :src="getFaviconUrl(ui.previewRecord?.url)" class="preview-favicon" @error="onFaviconError($event, ui.previewRecord?.url || '')" />
         <div class="preview-title-wrap">
-          <div class="preview-title">{{ ui.previewRecord?.title || '无标题' }}</div>
+          <div class="preview-title">{{ ui.previewRecord?.title || t('preview.noTitle') }}</div>
           <div class="preview-domain">{{ ui.previewRecord?.domain }}</div>
         </div>
         <button class="preview-close" @click="ui.closePreview()">
@@ -33,28 +35,28 @@ function openUrl(url?: string) {
       </div>
       <div class="preview-body">
         <div class="preview-row">
-          <span class="preview-label">网址</span>
+          <span class="preview-label">{{ t('preview.url') }}</span>
           <span class="preview-value preview-url">{{ sanitizeUrl(ui.previewRecord?.url) }}</span>
         </div>
         <div class="preview-row">
-          <span class="preview-label">访问时间</span>
-          <span class="preview-value">{{ formatTime(ui.previewRecord?.lastVisitTime) }}</span>
+          <span class="preview-label">{{ t('preview.visitTime') }}</span>
+          <span class="preview-value">{{ formatTime(ui.previewRecord?.lastVisitTime, t) }}</span>
         </div>
         <div class="preview-row">
-          <span class="preview-label">访问次数</span>
-          <span class="preview-value">{{ ui.previewRecord?.visitCount || 0 }} 次</span>
+          <span class="preview-label">{{ t('preview.visitCount') }}</span>
+          <span class="preview-value">{{ t('preview.visitCountTimes', { count: ui.previewRecord?.visitCount || 0 }) }}</span>
         </div>
         <div class="preview-row">
-          <span class="preview-label">已收藏</span>
-          <span class="preview-value">{{ history.favoriteSet.has(ui.previewRecord?.url) ? '是' : '否' }}</span>
+          <span class="preview-label">{{ t('preview.favorited') }}</span>
+          <span class="preview-value">{{ history.favoriteSet.has(ui.previewRecord?.url) ? t('preview.yes') : t('preview.no') }}</span>
         </div>
       </div>
       <div class="preview-actions">
         <button class="preview-btn primary" @click="openUrl(ui.previewRecord?.url)">
-          <span class="i-lucide:external-link" />打开
+          <span class="i-lucide:external-link" />{{ t('preview.open') }}
         </button>
         <button class="preview-btn" @click="copyUrl">
-          <span class="i-lucide:copy" />复制链接
+          <span class="i-lucide:copy" />{{ t('preview.copyUrl') }}
         </button>
       </div>
     </div>

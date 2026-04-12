@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
+import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const history = useHistoryStore()
+const { t } = useI18n()
 const newTagName = ref('')
 const newTagColor = ref('#4f46e5')
 
@@ -31,14 +33,14 @@ function toggleTag(tagId: string) {
   <div class="modal-overlay" @click.self="ui.closeTagModal()">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>标签管理</h3>
+        <h3>{{ t('tagModal.title') }}</h3>
         <button class="close-btn" @click="ui.closeTagModal()">
           <span class="i-lucide:x" />
         </button>
       </div>
 
       <div class="tag-list">
-        <div v-if="!history.customTags.length" class="empty-hint">暂无标签</div>
+        <div v-if="!history.customTags.length" class="empty-hint">{{ t('tagModal.noTags') }}</div>
         <div v-for="tag in history.customTags" :key="tag.id" class="tag-row">
           <span class="tag-dot" :style="{ background: tag.color }" />
           <span class="tag-name">{{ tag.name }}</span>
@@ -47,7 +49,7 @@ function toggleTag(tagId: string) {
             :class="{ active: ui.tagModalTarget && (history.recordTagsMap[ui.tagModalTarget] || []).includes(tag.id) }"
             @click="toggleTag(tag.id)"
           >
-            {{ ui.tagModalTarget && (history.recordTagsMap[ui.tagModalTarget] || []).includes(tag.id) ? '已添加' : '添加' }}
+            {{ ui.tagModalTarget && (history.recordTagsMap[ui.tagModalTarget] || []).includes(tag.id) ? t('tagModal.added') : t('tagModal.add') }}
           </button>
           <button class="remove-btn" @click="history.removeTag(tag.id)">
             <span class="i-lucide:trash-2" />
@@ -56,11 +58,11 @@ function toggleTag(tagId: string) {
       </div>
 
       <div class="add-tag-form">
-        <input v-model="newTagName" type="text" placeholder="新标签名称" class="tag-input" maxlength="10"
+        <input v-model="newTagName" type="text" :placeholder="t('tagModal.newTagPlaceholder')" class="tag-input" maxlength="10"
           :class="{ error: isDuplicate }" @keydown.enter="addTag" />
         <input v-model="newTagColor" type="color" class="color-input" />
         <button class="btn-primary" @click="addTag" :disabled="!newTagName.trim() || !!isDuplicate">
-          {{ isDuplicate ? '已存在' : '添加' }}
+          {{ isDuplicate ? t('tagModal.duplicate') : t('tagModal.add') }}
         </button>
       </div>
     </div>

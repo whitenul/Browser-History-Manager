@@ -3,6 +3,7 @@ import { onMounted, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useThemeStore } from '@/stores/theme'
 import { useHistoryStore } from '@/stores/history'
+import { useI18n } from '@/i18n'
 import HistoryView from '@/views/HistoryView.vue'
 import StatsView from '@/views/StatsView.vue'
 import BookmarksView from '@/views/BookmarksView.vue'
@@ -19,21 +20,22 @@ import CommandPalette from '@/components/business/CommandPalette.vue'
 const ui = useUIStore()
 const theme = useThemeStore()
 const history = useHistoryStore()
+const { t } = useI18n()
 
 const tabTitles: Record<string, string> = {
-  history: '历史记录',
-  stats: '数据统计',
-  bookmarks: '书签管理',
-  settings: '设置',
+  history: t('nav.history'),
+  stats: t('nav.stats'),
+  bookmarks: t('nav.bookmarks'),
+  settings: t('nav.settings'),
 }
 
-const headerTitle = computed(() => tabTitles[ui.activeTab] || '历史记录')
+const headerTitle = computed(() => tabTitles[ui.activeTab] || t('nav.history'))
 
 const tabs = [
-  { id: 'history' as const, label: '历史', icon: 'i-lucide:clock' },
-  { id: 'stats' as const, label: '统计', icon: 'i-lucide:bar-chart-3' },
-  { id: 'bookmarks' as const, label: '书签', icon: 'i-lucide:bookmark' },
-  { id: 'settings' as const, label: '设置', icon: 'i-lucide:settings' },
+  { id: 'history' as const, label: t('nav.history'), icon: 'i-lucide:clock' },
+  { id: 'stats' as const, label: t('nav.stats'), icon: 'i-lucide:bar-chart-3' },
+  { id: 'bookmarks' as const, label: t('nav.bookmarks'), icon: 'i-lucide:bookmark' },
+  { id: 'settings' as const, label: t('nav.settings'), icon: 'i-lucide:settings' },
 ]
 
 onMounted(async () => {
@@ -45,22 +47,22 @@ onMounted(async () => {
   <div class="app-container" :class="{ 'has-gradient': theme.activeGradient }">
     <header class="app-header">
       <div class="header-left">
-        <button v-if="ui.canGoBack" class="btn-back" @click="ui.goBack()" :title="'返回' + (ui.navStack.length > 0 ? ui.navStack[ui.navStack.length - 1].label : '')">
+        <button v-if="ui.canGoBack" class="btn-back" @click="ui.goBack()" :title="t('common.back')">
           <span class="i-lucide:arrow-left" />
         </button>
         <h1 class="header-title">{{ headerTitle }}</h1>
         <span v-if="ui.activeTab === 'history' && history.displayedRecords.length" class="header-count">
-          {{ history.displayedRecords.length }} 条
+          {{ history.displayedRecords.length }}
         </span>
       </div>
       <div class="header-actions">
-        <button class="btn-icon btn-ghost" title="命令面板 (Ctrl+K)" @click="ui.showCommandPalette = true">
+        <button class="btn-icon btn-ghost" :title="t('commandPalette.placeholder')" @click="ui.showCommandPalette = true">
           <span class="i-lucide:terminal" />
         </button>
-        <button v-if="ui.activeTab === 'history'" class="btn-icon btn-ghost" title="导出CSV" @click="history.doExport()">
+        <button v-if="ui.activeTab === 'history'" class="btn-icon btn-ghost" :title="t('history.exportCsv')" @click="history.doExport()">
           <span class="i-lucide:download" />
         </button>
-        <button class="btn-icon btn-ghost" title="主题设置" @click="theme.toggleThemeModal()">
+        <button class="btn-icon btn-ghost" :title="t('theme.title')" @click="theme.toggleThemeModal()">
           <span class="i-lucide:palette" />
         </button>
       </div>
@@ -101,7 +103,7 @@ onMounted(async () => {
       <Transition name="toast">
         <div v-if="ui.showUndoToast" class="toast undo-toast" @click="ui.executeUndo()">
           <span>{{ ui.undoLabel }}</span>
-          <button class="undo-btn">撤销</button>
+          <button class="undo-btn">{{ t('toast.undo') }}</button>
         </div>
         <div v-else-if="ui.showToast" class="toast" :class="ui.toastType">
           {{ ui.toastMessage }}

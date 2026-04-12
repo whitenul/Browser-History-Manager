@@ -18,7 +18,7 @@ export interface TopSite {
 }
 
 export interface TrendItem {
-  label: string
+  dayIndex: number
   count: number
 }
 
@@ -79,22 +79,22 @@ export interface ContextualRec {
 
 const CATEGORY_MAP: Map<string, string> = new Map()
 const CATEGORY_KEYWORDS: [string, string[]][] = [
-  ['社交', ['weibo', 'twitter', 'facebook', 'instagram', 'zhihu', 'douban', 'reddit', 'qq', 'weixin']],
-  ['视频', ['youtube', 'bilibili', 'netflix', 'iqiyi', 'youku', 'twitch', 'douyin']],
-  ['购物', ['taobao', 'jd', 'amazon', 'pinduoduo', 'ebay', 'tmall']],
-  ['新闻', ['news', 'sina', 'bbc', 'cnn', 'toutiao', 'ifeng']],
-  ['开发', ['github', 'stackoverflow', 'gitlab', 'npmjs', 'codepen', 'leetcode', 'csdn', 'juejin']],
-  ['搜索', ['google', 'baidu', 'bing', 'duckduckgo', 'sogou']],
-  ['邮件', ['gmail', 'outlook', 'mail', 'qq.com/mail']],
-  ['文档', ['docs', 'notion', 'confluence', 'wiki', 'docs.google']],
+  ['social', ['weibo', 'twitter', 'facebook', 'instagram', 'zhihu', 'douban', 'reddit', 'qq', 'weixin']],
+  ['video', ['youtube', 'bilibili', 'netflix', 'iqiyi', 'youku', 'twitch', 'douyin']],
+  ['shopping', ['taobao', 'jd', 'amazon', 'pinduoduo', 'ebay', 'tmall']],
+  ['news', ['news', 'sina', 'bbc', 'cnn', 'toutiao', 'ifeng']],
+  ['dev', ['github', 'stackoverflow', 'gitlab', 'npmjs', 'codepen', 'leetcode', 'csdn', 'juejin']],
+  ['search', ['google', 'baidu', 'bing', 'duckduckgo', 'sogou']],
+  ['email', ['gmail', 'outlook', 'mail', 'qq.com/mail']],
+  ['docs', ['docs', 'notion', 'confluence', 'wiki', 'docs.google']],
 ]
 for (const [cat, keywords] of CATEGORY_KEYWORDS) {
   for (const kw of keywords) CATEGORY_MAP.set(kw, cat)
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  '社交': '#6366f1', '视频': '#ef4444', '购物': '#f59e0b', '新闻': '#10b981',
-  '开发': '#3b82f6', '搜索': '#8b5cf6', '邮件': '#ec4899', '文档': '#14b8a6', '其他': '#64748b',
+  'social': '#6366f1', 'video': '#ef4444', 'shopping': '#f59e0b', 'news': '#10b981',
+  'dev': '#3b82f6', 'search': '#8b5cf6', 'email': '#ec4899', 'docs': '#14b8a6', 'other': '#64748b',
 }
 
 function getCategoryForDomain(domain: string): string {
@@ -102,7 +102,7 @@ function getCategoryForDomain(domain: string): string {
   for (const [kw, cat] of CATEGORY_MAP) {
     if (lower.includes(kw)) return cat
   }
-  return '其他'
+  return 'other'
 }
 
 function isProductive(domain: string): boolean {
@@ -129,8 +129,6 @@ function getTimeSlot(hour: number): string {
   if (hour >= 18 && hour < 21) return 'evening'
   return 'night'
 }
-
-const DAYS = ['日', '一', '二', '三', '四', '五', '六']
 
 export const useStatsStore = defineStore('stats', () => {
   const overview = ref<StatOverview>({ totalVisits: 0, weekVisits: 0, dailyAvg: 0, siteCount: 0 })
@@ -300,7 +298,7 @@ export const useStatsStore = defineStore('stats', () => {
       const d = new Date(today)
       d.setDate(d.getDate() - (6 - i))
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-      return { label: `周${DAYS[d.getDay()]}`, count: dayBuckets.get(key) || 0 }
+      return { dayIndex: d.getDay(), count: dayBuckets.get(key) || 0 }
     })
 
     categoryStats.value = Array.from(catMap.entries())
@@ -336,12 +334,12 @@ export const useStatsStore = defineStore('stats', () => {
       const tags: string[] = []
       let reason = ''
 
-      if (timeMatch > 0.3) { tags.push('时段匹配'); reason = `${currentSlot === 'morning' ? '上午' : currentSlot === 'afternoon' ? '下午' : currentSlot === 'evening' ? '晚间' : currentSlot === 'night' ? '深夜' : '此时'}常访问` }
-      if (dayMatch > 0.3) { tags.push('周期匹配'); if (!reason) reason = `周${DAYS[currentDay]}常访问` }
-      if (freq > 0.5) { tags.push('高频'); if (!reason) reason = '高频访问' }
-      if (recency > 0.8) { tags.push('最近'); if (!reason) reason = '最近访问' }
-      if (habitStrength > 0.5) { tags.push('习惯性'); if (!reason) reason = '每日习惯' }
-      if (!reason) reason = '综合推荐'
+      if (timeMatch > 0.3) { tags.push('timeMatch'); reason = 'slotBrowsing' }
+      if (dayMatch > 0.3) { tags.push('dayMatch'); if (!reason) reason = 'dayBrowsing' }
+      if (freq > 0.5) { tags.push('frequent'); if (!reason) reason = 'frequentVisit' }
+      if (recency > 0.8) { tags.push('recent'); if (!reason) reason = 'recentVisit' }
+      if (habitStrength > 0.5) { tags.push('habitual'); if (!reason) reason = 'dailyHabit' }
+      if (!reason) reason = 'general'
 
       return { record: r, score, reason, tags }
     })
@@ -353,10 +351,10 @@ export const useStatsStore = defineStore('stats', () => {
       .slice(0, 8)
 
     const prodScore = Math.round((productiveCount / total) * 100)
-    let prodLevel = '需改善'
-    if (prodScore >= 70) prodLevel = '高效'
-    else if (prodScore >= 50) prodLevel = '良好'
-    else if (prodScore >= 30) prodLevel = '一般'
+    let prodLevel = 'poor'
+    if (prodScore >= 70) prodLevel = 'excellent'
+    else if (prodScore >= 50) prodLevel = 'good'
+    else if (prodScore >= 30) prodLevel = 'fair'
 
     productivity.value = {
       score: prodScore,
@@ -392,12 +390,12 @@ export const useStatsStore = defineStore('stats', () => {
     }
     const avgSessionLen = sessions > 0 ? Math.round(sessionLen / sessions) : 0
 
-    let pattern = '规律型'
+    let pattern = 'regular'
     const nightCount = [22, 23, 0, 1, 2, 3, 4, 5].reduce((s, h) => s + (hourBuckets.get(h) || 0), 0)
     const workCount = [9, 10, 11, 14, 15, 16, 17].reduce((s, h) => s + (hourBuckets.get(h) || 0), 0)
-    if (nightCount > total * 0.3) pattern = '夜猫型'
-    else if (workCount > total * 0.6) pattern = '工作型'
-    else if (sessions > daySet.size * 3) pattern = '碎片型'
+    if (nightCount > total * 0.3) pattern = 'nightOwl'
+    else if (workCount > total * 0.6) pattern = 'workaholic'
+    else if (sessions > daySet.size * 3) pattern = 'fragmented'
 
     rhythm.value = {
       peakHour,
@@ -431,12 +429,12 @@ export const useStatsStore = defineStore('stats', () => {
       const combined = (slotScore / total2) * 0.6 + (dayScore / total2) * 0.4
       if (combined > 0.15 && slotScore >= 2) {
         let reason = ''
-        if (currentSlot === 'morning') reason = '上午常浏览'
-        else if (currentSlot === 'afternoon') reason = '下午常浏览'
-        else if (currentSlot === 'evening') reason = '晚间常浏览'
-        else if (currentSlot === 'night') reason = '深夜常浏览'
-        else if (currentSlot === 'noon') reason = '午间常浏览'
-        else reason = '此时段常浏览'
+        if (currentSlot === 'morning') reason = 'morningBrowsing'
+        else if (currentSlot === 'afternoon') reason = 'afternoonBrowsing'
+        else if (currentSlot === 'evening') reason = 'eveningBrowsing'
+        else if (currentSlot === 'night') reason = 'nightBrowsing'
+        else if (currentSlot === 'noon') reason = 'noonBrowsing'
+        else reason = 'slotBrowsing'
         contextScores.set(domain, { score: combined, reason, favicon: getFaviconUrl(`https://${domain}`) })
       }
     }

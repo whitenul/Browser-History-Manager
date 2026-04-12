@@ -6,11 +6,13 @@ import { useStatsStore } from '@/stores/stats'
 import { useReadingQueueStore } from '@/stores/readingQueue'
 import { formatTime, formatDateTime, getFaviconUrl, highlightText, getGroupLabel, autoTag, TAG_COLORS, onFaviconError } from '@/utils/helpers'
 import type { HistoryRecord } from '@/utils/helpers'
+import { useI18n } from '@/i18n'
 
 const history = useHistoryStore()
 const ui = useUIStore()
 const stats = useStatsStore()
 const readingQueue = useReadingQueueStore()
+const { t } = useI18n()
 
 const searchInput = ref('')
 const recordListRef = ref<HTMLElement | null>(null)
@@ -39,28 +41,28 @@ const dailySummary = computed(() => {
   }
 })
 
-const timeOptions = [
-  { value: 'today', label: '今日' },
-  { value: '3days', label: '近3天' },
-  { value: 'week', label: '近7天' },
-  { value: 'month', label: '近30天' },
-  { value: 'all', label: '全部' },
-]
+const timeOptions = computed(() => [
+  { value: 'today', label: t('history.filter.today') },
+  { value: '3days', label: t('history.filter.last3Days') },
+  { value: 'week', label: t('history.filter.last7Days') },
+  { value: 'month', label: t('history.filter.last30Days') },
+  { value: 'all', label: t('history.filter.all') },
+])
 
-const groupOptions = [
-  { value: 'none', label: '不分组' },
-  { value: 'domain', label: '按域名' },
-  { value: 'timeline', label: '按时间' },
-  { value: 'session', label: '按会话' },
-  { value: 'custom', label: '自定义' },
-]
+const groupOptions = computed(() => [
+  { value: 'none', label: t('history.group.none') },
+  { value: 'domain', label: t('history.group.domain') },
+  { value: 'timeline', label: t('history.group.timeline') },
+  { value: 'session', label: t('history.group.session') },
+  { value: 'custom', label: t('history.group.custom') },
+])
 
-const sortOptions = [
-  { value: 'timeDesc', label: '最新' },
-  { value: 'timeAsc', label: '最旧' },
-  { value: 'visitDesc', label: '最常访问' },
-  { value: 'visitAsc', label: '最少访问' },
-]
+const sortOptions = computed(() => [
+  { value: 'timeDesc', label: t('history.sort.timeDesc') },
+  { value: 'timeAsc', label: t('history.sort.timeAsc') },
+  { value: 'visitDesc', label: t('history.sort.visitsDesc') },
+  { value: 'visitAsc', label: t('history.sort.visitsAsc') },
+])
 
 const visibleRecords = computed(() => history.pagedRecords)
 const showLoadMore = computed(() => history.pagedRecords.length < history.filteredRecords.length)
@@ -81,7 +83,7 @@ function getSessionLabel(key: string, records?: HistoryRecord[]): string {
   const first = records[0]
   const last = records[records.length - 1]
   const start = formatDateTime(first.lastVisitTime)
-  const end = formatTime(last.lastVisitTime)
+  const end = formatTime(last.lastVisitTime, t)
   return `${start} ~ ${end}`
 }
 
@@ -155,10 +157,10 @@ onUnmounted(() => {
         v-model="searchInput"
         type="text"
         class="search-input"
-        placeholder="搜索标题或网址... (Ctrl+F)"
+        :placeholder="t('history.searchPlaceholder')"
         @input="onSearch"
       />
-      <button class="cmd-trigger" @click="ui.showCommandPalette = true" title="命令面板 (Ctrl+K)">
+      <button class="cmd-trigger" @click="ui.showCommandPalette = true" :title="t('commandPalette.placeholder')">
         <span class="i-lucide:terminal" />
       </button>
       <button v-if="searchInput" class="clear-btn" @click="searchInput = ''; history.setSearchImmediate('')">
@@ -169,11 +171,11 @@ onUnmounted(() => {
     <div v-if="history.hasActiveFilter" class="active-filter-bar">
       <span class="filter-indicator">
         <span class="i-lucide:filter filter-indicator-icon" />
-        {{ history.activeFilterLabel }}
+        {{ history.searchKeyword ? t('history.searchLabel', { keyword: history.activeFilterLabel }) : history.activeFilterLabel }}
       </span>
-      <span class="filter-count">{{ history.filteredRecords.length }} 条结果</span>
+      <span class="filter-count">{{ history.filteredRecords.length }} {{ t('history.recordsCount', { count: '' }).replace('{count}', '').trim() }}</span>
       <button class="filter-clear-btn" @click="history.clearAllFilters(); searchInput = ''">
-        <span class="i-lucide:x" /> 清除筛选
+        <span class="i-lucide:x" /> {{ t('common.clearFilter') }}
       </button>
     </div>
 
@@ -181,15 +183,15 @@ onUnmounted(() => {
       <div class="summary-content">
         <span class="summary-item">
           <span class="i-lucide:eye summary-icon" />
-          今日 <strong>{{ dailySummary.count }}</strong> 次浏览
+          {{ t('history.todayVisits', { count: dailySummary.count }) }}
         </span>
         <span v-if="dailySummary.topDomain" class="summary-item">
           <span class="i-lucide:trophy summary-icon" />
-          最活跃 <strong>{{ dailySummary.topDomain }}</strong> ({{ dailySummary.topDomainCount }}次)
+          {{ t('stats.topSites') }} <strong>{{ dailySummary.topDomain }}</strong> ({{ t('history.visitCountLabel', { count: dailySummary.topDomainCount }) }})
         </span>
         <span class="summary-item">
           <span class="i-lucide:zap summary-icon" />
-          生产力 <strong :style="{ color: dailySummary.productivity >= 50 ? '#10b981' : '#ef4444' }">{{ dailySummary.productivity }}分</strong>
+          {{ t('stats.productivity') }} <strong :style="{ color: dailySummary.productivity >= 50 ? '#10b981' : '#ef4444' }">{{ dailySummary.productivity }}{{ t('history.scoreUnit') }}</strong>
         </span>
       </div>
       <button class="summary-close" @click="showDailySummary = false">
@@ -224,7 +226,7 @@ onUnmounted(() => {
           <button
             v-if="history.groupMode !== 'none'"
             class="filter-btn xs icon-only"
-            title="展开前3组"
+            :title="t('history.expandTopGroups')"
             @click="history.expandTopGroups(3)"
           >
             <span class="i-lucide:chevrons-down" />
@@ -232,7 +234,7 @@ onUnmounted(() => {
           <button
             v-if="history.groupMode === 'custom'"
             class="filter-btn xs icon-only"
-            title="管理规则"
+            :title="t('groupRule.title')"
             @click="ui.showGroupRuleModal = true"
           >
             <span class="i-lucide:settings-2" />
@@ -256,7 +258,7 @@ onUnmounted(() => {
             @click="history.toggleSelectMode()"
           >
             <span class="i-lucide:check-square" style="margin-right:2px;font-size:10px" />
-            多选
+            {{ t('history.selectMode') }}
           </button>
           <button
             v-if="history.blacklistedDomains.length"
@@ -272,17 +274,17 @@ onUnmounted(() => {
     </div>
 
     <div class="batch-bar" v-if="history.isSelectMode">
-      <span class="batch-info">已选 {{ selectedCount }} 项</span>
-      <button class="batch-btn" @click="history.selectAll()">全选</button>
-      <button class="batch-btn" @click="history.clearSelection()">取消</button>
-      <button class="batch-btn danger" :disabled="!selectedCount" @click="batchDeleteConfirm = true">删除</button>
+      <span class="batch-info">{{ t('history.selectedCount', { count: selectedCount }) }}</span>
+      <button class="batch-btn" @click="history.selectAll()">{{ t('common.selectAll') }}</button>
+      <button class="batch-btn" @click="history.clearSelection()">{{ t('common.cancel') }}</button>
+      <button class="batch-btn danger" :disabled="!selectedCount" @click="batchDeleteConfirm = true">{{ t('common.delete') }}</button>
     </div>
 
     <div class="blacklist-bar" v-if="showBlacklist">
       <div class="blacklist-form">
-        <input v-model="newBlacklistDomain" type="text" placeholder="输入域名（如 google.com）" class="blacklist-input"
+        <input v-model="newBlacklistDomain" type="text" :placeholder="t('settings.blacklistPlaceholder')" class="blacklist-input"
           @keydown.enter="if(newBlacklistDomain.trim()){history.addBlacklistDomain(newBlacklistDomain.trim());newBlacklistDomain=''}" />
-        <button class="batch-btn" @click="if(newBlacklistDomain.trim()){history.addBlacklistDomain(newBlacklistDomain.trim());newBlacklistDomain=''}">添加</button>
+        <button class="batch-btn" @click="if(newBlacklistDomain.trim()){history.addBlacklistDomain(newBlacklistDomain.trim());newBlacklistDomain=''}">{{ t('common.add') }}</button>
       </div>
       <div class="blacklist-tags">
         <span v-for="d in history.blacklistedDomains" :key="d" class="blacklist-tag">
@@ -298,7 +300,7 @@ onUnmounted(() => {
         :class="{ active: !history.activeTagId }"
         @click="history.activeTagId = null"
       >
-        全部
+        {{ t('common.all') }}
       </button>
       <button
         v-for="tag in history.customTags"
@@ -314,19 +316,19 @@ onUnmounted(() => {
 
     <div v-if="history.groupMode === 'custom' && !history.customRules.length" class="custom-guide">
       <span class="i-lucide:lightbulb guide-icon" />
-      <span>自定义分组需要先创建规则，点击下方按钮打开规则管理</span>
+      <span>{{ t('history.customGroupGuide') }}</span>
       <button class="guide-btn" @click="ui.showGroupRuleModal = true">
-        <span class="i-lucide:settings-2" />管理规则
+        <span class="i-lucide:settings-2" />{{ t('groupRule.title') }}
       </button>
     </div>
 
     <div v-if="batchDeleteConfirm" class="confirm-overlay" @click.self="batchDeleteConfirm = false">
       <div class="confirm-dialog">
-        <div class="confirm-title">确认批量删除</div>
-        <div class="confirm-text">确定要删除已选中的 {{ selectedCount }} 条记录吗？此操作不可撤销。</div>
+        <div class="confirm-title">{{ t('deleteConfirm.title') }}</div>
+        <div class="confirm-text">{{ t('history.deleteConfirm', { count: selectedCount }) }}</div>
         <div class="confirm-actions">
-          <button class="batch-btn" @click="batchDeleteConfirm = false">取消</button>
-          <button class="batch-btn danger" @click="history.deleteRecords(history.filteredRecords.filter(r => history.selectedRecords.has(r.id))); batchDeleteConfirm = false">确认删除</button>
+          <button class="batch-btn" @click="batchDeleteConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="batch-btn danger" @click="history.deleteRecords(history.filteredRecords.filter(r => history.selectedRecords.has(r.id))); batchDeleteConfirm = false">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </div>
@@ -334,12 +336,12 @@ onUnmounted(() => {
     <div class="record-list" ref="recordListRef" @scroll="onScroll">
       <div v-if="history.isLoading" class="loading-state">
         <div class="spinner" />
-        <span>正在加载...</span>
+        <span>{{ t('common.loading') }}</span>
       </div>
 
       <div v-else-if="!visibleRecords.length" class="empty-state">
         <span class="i-lucide:clock empty-icon" />
-        <p>暂无历史记录</p>
+        <p>{{ t('history.noResults') }}</p>
       </div>
 
       <template v-else>
@@ -353,11 +355,11 @@ onUnmounted(() => {
                 <span class="i-lucide:chevron-down group-chevron" />
               </span>
               <span class="group-name" @click="history.toggleGroupCollapse(groupKey)">
-                {{ history.groupMode === 'session' ? getSessionLabel(groupKey, history.groupedResult.groups[groupKey]) : getGroupLabel(groupKey) }}
+                {{ history.groupMode === 'session' ? getSessionLabel(groupKey, history.groupedResult.groups[groupKey]) : getGroupLabel(groupKey, t) }}
               </span>
               <span class="group-count">{{ history.groupedResult.groups[groupKey]?.length || 0 }}</span>
-              <button v-if="history.groupMode === 'session'" class="restore-btn" @click.stop="history.restoreSession(groupKey)" title="恢复此会话">
-                <span class="i-lucide:rotate-ccw" />恢复
+              <button v-if="history.groupMode === 'session'" class="restore-btn" @click.stop="history.restoreSession(groupKey)" :title="t('history.restoreSession')">
+                <span class="i-lucide:rotate-ccw" />{{ t('common.restore') }}
               </button>
             </div>
             <template v-if="!history.collapsedSet.has(groupKey)">
@@ -383,13 +385,13 @@ onUnmounted(() => {
                   <div class="record-meta">
                     <span v-html="highlightText(record.domain, history.searchKeyword)" />
                     <span class="meta-dot">·</span>
-                    <span>{{ formatTime(record.lastVisitTime) }}</span>
+                    <span>{{ formatTime(record.lastVisitTime, t) }}</span>
                     <span v-if="record.visitCount > 1" class="meta-dot">·</span>
-                    <span v-if="record.visitCount > 1">{{ record.visitCount }}次</span>
+                    <span v-if="record.visitCount > 1">{{ t('history.visitCountLabel', { count: record.visitCount }) }}</span>
                     <span class="auto-tags">
                       <span v-for="tag in autoTag(record.url, record.title)" :key="tag" class="auto-tag"
                         :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
-                        {{ tag }}
+                        {{ t('tags.' + tag) }}
                       </span>
                     </span>
                   </div>
@@ -398,22 +400,22 @@ onUnmounted(() => {
                   <button
                     class="action-btn"
                     :class="{ 'queue-active': readingQueue.isInQueue(record.url) }"
-                    :title="readingQueue.isInQueue(record.url) ? '移出阅读队列' : '加入阅读队列'"
+                    :title="readingQueue.isInQueue(record.url) ? t('readingQueue.removeFromQueue') : t('readingQueue.addToQueue')"
                     @click.stop="readingQueue.toggleQueue(record.url, record.title, record.domain, autoTag(record.url, record.title))"
                   >
                     <span :class="readingQueue.isInQueue(record.url) ? 'i-lucide:bookmark-check' : 'i-lucide:clock'" />
                   </button>
                   <button
                     class="action-btn bookmark-btn"
-                    title="添加到书签"
+                    :title="t('preview.addToBookmarks')"
                     @click.stop="ui.openBookmarkPicker(record)"
                   >
                     <span class="i-lucide:bookmark-plus" />
                   </button>
-                  <button class="action-btn" title="打开" @click.stop="history.openRecord(record.url)">
+                  <button class="action-btn" :title="t('common.open')" @click.stop="history.openRecord(record.url)">
                     <span class="i-lucide:external-link" />
                   </button>
-                  <button class="action-btn danger" title="删除" @click.stop="ui.openDeleteConfirm(record)">
+                  <button class="action-btn danger" :title="t('common.delete')" @click.stop="ui.openDeleteConfirm(record)">
                     <span class="i-lucide:trash-2" />
                   </button>
                 </div>
@@ -445,13 +447,13 @@ onUnmounted(() => {
               <div class="record-meta">
                 <span v-html="highlightText(record.domain, history.searchKeyword)" />
                 <span class="meta-dot">·</span>
-                <span>{{ formatTime(record.lastVisitTime) }}</span>
+                <span>{{ formatTime(record.lastVisitTime, t) }}</span>
                 <span v-if="record.visitCount > 1" class="meta-dot">·</span>
-                <span v-if="record.visitCount > 1">{{ record.visitCount }}次</span>
+                <span v-if="record.visitCount > 1">{{ t('history.visitCountLabel', { count: record.visitCount }) }}</span>
                 <span class="auto-tags">
                   <span v-for="tag in autoTag(record.url, record.title)" :key="tag" class="auto-tag"
                     :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
-                    {{ tag }}
+                    {{ t('tags.' + tag) }}
                   </span>
                 </span>
               </div>
@@ -460,22 +462,22 @@ onUnmounted(() => {
               <button
                 class="action-btn"
                 :class="{ 'queue-active': readingQueue.isInQueue(record.url) }"
-                :title="readingQueue.isInQueue(record.url) ? '移出阅读队列' : '加入阅读队列'"
+                :title="readingQueue.isInQueue(record.url) ? t('readingQueue.removeFromQueue') : t('readingQueue.addToQueue')"
                 @click.stop="readingQueue.toggleQueue(record.url, record.title, record.domain, autoTag(record.url, record.title))"
               >
                 <span :class="readingQueue.isInQueue(record.url) ? 'i-lucide:bookmark-check' : 'i-lucide:clock'" />
               </button>
               <button
                 class="action-btn bookmark-btn"
-                title="添加到书签"
+                :title="t('preview.addToBookmarks')"
                 @click.stop="ui.openBookmarkPicker(record)"
               >
                 <span class="i-lucide:bookmark-plus" />
               </button>
-              <button class="action-btn" title="打开" @click.stop="history.openRecord(record.url)">
+              <button class="action-btn" :title="t('common.open')" @click.stop="history.openRecord(record.url)">
                 <span class="i-lucide:external-link" />
               </button>
-              <button class="action-btn danger" title="删除" @click.stop="ui.openDeleteConfirm(record)">
+              <button class="action-btn danger" :title="t('common.delete')" @click.stop="ui.openDeleteConfirm(record)">
                 <span class="i-lucide:trash-2" />
               </button>
             </div>
@@ -483,7 +485,7 @@ onUnmounted(() => {
         </template>
 
         <div v-if="showLoadMore" class="load-more" @click="history.loadMore()">
-          加载更多...
+          {{ t('history.loadMore') }}
         </div>
       </template>
     </div>
