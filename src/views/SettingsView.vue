@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
+import { useFingerprintStore } from '@/stores/fingerprint'
 import { useI18n } from '@/i18n'
 import { safeOpenUrl, isValidDomain } from '@/utils/helpers'
 
@@ -10,9 +11,11 @@ const { t } = useI18n()
 const history = useHistoryStore()
 const theme = useThemeStore()
 const ui = useUIStore()
+const fpStore = useFingerprintStore()
 
 const newBlacklistDomain = ref('')
 const clearConfirm = ref(false)
+const fingerprintEnabled = ref(true)
 
 const isSidebar = document.location.pathname.includes('sidebar')
 
@@ -207,6 +210,23 @@ function openUrl(url: string) { safeOpenUrl(url) }
           <span class="i-lucide:alert-triangle section-icon danger" />
           {{ t('settings.dangerZone') }}
         </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">{{ t('settings.fingerprintCollect') }}</div>
+            <div class="setting-desc">{{ t('settings.fingerprintCollectDesc') }}</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="fingerprintEnabled" />
+            <span class="toggle-slider" />
+          </label>
+        </div>
+        <div v-if="fingerprintEnabled" class="setting-row">
+          <div>
+            <div class="setting-label">{{ t('settings.fingerprintClear') }}</div>
+            <div class="setting-desc">{{ t('settings.fingerprintClearDesc') }}</div>
+          </div>
+          <button class="btn-danger-sm" @click="fpStore.clearAllData()">{{ t('settings.fingerprintClear') }}</button>
+        </div>
         <button v-if="!clearConfirm" class="btn-danger" @click="clearConfirm = true">{{ t('settings.clearAllData') }}</button>
         <div v-else class="confirm-clear">
           <p class="confirm-text">{{ t('settings.clearAllConfirm') }}</p>
@@ -323,6 +343,27 @@ function openUrl(url: string) { safeOpenUrl(url) }
   cursor: pointer; transition: all var(--transition-fast);
 }
 .btn-danger:hover { background: #ef4444; color: white; }
+.btn-danger-sm {
+  padding: 5px 12px; border: 1px solid #ef4444; border-radius: var(--radius-sm);
+  background: transparent; color: #ef4444; font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all var(--transition-fast); white-space: nowrap;
+}
+.btn-danger-sm:hover { background: #ef4444; color: white; }
+
+.toggle-switch {
+  position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: var(--border-color); border-radius: 10px; transition: 0.2s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute; height: 16px; width: 16px;
+  left: 2px; bottom: 2px; background: white; border-radius: 50%; transition: 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: #6366f1; }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
 
 .confirm-clear { padding: 12px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-md); }
 .confirm-text { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }

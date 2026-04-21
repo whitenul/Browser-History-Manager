@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, shallowRef, watchEffect } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
+import { perfMark, perfMeasure } from '@/utils/perf'
 import {
   getDomain, stringToColor, getTimeRange, groupByDomain,
   groupByTimeline, groupByCustomRules, groupBySession,
@@ -71,6 +72,8 @@ export const useHistoryStore = defineStore('history', () => {
     const ati = activeTagId.value
     const hasActiveTag = !!ati
 
+    const tagCache = hasTagFilter ? new Map<string, string[]>() : null
+
     const result: HistoryRecord[] = []
     for (let i = 0; i < source.length; i++) {
       const r = source[i]
@@ -78,8 +81,11 @@ export const useHistoryStore = defineStore('history', () => {
       if (hasBlacklist && blSet.has(r.domain)) continue
 
       if (hasSearch) {
-        const rd = r.domain.toLowerCase()
-        if (!r.title.toLowerCase().includes(kw) && !r.url.toLowerCase().includes(kw) && !rd.includes(kw)) continue
+        const urlLower = r.url.toLowerCase()
+        if (!urlLower.includes(kw)) {
+          const titleLower = (r.title || '').toLowerCase()
+          if (!titleLower.includes(kw) && !r.domain.toLowerCase().includes(kw)) continue
+        }
       }
 
       if (hasTimeFilter) {
@@ -95,7 +101,14 @@ export const useHistoryStore = defineStore('history', () => {
 
       if (hasTagFilter) {
         const customTags = recordTagsMap.value[r.url] || []
-        if (!customTags.includes(tg!.tag) && !autoTag(r.url, r.title).includes(tg!.tag)) continue
+        if (!customTags.includes(tg!.tag)) {
+          let tags = tagCache!.get(r.url)
+          if (!tags) {
+            tags = autoTag(r.url, r.title)
+            tagCache!.set(r.url, tags)
+          }
+          if (!tags.includes(tg!.tag)) continue
+        }
       }
 
       if (hasDomainFilter) {
@@ -130,6 +143,7 @@ export const useHistoryStore = defineStore('history', () => {
   const isFavorite = computed(() => (url: string) => favoriteSet.value.has(url))
 
   async function loadRecords() {
+    const loadStart = perfMark('history:load')
     isLoading.value = true
     try {
       const { startTime, endTime } = getTimeRange(timeRange.value)
@@ -163,6 +177,7 @@ export const useHistoryStore = defineStore('history', () => {
 
       await Promise.all([loadFavorites(), loadCustomRules(), loadTags(), loadBlacklist()])
       applyFilters()
+      perfMeasure('history:load', loadStart, { recordCount: allRecords.value.length })
     } catch (e) {
       console.error('Failed to load records:', e)
     } finally {

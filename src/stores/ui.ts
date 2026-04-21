@@ -74,7 +74,7 @@ export const useUIStore = defineStore('ui', () => {
     activeTab.value = tab
   }
 
-  function goBack(clearFilter = false) {
+  function goBack(_clearFilter = false) {
     const entry = navStack.value.pop()
     if (entry) {
       saveCurrentScroll()

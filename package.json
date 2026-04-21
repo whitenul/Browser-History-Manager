@@ -10,7 +10,9 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@unocss/reset": "^66.6.8",
     "pinia": "^2.1.7",
+    "tldts": "^7.0.28",
     "vue": "^3.4.21"
   },
   "devDependencies": {

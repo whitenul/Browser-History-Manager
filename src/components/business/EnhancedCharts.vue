@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
-import { autoTagDetailed, TAG_COLORS, getFaviconUrl } from '@/utils/helpers'
+import { autoTagDetailed, TAG_COLORS, getFaviconUrl, buildDomainGraph, SessionCoVisitAnalyzer, getEntityForDomain, type DomainGraphEdge } from '@/utils/helpers'
 import { useStatsNavigation } from '@/composables/useStatsNavigation'
 import { useI18n } from '@/i18n'
 
@@ -15,6 +15,7 @@ const {
   isCurrentHeatCell,
   navigateWithTimeFilter,
   navigateWithTagFilter,
+  navigateWithDomainFilter,
 } = useStatsNavigation()
 const { t } = useI18n()
 
@@ -28,10 +29,40 @@ const trendRange = ref<'7d' | '30d'>('7d')
 const hoveredHeatCell = ref<{ day: number; hour: number; count: number } | null>(null)
 const heatTooltipPos = ref({ x: 0, y: 0 })
 const hoveredTrendIdx = ref(-1)
-const hoveredGraphNode = ref<string | null>(null)
 
 const tagDistributionData = ref<{ tag: string; count: number; percentage: number; color: string }[]>([])
-const domainGraphData = ref<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: [] })
+
+interface DomainRelationItem {
+  domain: string
+  favicon: string
+  entityName: string
+  visitCount: number
+  expanded: boolean
+  relations: Array<{
+    domain: string
+    favicon: string
+    type: string
+    typeLabel: string
+    typeColor: string
+    weight: number
+  }>
+}
+
+const domainRelationData = ref<DomainRelationItem[]>([])
+
+const RELATION_TYPE_LABELS: Record<string, string> = {
+  'same-entity': 'stats.sameEntity',
+  'parent-subsidiary': 'stats.parentSubsidiary',
+  'sibling': 'stats.sibling',
+  'session-co-visit': 'stats.coVisit',
+}
+
+const RELATION_TYPE_COLORS: Record<string, string> = {
+  'same-entity': '#6366f1',
+  'parent-subsidiary': '#8b5cf6',
+  'sibling': '#a78bfa',
+  'session-co-visit': '#94a3b8',
+}
 
 let tagDistFrame: number | null = null
 let graphFrame: number | null = null
@@ -78,7 +109,7 @@ function computeTagDistribution() {
     .slice(0, 10)
 }
 
-function computeDomainGraph() {
+function computeDomainRelation() {
   const records = history.allRecords
   if (records.length === 0) return
 
@@ -88,76 +119,66 @@ function computeDomainGraph() {
     domainMap.set(r.domain, (domainMap.get(r.domain) || 0) + 1)
   }
 
-  const topDomains = Array.from(domainMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 15)
+  const { nodes: graphNodes, edges: entityEdges } = buildDomainGraph(domainMap, 15)
 
-  const topDomainSet = new Set(topDomains.map(d => d[0]))
-  const edgeMap = new Map<string, number>()
+  const coVisitAnalyzer = new SessionCoVisitAnalyzer(5 * 60 * 1000)
+  coVisitAnalyzer.analyzeSessions(records, 50)
+  const coVisitEdges = coVisitAnalyzer.getCoVisitEdges(2)
 
-  const sorted = [...records].sort((a, b) => a.lastVisitTime - b.lastVisitTime)
-  const windowSize = 10 * 60 * 1000
-
-  for (let i = 0; i < sorted.length; i++) {
-    const r1 = sorted[i]
-    if (!topDomainSet.has(r1.domain)) continue
-
-    const maxTime = r1.lastVisitTime + windowSize
-    for (let j = i + 1; j < sorted.length && sorted[j].lastVisitTime <= maxTime; j++) {
-      const r2 = sorted[j]
-      if (r1.domain === r2.domain) continue
-      if (!topDomainSet.has(r2.domain)) continue
-
-      const key = [r1.domain, r2.domain].sort().join('|')
-      edgeMap.set(key, (edgeMap.get(key) || 0) + 1)
+  const allEdges: DomainGraphEdge[] = [...entityEdges]
+  const existingEdgeKeys = new Set(
+    entityEdges.map(e => [e.source, e.target].sort().join('|'))
+  )
+  for (const ce of coVisitEdges) {
+    const key = [ce.source, ce.target].sort().join('|')
+    if (!existingEdgeKeys.has(key)) {
+      allEdges.push(ce)
+      existingEdgeKeys.add(key)
     }
   }
 
-  const edges = Array.from(edgeMap.entries())
-    .map(([key, weight]) => {
-      const [from, to] = key.split('|')
-      return { from, to, weight }
-    })
-    .sort((a, b) => b.weight - a.weight)
-    .slice(0, 30)
+  const domainEdges = new Map<string, Array<{ domain: string; type: string; weight: number }>>()
+  for (const e of allEdges) {
+    const a = domainEdges.get(e.source) || []
+    a.push({ domain: e.target, type: e.type, weight: e.weight })
+    domainEdges.set(e.source, a)
 
-  const maxCount = topDomains[0]?.[1] || 1
-  const cx = 170
-  const cy = 130
-  const nodes = topDomains.map(([domain, count], i) => {
-    const angle = (2 * Math.PI * i) / topDomains.length - Math.PI / 2
-    const radius = 90
-    const x = cx + radius * Math.cos(angle)
-    const y = cy + radius * Math.sin(angle)
-    const size = 6 + (count / maxCount) * 14
-    return { domain, count, x, y, size }
-  })
+    const b = domainEdges.get(e.target) || []
+    b.push({ domain: e.source, type: e.type, weight: e.weight })
+    domainEdges.set(e.target, b)
+  }
 
-  const nodeMap = new Map(nodes.map(n => [n.domain, n]))
-  const maxEdgeWeight = edges[0]?.weight || 1
-
-  const renderedEdges = edges.map(e => {
-    const from = nodeMap.get(e.from)
-    const to = nodeMap.get(e.to)
-    if (!from || !to) return null
+  const { t } = useI18n()
+  domainRelationData.value = graphNodes.map(n => {
+    const entity = n.entity
+    const edges = domainEdges.get(n.domain) || []
     return {
-      from: e.from,
-      to: e.to,
-      x1: from.x,
-      y1: from.y,
-      x2: to.x,
-      y2: to.y,
-      thickness: 0.5 + (e.weight / maxEdgeWeight) * 2.5,
-      weight: e.weight,
+      domain: n.domain,
+      favicon: getFaviconUrl(`https://${n.domain}`),
+      entityName: entity?.names?.zh || entity?.name || '',
+      visitCount: n.visitCount,
+      expanded: false,
+      relations: edges
+        .sort((a, b) => b.weight - a.weight)
+        .map(e => ({
+          domain: e.domain,
+          favicon: getFaviconUrl(`https://${e.domain}`),
+          type: e.type,
+          typeLabel: t(RELATION_TYPE_LABELS[e.type] || 'stats.coVisit'),
+          typeColor: RELATION_TYPE_COLORS[e.type] || '#94a3b8',
+          weight: e.weight,
+        })),
     }
-  }).filter(Boolean) as { from: string; to: string; x1: number; y1: number; x2: number; y2: number; thickness: number; weight: number }[]
+  }).filter(item => item.relations.length > 0)
+}
 
-  domainGraphData.value = { nodes, edges: renderedEdges }
+function toggleRelationExpand(idx: number) {
+  domainRelationData.value[idx].expanded = !domainRelationData.value[idx].expanded
 }
 
 onMounted(() => {
   tagDistFrame = requestAnimationFrame(() => computeTagDistribution())
-  graphFrame = requestAnimationFrame(() => computeDomainGraph())
+  graphFrame = requestAnimationFrame(() => computeDomainRelation())
 })
 
 onUnmounted(() => {
@@ -296,20 +317,6 @@ const tagDonutSegments = computed(() => {
 
 function onTagSegmentClick(tag: string) {
   navigateWithTagFilter(tag, t('charts.tagFilterLabel', { tag: t('tags.' + tag) }))
-}
-
-function isNodeHighlighted(domain: string) {
-  if (!hoveredGraphNode.value) return true
-  if (domain === hoveredGraphNode.value) return true
-  return domainGraphData.value.edges.some(
-    e => (e.from === hoveredGraphNode.value && e.to === domain) ||
-         (e.to === hoveredGraphNode.value && e.from === domain)
-  )
-}
-
-function isEdgeHighlighted(edge: { from: string; to: string }) {
-  if (!hoveredGraphNode.value) return true
-  return edge.from === hoveredGraphNode.value || edge.to === hoveredGraphNode.value
 }
 
 </script>
@@ -505,60 +512,26 @@ function isEdgeHighlighted(edge: { from: string; to: string }) {
         </div>
       </div>
 
-      <div v-if="isTab(3)" class="graph-wrapper">
-        <svg class="graph-svg" viewBox="0 0 340 260" preserveAspectRatio="xMidYMid meet">
-          <line
-            v-for="(edge, i) in domainGraphData.edges"
-            :key="'e-' + i"
-            :x1="edge.x1"
-            :y1="edge.y1"
-            :x2="edge.x2"
-            :y2="edge.y2"
-            :stroke="isEdgeHighlighted(edge) ? 'var(--primary-color)' : 'var(--border-color)'"
-            :stroke-width="edge.thickness"
-            :opacity="isEdgeHighlighted(edge) ? 0.6 : 0.15"
-            stroke-linecap="round"
-            style="transition: all 0.2s"
-          />
-          <g
-            v-for="(node, i) in domainGraphData.nodes"
-            :key="'n-' + i"
-            class="graph-node"
-            @mouseenter="hoveredGraphNode = node.domain"
-            @mouseleave="hoveredGraphNode = null"
-          >
-            <circle
-              :cx="node.x"
-              :cy="node.y"
-              :r="node.size"
-              :fill="isNodeHighlighted(node.domain) ? 'var(--primary-color)' : 'var(--border-color)'"
-              :opacity="isNodeHighlighted(node.domain) ? 0.8 : 0.25"
-              style="cursor: pointer; transition: all 0.2s"
-            />
-            <text
-              :x="node.x"
-              :y="node.y + node.size + 10"
-              text-anchor="middle"
-              :fill="isNodeHighlighted(node.domain) ? 'var(--text-primary)' : 'var(--text-muted)'"
-              font-size="7"
-              :font-weight="hoveredGraphNode === node.domain ? '600' : '400'"
-              style="transition: all 0.2s; pointer-events: none"
-            >{{ node.domain.length > 14 ? node.domain.slice(0, 12) + '..' : node.domain }}</text>
-            <text
-              v-if="hoveredGraphNode === node.domain"
-              :x="node.x"
-              :y="node.y - node.size - 4"
-              text-anchor="middle"
-              fill="var(--text-primary)"
-              font-size="8"
-              font-weight="600"
-              style="pointer-events: none"
-            >{{ t('charts.visitTimes', { count: node.count }) }}</text>
-          </g>
-        </svg>
-        <div class="graph-hint">
-          <span class="i-lucide:info" />
-          {{ t('charts.graphHint') }}
+      <div v-if="isTab(3)" class="domain-relation-tab">
+        <div v-if="domainRelationData.length === 0" class="relation-empty">
+          {{ t('stats.noRelationData') }}
+        </div>
+        <div v-for="(item, idx) in domainRelationData" :key="item.domain" class="relation-group">
+          <div class="relation-header" @click="toggleRelationExpand(idx)">
+            <span class="i-lucide:chevron-down relation-chevron" :class="{ expanded: item.expanded }" />
+            <img :src="item.favicon" class="relation-favicon" @error="($event.target as HTMLImageElement).style.display = 'none'" />
+            <span class="relation-domain">{{ item.domain }}</span>
+            <span v-if="item.entityName" class="relation-entity">{{ item.entityName }}</span>
+            <span class="relation-count">{{ item.relations.length }}</span>
+          </div>
+          <div v-if="item.expanded" class="relation-list">
+            <div v-for="rel in item.relations" :key="rel.domain" class="relation-item" @click="navigateWithDomainFilter(rel.domain, rel.domain)">
+              <img :src="rel.favicon" class="relation-item-favicon" @error="($event.target as HTMLImageElement).style.display = 'none'" />
+              <span class="relation-item-domain">{{ rel.domain }}</span>
+              <span class="relation-type-badge" :style="{ color: rel.typeColor, background: rel.typeColor + '18' }">{{ rel.typeLabel }}</span>
+              <span class="relation-weight">{{ Math.round(rel.weight * 100) }}%</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -825,27 +798,136 @@ function isEdgeHighlighted(edge: { from: string; to: string }) {
   flex-shrink: 0;
 }
 
-.graph-wrapper {
+.domain-relation-tab {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
-.graph-svg {
-  width: 100%;
-  height: auto;
+.relation-empty {
+  text-align: center;
+  padding: 20px;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
-.graph-hint {
+.relation-group {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.relation-header {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 9px;
-  color: var(--text-muted);
-  padding: 4px 0;
+  gap: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-.graph-hint .i-lucide\:info {
+.relation-header:hover {
+  background: var(--primary-light);
+}
+
+.relation-chevron {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.relation-chevron.expanded {
+  transform: rotate(0deg);
+}
+
+.relation-chevron:not(.expanded) {
+  transform: rotate(-90deg);
+}
+
+.relation-favicon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.relation-domain {
   font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.relation-entity {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--primary-color);
+  background: var(--primary-light);
+  padding: 1px 5px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.relation-count {
+  font-size: 9px;
+  color: var(--text-muted);
+  background: var(--app-bg);
+  padding: 1px 5px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.relation-list {
+  border-top: 1px solid var(--border-color);
+  background: var(--app-bg);
+}
+
+.relation-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 26px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.relation-item:hover {
+  background: var(--primary-light);
+}
+
+.relation-item-favicon {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.relation-item-domain {
+  font-size: 10px;
+  color: var(--text-secondary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.relation-type-badge {
+  font-size: 8px;
+  font-weight: 500;
+  padding: 1px 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.relation-weight {
+  font-size: 9px;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 </style>

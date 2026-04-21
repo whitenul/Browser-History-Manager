@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
 import { resolve } from 'path'
@@ -13,6 +13,9 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
+    target: 'chrome120',
+    minify: 'esbuild',
+    cssCodeSplit: true,
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'popup.html'),
@@ -26,10 +29,21 @@ export default defineConfig({
         },
         chunkFileNames: 'assets/[name].js',
         assetFileNames: 'assets/[name][extname]',
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('tldts')) return 'vendor-tldts'
+            if (id.includes('pinia')) return 'vendor-pinia'
+            if (id.includes('vue')) return 'vendor-vue'
+            return 'vendor'
+          }
+          if (id.includes('src/utils/domainEntity')) return 'core-domain'
+          if (id.includes('src/utils/helpers')) return 'core-helpers'
+        },
       },
     },
-    target: 'chrome120',
-    minify: 'esbuild',
-    cssCodeSplit: true,
+  },
+  esbuild: {
+    drop: ['console', 'debugger'],
+    pure: ['console.log', 'console.info', 'console.debug'],
   },
 })

@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { useStatsStore } from '@/stores/stats'
+import { useFingerprintStore } from '@/stores/fingerprint'
 import { useHistoryStore } from '@/stores/history'
 import { autoTagDetailed, TAG_COLORS, TAG_ICONS } from '@/utils/helpers'
 import { useI18n } from '@/i18n'
+import type { BehavioralDimension } from '@/types/fingerprint'
 
-const stats = useStatsStore()
+const fpStore = useFingerprintStore()
 const history = useHistoryStore()
 const { t } = useI18n()
 
 const tagCloudData = ref<{ tag: string; count: number; color: string; icon: string; size: number }[]>([])
-const orbitData = ref<{ cx: number; cy: number; r: number; color: string; opacity: number }[]>([])
+const knowledgeData = ref<{ tag: string; count: number; color: string; percentage: number }[]>([])
 
 let tagComputeFrame: number | null = null
-let orbitComputeFrame: number | null = null
 
 const TAG_CACHE = new Map<string, string[]>()
 
@@ -22,9 +22,7 @@ function getCachedTags(url: string, title: string): string[] {
   let cached = TAG_CACHE.get(key)
   if (!cached) {
     cached = autoTagDetailed(url, title).map(tag => tag.tag)
-    if (TAG_CACHE.size < 5000) {
-      TAG_CACHE.set(key, cached)
-    }
+    if (TAG_CACHE.size < 5000) TAG_CACHE.set(key, cached)
   }
   return cached
 }
@@ -40,9 +38,7 @@ function computeTagCloud() {
   for (let i = 0; i < records.length; i += step) {
     const r = records[i]
     const tags = getCachedTags(r.url, r.title)
-    for (const tag of tags) {
-      tagMap.set(tag, (tagMap.get(tag) || 0) + 1)
-    }
+    for (const tag of tags) tagMap.set(tag, (tagMap.get(tag) || 0) + 1)
   }
 
   const total = Math.ceil(records.length / step)
@@ -56,174 +52,152 @@ function computeTagCloud() {
       icon: TAG_ICONS[tag] || 'i-lucide:tag',
       size: Math.max(10, Math.min(18, 10 + (count / total) * 40)),
     }))
+
+  const knowledgeTags = ['tech', 'dev', 'docs', 'education', 'reading', 'design', 'ai', 'finance', 'health', 'law']
+  const totalKn = knowledgeTags.reduce((s, tag) => s + (tagMap.get(tag) || 0), 0)
+  knowledgeData.value = knowledgeTags
+    .filter(tag => (tagMap.get(tag) || 0) > 0)
+    .map(tag => ({
+      tag,
+      count: tagMap.get(tag) || 0,
+      color: TAG_COLORS[tag] || '#94a3b8',
+      percentage: totalKn > 0 ? Math.round((tagMap.get(tag) || 0) / totalKn * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
 }
 
-function computeOrbitParticles() {
+const contentDims = computed<BehavioralDimension[]>(() =>
+  fpStore.contentDimensions.map(d => ({
+    ...d,
+    label: t(`dna.dimensions.${d.key}`),
+  }))
+)
+
+const interestDims = computed<BehavioralDimension[]>(() =>
+  fpStore.interestDimensions.map(d => ({
+    ...d,
+    label: t(`dna.dimensions.${d.key}`),
+  }))
+)
+
+const interactionDims = computed<BehavioralDimension[]>(() =>
+  fpStore.interactionDimensions.map(d => ({
+    ...d,
+    label: t(`dna.dimensions.${d.key}`),
+  }))
+)
+
+const archetypeLabel = computed(() => {
+  const id = fpStore.archetype
+  if (!id) return ''
+  return t(`dna.archetypes.${id}`)
+})
+
+const archetypeDesc = computed(() => {
+  const id = fpStore.archetype
+  if (!id) return t('dna.defaultDesc')
+  return t(`dna.archetypes.${id}Desc`)
+})
+
+const cx = 100
+const cy = 100
+
+const innerRingBars = computed(() => {
+  return contentDims.value.map((d, i) => {
+    const angle = (Math.PI * 2 * i) / 8 - Math.PI / 2
+    return {
+      ...d,
+      angle,
+      transform: `rotate(${(i * 45) - 90})`,
+      length: Math.max(2, d.value * 22),
+    }
+  })
+})
+
+const middleRingBars = computed(() => {
+  return interestDims.value.map((d, i) => {
+    const angle = (Math.PI * 2 * i) / 4 - Math.PI / 2
+    return {
+      ...d,
+      angle,
+      transform: `rotate(${(i * 90) - 90})`,
+      length: Math.max(2, d.value * 28),
+    }
+  })
+})
+
+const outerRingBars = computed(() => {
+  return interactionDims.value.map((d, i) => {
+    const angle = (Math.PI * 2 * i) / 8 - Math.PI / 2
+    return {
+      ...d,
+      angle,
+      transform: `rotate(${(i * 45) - 90})`,
+      length: Math.max(2, d.value * 32),
+    }
+  })
+})
+
+const orbitParticles = computed(() => {
   const records = history.allRecords
-  if (records.length === 0) return
+  if (records.length === 0) return []
 
   const domainMap = new Map<string, number>()
-  for (let i = 0; i < records.length; i++) {
-    const r = records[i]
-    domainMap.set(r.domain, (domainMap.get(r.domain) || 0) + 1)
-  }
+  for (const r of records) domainMap.set(r.domain, (domainMap.get(r.domain) || 0) + 1)
 
   const topDomains = Array.from(domainMap.entries())
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 16)
+    .slice(0, 12)
 
   const maxCount = topDomains[0]?.[1] || 1
-  const cx = 100
-  const cy = 100
 
-  orbitData.value = topDomains.map(([, count], i) => {
-    const angle = (Math.PI * 2 * i) / 16 + 0.3
-    const dist = 30 + (count / maxCount) * 55
+  return topDomains.map(([, count], i) => {
+    const angle = (Math.PI * 2 * i) / 12 + 0.3
+    const dist = 80 + (count / maxCount) * 15
     return {
       cx: cx + dist * Math.cos(angle),
       cy: cy + dist * Math.sin(angle),
-      r: 1.5 + (count / maxCount) * 4,
-      color: `hsl(${(i * 22.5) % 360}, 70%, 60%)`,
-      opacity: 0.35 + (count / maxCount) * 0.55,
+      r: 1.2 + (count / maxCount) * 2.5,
+      color: `hsl(${(i * 30) % 360}, 70%, 60%)`,
+      opacity: 0.3 + (count / maxCount) * 0.5,
     }
   })
-}
+})
+
+const fingerprintRidges = computed(() => {
+  const hash = fpStore.dnaId || '00000000'
+  const paths: { path: string; width: number }[] = []
+
+  for (let i = 0; i < 6; i++) {
+    const seed = parseInt(hash.substring(i, i + 1), 16) || 0
+    const startAngle = (seed / 16) * Math.PI * 2
+    const curvature = 0.3 + (seed / 16) * 0.5
+    const radius = 6 + i * 2
+
+    const x1 = cx + radius * Math.cos(startAngle)
+    const y1 = cy + radius * Math.sin(startAngle)
+    const x2 = cx + radius * Math.cos(startAngle + Math.PI * 0.8)
+    const y2 = cy + radius * Math.sin(startAngle + Math.PI * 0.8)
+
+    const cpx = cx + radius * curvature * Math.cos(startAngle + Math.PI * 0.4)
+    const cpy = cy + radius * curvature * Math.sin(startAngle + Math.PI * 0.4)
+
+    paths.push({
+      path: `M${x1},${y1} Q${cpx},${cpy} ${x2},${y2}`,
+      width: 1 + (seed % 3) * 0.3,
+    })
+  }
+
+  return paths
+})
 
 onMounted(() => {
-  tagComputeFrame = requestAnimationFrame(() => {
-    computeTagCloud()
-  })
-  orbitComputeFrame = requestAnimationFrame(() => {
-    computeOrbitParticles()
-  })
+  tagComputeFrame = requestAnimationFrame(() => computeTagCloud())
+  fpStore.collectFingerprint()
 })
 
 onUnmounted(() => {
   if (tagComputeFrame) cancelAnimationFrame(tagComputeFrame)
-  if (orbitComputeFrame) cancelAnimationFrame(orbitComputeFrame)
-})
-
-const dnaDimensions = computed(() => {
-  const total = stats.overview.totalVisits || 1
-  const prodRatio = stats.productivity.productiveCount / total
-  const unprodRatio = stats.productivity.unproductiveCount / total
-
-  let nightCount = 0
-  let weekendCount = 0
-  let workCount = 0
-  let morningCount = 0
-  const nightHours = new Set([22, 23, 0, 1, 2, 3, 4, 5])
-  const weekendDays = new Set([0, 6])
-  const workHours = new Set([9, 10, 11, 12, 13, 14, 15, 16, 17, 18])
-  const morningHours = new Set([6, 7, 8, 9, 10, 11])
-
-  for (const c of stats.heatmap) {
-    if (c.count > 0) {
-      if (nightHours.has(c.hour)) nightCount += c.count
-      if (weekendDays.has(c.day)) weekendCount += c.count
-      if (workHours.has(c.hour)) workCount += c.count
-      if (morningHours.has(c.hour)) morningCount += c.count
-    }
-  }
-
-  const nightRatio = Math.min(1, nightCount / total)
-  const diversity = Math.min(1, stats.overview.siteCount / 50)
-  const intensity = Math.min(1, stats.overview.dailyAvg / 100)
-  const focusScore = 1 - (stats.rhythm.sessionCount > 0 ? Math.min(1, stats.rhythm.avgSessionLength / 20) : 0)
-  const workRatio = Math.min(1, workCount / total)
-  const topSiteRatio = stats.topSites.length > 0 ? Math.min(1, (stats.topSites[0]?.count || 0) / total) : 0
-  const morningRatio = Math.min(1, morningCount / total)
-  const explorRatio = Math.min(1, stats.overview.siteCount / 100)
-
-  return [
-    { label: t('dna.dimensions.productivity'), key: 'productivity', value: prodRatio, color: '#10b981' },
-    { label: t('dna.dimensions.entertainment'), key: 'entertainment', value: unprodRatio, color: '#ef4444' },
-    { label: t('dna.dimensions.nightOwl'), key: 'nightOwl', value: nightRatio, color: '#8b5cf6' },
-    { label: t('dna.dimensions.breadth'), key: 'breadth', value: diversity, color: '#3b82f6' },
-    { label: t('dna.dimensions.intensity'), key: 'intensity', value: intensity, color: '#f59e0b' },
-    { label: t('dna.dimensions.focus'), key: 'focus', value: focusScore, color: '#ec4899' },
-    { label: t('dna.dimensions.work'), key: 'work', value: workRatio, color: '#06b6d4' },
-    { label: t('dna.dimensions.loyalty'), key: 'loyalty', value: topSiteRatio, color: '#f97316' },
-    { label: t('dna.dimensions.morning'), key: 'morning', value: morningRatio, color: '#fbbf24' },
-    { label: t('dna.dimensions.exploration'), key: 'exploration', value: explorRatio, color: '#a78bfa' },
-  ]
-})
-
-const personalityType = computed(() => {
-  const dims = dnaDimensions.value
-  const sorted = [...dims].sort((a, b) => b.value - a.value)
-  const top = sorted[0]
-  const second = sorted[1]
-
-  const comboKey = `${top.key}-${second.key}`
-
-  const comboResult = t(`dna.types.${comboKey}`)
-  if (comboResult !== `dna.types.${comboKey}`) return comboResult
-
-  const singleResult = t(`dna.types.${top.key}`)
-  if (singleResult !== `dna.types.${top.key}`) return singleResult
-
-  return t('dna.types.default')
-})
-
-const personalityDescKey = computed(() => {
-  const dims = dnaDimensions.value
-  const sorted = [...dims].sort((a, b) => b.value - a.value)
-  const top = sorted[0]
-  const second = sorted[1]
-
-  const comboKey = `${top.key}-${second.key}`
-  const comboResult = t(`dna.descs.${comboKey}`)
-  if (comboResult !== `dna.descs.${comboKey}`) return `dna.descs.${comboKey}`
-
-  const singleResult = t(`dna.descs.${top.key}`)
-  if (singleResult !== `dna.descs.${top.key}`) return `dna.descs.${top.key}`
-
-  return 'dna.defaultDesc'
-})
-
-const personalityDesc = computed(() => t(personalityDescKey.value))
-
-const cx = 100
-const cy = 100
-const maxR = 80
-
-function polarPoint(index: number, value: number): string {
-  const angle = (Math.PI * 2 * index) / dnaDimensions.value.length - Math.PI / 2
-  const r = maxR * Math.max(0.08, value)
-  const x = cx + r * Math.cos(angle)
-  const y = cy + r * Math.sin(angle)
-  return `${x},${y}`
-}
-
-const radarPath = computed(() => {
-  const points = dnaDimensions.value.map((d, i) => polarPoint(i, d.value))
-  return `M${points.join('L')}Z`
-})
-
-const radarDots = computed(() => {
-  return dnaDimensions.value.map((d, i) => ({
-    ...d,
-    x: polarPoint(i, d.value).split(',')[0],
-    y: polarPoint(i, d.value).split(',')[1],
-  }))
-})
-
-const gridRings = [0.25, 0.5, 0.75, 1.0]
-
-function ringPath(ratio: number): string {
-  const r = maxR * ratio
-  return `M${cx},${cy - r} A${r},${r} 0 1,1 ${cx},${cy + r} A${r},${r} 0 1,1 ${cx},${cy - r}`
-}
-
-const axisLines = computed(() => {
-  return dnaDimensions.value.map((_, i) => {
-    const angle = (Math.PI * 2 * i) / dnaDimensions.value.length - Math.PI / 2
-    return {
-      x2: cx + maxR * Math.cos(angle),
-      y2: cy + maxR * Math.sin(angle),
-    }
-  })
 })
 </script>
 
@@ -232,34 +206,115 @@ const axisLines = computed(() => {
     <div class="dna-header">
       <span class="i-lucide:fingerprint dna-header-icon" />
       <span class="dna-title">{{ t('dna.title') }}</span>
-      <span class="dna-badge">{{ personalityType }}</span>
+      <span v-if="archetypeLabel" class="dna-badge">{{ archetypeLabel }}</span>
     </div>
-    <div class="dna-desc">{{ personalityDesc }}</div>
-    <div class="dna-body">
-      <div class="dna-chart">
-        <svg viewBox="0 0 200 200" class="dna-svg">
-          <path v-for="ring in gridRings" :key="ring" :d="ringPath(ring)"
-            fill="none" stroke="var(--border-color)" stroke-width="0.5" opacity="0.4" />
-          <line v-for="(axis, i) in axisLines" :key="i"
-            :x1="cx" :y1="cy" :x2="axis.x2" :y2="axis.y2"
-            stroke="var(--border-color)" stroke-width="0.5" opacity="0.3" />
-          <circle v-for="p in orbitData" :key="`${p.cx}-${p.cy}`"
-            :cx="p.cx" :cy="p.cy" :r="p.r"
-            :fill="p.color" :opacity="p.opacity" />
-          <path :d="radarPath" fill="rgba(99,102,241,0.12)" stroke="#6366f1" stroke-width="1.5" />
-          <circle v-for="dot in radarDots" :key="dot.key"
-            :cx="dot.x" :cy="dot.y" r="2.5" :fill="dot.color" />
-          <text v-for="(dim, i) in dnaDimensions" :key="dim.key"
-            :x="polarPoint(i, dim.value + 0.2).split(',')[0]"
-            :y="Number(polarPoint(i, dim.value + 0.2).split(',')[1]) + 3"
-            text-anchor="middle" fill="var(--text-muted)" font-size="5.5">
-            {{ dim.label }}
-          </text>
-        </svg>
-      </div>
-      <div class="dna-info">
+    <div class="dna-desc">{{ archetypeDesc }}</div>
+
+    <div v-if="fpStore.isCollecting" class="dna-loading">
+      <span class="i-lucide:loader-2 dna-loading-icon" />
+      {{ t('dna.collecting') }}
+    </div>
+
+    <div class="dna-nebula-wrap">
+      <svg viewBox="0 0 200 200" class="dna-nebula-svg">
+        <defs>
+          <radialGradient id="nebula-glow">
+            <stop offset="0%" stop-color="var(--primary-400, #818cf8)" stop-opacity="0.12" />
+            <stop offset="100%" stop-color="transparent" />
+          </radialGradient>
+        </defs>
+
+        <circle :cx="cx" :cy="cy" r="95" fill="url(#nebula-glow)" />
+
+        <g :transform="`translate(${cx},${cy})`">
+          <circle cx="0" cy="0" r="72" fill="none" stroke="var(--border-color)" stroke-width="0.3" opacity="0.3" />
+          <circle cx="0" cy="0" r="48" fill="none" stroke="var(--border-color)" stroke-width="0.3" opacity="0.3" />
+          <circle cx="0" cy="0" r="26" fill="none" stroke="var(--border-color)" stroke-width="0.3" opacity="0.3" />
+        </g>
+
+        <g :transform="`translate(${cx},${cy})`">
+          <rect v-for="(bar, i) in outerRingBars" :key="'o'+i"
+            :transform="bar.transform"
+            x="48" y="-1.2"
+            :width="bar.length" height="2.4"
+            :fill="bar.color" rx="1.2" opacity="0.7" />
+        </g>
+
+        <g :transform="`translate(${cx},${cy})`">
+          <rect v-for="(bar, i) in middleRingBars" :key="'m'+i"
+            :transform="bar.transform"
+            x="28" y="-1.5"
+            :width="bar.length" height="3"
+            :fill="bar.color" rx="1.5" opacity="0.75" />
+        </g>
+
+        <g :transform="`translate(${cx},${cy})`">
+          <rect v-for="(bar, i) in innerRingBars" :key="'i'+i"
+            :transform="bar.transform"
+            x="14" y="-1.8"
+            :width="bar.length" height="3.5"
+            :fill="bar.color" rx="1.5" opacity="0.8" />
+        </g>
+
+        <g :transform="`translate(${cx},${cy})`">
+          <path v-for="(ridge, i) in fingerprintRidges" :key="'r'+i"
+            :d="ridge.path"
+            fill="none" stroke="var(--primary-500, #6366f1)"
+            :stroke-width="ridge.width" opacity="0.4" stroke-linecap="round" />
+        </g>
+
+        <circle v-for="p in orbitParticles" :key="`${p.cx}-${p.cy}`"
+          :cx="p.cx" :cy="p.cy" :r="p.r"
+          :fill="p.color" :opacity="p.opacity" />
+      </svg>
+    </div>
+
+    <div class="dna-ring-legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#6366f1" />{{ t('dna.contentTitle') }}</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#14b8a6" />{{ t('dna.interestTitle') }}</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#7c3aed" />{{ t('dna.interactionTitle') }}</span>
+    </div>
+
+    <div class="dna-sections">
+      <div class="dna-section">
+        <div class="dna-section-title">
+          <span class="i-lucide:book-open dna-section-icon" style="color:#6366f1" />
+          {{ t('dna.contentTitle') }}
+        </div>
         <div class="dna-bars">
-          <div v-for="dim in dnaDimensions" :key="dim.key" class="dna-bar-row">
+          <div v-for="dim in contentDims" :key="dim.key" class="dna-bar-row">
+            <span class="dna-bar-label" :style="{ color: dim.color }">{{ dim.label }}</span>
+            <div class="dna-bar-track">
+              <div class="dna-bar-fill" :style="{ width: Math.round(dim.value * 100) + '%', backgroundColor: dim.color }" />
+            </div>
+            <span class="dna-bar-value">{{ Math.round(dim.value * 100) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dna-section">
+        <div class="dna-section-title">
+          <span class="i-lucide:compass dna-section-icon" style="color:#14b8a6" />
+          {{ t('dna.interestTitle') }}
+        </div>
+        <div class="dna-bars">
+          <div v-for="dim in interestDims" :key="dim.key" class="dna-bar-row">
+            <span class="dna-bar-label" :style="{ color: dim.color }">{{ dim.label }}</span>
+            <div class="dna-bar-track">
+              <div class="dna-bar-fill" :style="{ width: Math.round(dim.value * 100) + '%', backgroundColor: dim.color }" />
+            </div>
+            <span class="dna-bar-value">{{ Math.round(dim.value * 100) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dna-section">
+        <div class="dna-section-title">
+          <span class="i-lucide:activity dna-section-icon" style="color:#7c3aed" />
+          {{ t('dna.interactionTitle') }}
+        </div>
+        <div class="dna-bars">
+          <div v-for="dim in interactionDims" :key="dim.key" class="dna-bar-row">
             <span class="dna-bar-label" :style="{ color: dim.color }">{{ dim.label }}</span>
             <div class="dna-bar-track">
               <div class="dna-bar-fill" :style="{ width: Math.round(dim.value * 100) + '%', backgroundColor: dim.color }" />
@@ -269,6 +324,38 @@ const axisLines = computed(() => {
         </div>
       </div>
     </div>
+
+    <div v-if="knowledgeData.length > 0" class="dna-knowledge">
+      <div class="dna-section-title">
+        <span class="i-lucide:graduation-cap dna-section-icon" />
+        {{ t('dna.knowledgeTitle') }}
+      </div>
+      <div class="knowledge-bars">
+        <div v-for="item in knowledgeData" :key="item.tag" class="knowledge-bar-row">
+          <span class="knowledge-label" :style="{ color: item.color }">{{ t('tags.' + item.tag) }}</span>
+          <div class="knowledge-track">
+            <div class="knowledge-fill" :style="{ width: item.percentage + '%', backgroundColor: item.color }" />
+          </div>
+          <span class="knowledge-value">{{ item.percentage }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="fpStore.dnaId" class="dna-meta">
+      <div class="dna-meta-item">
+        <span class="dna-meta-label">{{ t('dna.fingerprintId') }}</span>
+        <span class="dna-meta-value mono">{{ fpStore.dnaId }}</span>
+      </div>
+      <div class="dna-meta-item">
+        <span class="dna-meta-label">{{ t('dna.confidence') }}</span>
+        <span class="dna-meta-value">{{ Math.round(fpStore.confidence * 100) }}%</span>
+      </div>
+      <div class="dna-meta-item">
+        <span class="dna-meta-label">{{ t('dna.stability') }}</span>
+        <span class="dna-meta-value">{{ Math.round(fpStore.stability * 100) }}%</span>
+      </div>
+    </div>
+
     <div v-if="tagCloudData.length > 0" class="dna-tags">
       <div class="dna-tags-title">
         <span class="i-lucide:tags dna-tags-icon" />
@@ -289,7 +376,7 @@ const axisLines = computed(() => {
   border: 1px solid var(--border-color); border-radius: var(--radius-lg);
 }
 .dna-header {
-  display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
 }
 .dna-header-icon { font-size: 16px; color: #8b5cf6; }
 .dna-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
@@ -299,24 +386,74 @@ const axisLines = computed(() => {
   background: rgba(139,92,246,0.12); color: #8b5cf6;
 }
 .dna-desc {
-  font-size: 11px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;
+  font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;
 }
-.dna-body { display: flex; gap: 14px; align-items: center; }
-.dna-chart { width: 140px; height: 140px; flex-shrink: 0; }
-.dna-svg { width: 100%; height: 100%; }
-.dna-info { flex: 1; min-width: 0; }
-.dna-bars { display: flex; flex-direction: column; gap: 3px; }
-.dna-bar-row { display: flex; align-items: center; gap: 6px; }
-.dna-bar-label { font-size: 9px; font-weight: 600; width: 36px; flex-shrink: 0; }
+.dna-loading {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 20px; font-size: 12px; color: var(--text-muted);
+}
+.dna-loading-icon { font-size: 14px; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.dna-nebula-wrap {
+  display: flex; justify-content: center; margin-bottom: 4px;
+}
+.dna-nebula-svg {
+  width: 180px; height: 180px;
+}
+.dna-ring-legend {
+  display: flex; justify-content: center; gap: 12px; margin-bottom: 8px;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 9px; color: var(--text-muted); font-weight: 500;
+}
+.legend-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.dna-sections {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  margin-bottom: 8px;
+}
+.dna-section {}
+.dna-section-title {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 600; color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.dna-section-icon { font-size: 11px; }
+.dna-bars { display: flex; flex-direction: column; gap: 2px; }
+.dna-bar-row { display: flex; align-items: center; gap: 3px; }
+.dna-bar-label { font-size: 7px; font-weight: 600; width: 28px; flex-shrink: 0; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dna-bar-track {
+  flex: 1; height: 2.5px; background: var(--border-color);
+  border-radius: 1.5px; overflow: hidden;
+}
+.dna-bar-fill { height: 100%; border-radius: 1.5px; transition: width 0.4s ease; }
+.dna-bar-value { font-size: 7px; font-weight: 600; color: var(--text-secondary); width: 18px; text-align: right; flex-shrink: 0; }
+.dna-knowledge {
+  padding: 8px 0; border-top: 1px solid var(--border-color);
+  margin-bottom: 8px;
+}
+.knowledge-bars { display: flex; flex-direction: column; gap: 3px; }
+.knowledge-bar-row { display: flex; align-items: center; gap: 4px; }
+.knowledge-label { font-size: 8px; font-weight: 600; width: 30px; flex-shrink: 0; }
+.knowledge-track {
   flex: 1; height: 4px; background: var(--border-color);
   border-radius: 2px; overflow: hidden;
 }
-.dna-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
-.dna-bar-value { font-size: 9px; font-weight: 600; color: var(--text-secondary); width: 22px; text-align: right; flex-shrink: 0; }
-.dna-tags {
-  margin-top: 10px; padding-top: 10px;
+.knowledge-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.knowledge-value { font-size: 8px; font-weight: 600; color: var(--text-secondary); width: 28px; text-align: right; flex-shrink: 0; }
+.dna-meta {
+  display: flex; gap: 10px; padding: 6px 0;
   border-top: 1px solid var(--border-color);
+  margin-bottom: 8px;
+}
+.dna-meta-item { display: flex; flex-direction: column; gap: 1px; }
+.dna-meta-label { font-size: 8px; color: var(--text-muted); }
+.dna-meta-value { font-size: 10px; font-weight: 600; color: var(--text-primary); }
+.dna-meta-value.mono { font-family: 'Consolas', 'Monaco', monospace; letter-spacing: 0.5px; }
+.dna-tags {
+  padding-top: 8px; border-top: 1px solid var(--border-color);
 }
 .dna-tags-title {
   display: flex; align-items: center; gap: 4px;

@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useTabOptimizerStore } from '@/stores/tabOptimizer'
-import { getFaviconUrlWithHint, onFaviconError } from '@/utils/helpers'
+import { getFaviconUrlWithHint, onFaviconError, autoTag, TAG_COLORS } from '@/utils/helpers'
 import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
@@ -68,6 +68,7 @@ async function loadTabs() {
 async function switchTab(tabId: number) {
   try {
     await chrome.tabs.update(tabId, { active: true })
+    activeTab.value = tabs.value.find(t => t.id === tabId) || null
   } catch { /* ignore */ }
 }
 
@@ -119,7 +120,7 @@ async function handleSuspendAll() {
 
 let activatedListener: ((activeInfo: { tabId: number; windowId: number }) => void) | null = null
 let updatedListener: ((_tabId: number, _changeInfo: any, tab: chrome.tabs.Tab) => void) | null = null
-let removedListener: (() => void) | null = null
+let removedListener: ((tabId: number, _removeInfo: chrome.tabs.OnRemovedInfo) => void) | null = null
 
 onMounted(async () => {
   loadTabs()
@@ -127,7 +128,9 @@ onMounted(async () => {
   await optimizer.loadSettings()
 
   activatedListener = () => { loadTabs(); optimizer.loadTabs() }
-  updatedListener = (_tabId, _changeInfo, tab) => { if (tab.active) { loadTabs(); optimizer.loadTabs() } }
+  updatedListener = (_tabId, _changeInfo, tab) => {
+    if (tab.active) { loadTabs(); optimizer.loadTabs() }
+  }
   removedListener = () => { loadTabs(); optimizer.loadTabs() }
 
   chrome.tabs.onActivated.addListener(activatedListener)
@@ -240,8 +243,14 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
         >
           <img :src="resolveFavicon(tab)" class="tm-tab-favicon" @error="onFaviconError($event, tab.url)" />
           <div class="tm-tab-info">
-            <div class="tm-tab-title">{{ tab.title }}</div>
+            <div class="tm-tab-title" :title="tab.title">{{ tab.title }}</div>
             <div class="tm-tab-domain">{{ getDomain(tab.url) }}</div>
+            <div v-if="autoTag(tab.url, tab.title).length" class="tm-tab-tags">
+              <span v-for="tag in autoTag(tab.url, tab.title).slice(0, 2)" :key="tag" class="tm-tab-tag"
+                :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
+                {{ t('tags.' + tag) }}
+              </span>
+            </div>
           </div>
           <span v-if="tab.discarded" class="tm-discarded-tag">{{ t('tabs.discarded') }}</span>
           <span v-if="tab.pinned" class="i-lucide:pin tm-pin-icon" />
@@ -253,7 +262,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
             <span class="i-lucide:x" />
           </button>
         </button>
-        <div v-if="!tabs.length" class="tm-empty">{{ t('tabs.noOpenTabs') }}</div>
+      <div v-if="!tabs.length" class="tm-empty">{{ t('tabs.noOpenTabs') }}</div>
       </div>
     </template>
   </div>
@@ -577,6 +586,14 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.tm-tab-tags {
+  display: flex; gap: 3px; margin-top: 2px;
+}
+.tm-tab-tag {
+  font-size: 8px; padding: 0 4px; border-radius: 3px;
+  font-weight: 500; white-space: nowrap; line-height: 13px;
 }
 
 .tm-discarded-tag {

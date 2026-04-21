@@ -38,7 +38,7 @@ function renderNode(node: any, level: number): VNode {
         loading: 'lazy',
         onError(e: Event) { (e.target as HTMLImageElement).style.display = 'none' },
       }),
-      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;color:var(--text-primary);' }, node.title.startsWith('bookmarks.') ? t(node.title) : node.title),
+      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;color:var(--text-primary);', title: node.title.startsWith('bookmarks.') ? t(node.title) : node.title }, node.title.startsWith('bookmarks.') ? t(node.title) : node.title),
     ])
   }
 
@@ -56,7 +56,7 @@ function renderNode(node: any, level: number): VNode {
         style: `width:16px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:12px;transition:transform .2s ease;flex-shrink:0;${isExpanded ? 'transform:rotate(90deg)' : ''}`,
       }, '\u25B8'),
       h('span', { class: 'i-lucide i-lucide-folder', style: 'width:14px;height:14px;margin-right:6px;color:#fbbf24;flex-shrink:0;display:inline-flex;align-items:center;' }),
-      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;font-weight:500;color:var(--text-primary);' }, node.title ? (node.title.startsWith('bookmarks.') ? t(node.title) : node.title) : t('bookmarks.unnamed')),
+      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;font-weight:500;color:var(--text-primary);', title: node.title ? (node.title.startsWith('bookmarks.') ? t(node.title) : node.title) : t('bookmarks.unnamed') }, node.title ? (node.title.startsWith('bookmarks.') ? t(node.title) : node.title) : t('bookmarks.unnamed')),
       childCount > 0 ? h('span', { style: 'font-size:11px;color:var(--text-muted);background:var(--primary-light);padding:1px 7px;border-radius:10px;margin-left:8px;flex-shrink:0;' }, String(childCount)) : null,
     ].filter(Boolean)),
     node.children && node.children.length > 0

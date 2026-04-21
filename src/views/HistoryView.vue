@@ -4,7 +4,7 @@ import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'
 import { useStatsStore } from '@/stores/stats'
 import { useReadingQueueStore } from '@/stores/readingQueue'
-import { formatTime, formatDateTime, getFaviconUrl, highlightText, getGroupLabel, autoTag, TAG_COLORS, onFaviconError } from '@/utils/helpers'
+import { formatTime, formatDateTime, getFaviconUrl, highlightText, getGroupLabel, autoTag, TAG_COLORS, onFaviconError, getEntityForDomain } from '@/utils/helpers'
 import type { HistoryRecord } from '@/utils/helpers'
 import { useI18n } from '@/i18n'
 
@@ -357,6 +357,9 @@ onUnmounted(() => {
               <span class="group-name" @click="history.toggleGroupCollapse(groupKey)">
                 {{ history.groupMode === 'session' ? getSessionLabel(groupKey, history.groupedResult.groups[groupKey]) : getGroupLabel(groupKey, t) }}
               </span>
+              <span v-if="history.groupMode === 'domain' && getEntityForDomain(groupKey)" class="entity-badge">
+                {{ getEntityForDomain(groupKey)!.names.zh }}
+              </span>
               <span class="group-count">{{ history.groupedResult.groups[groupKey]?.length || 0 }}</span>
               <button v-if="history.groupMode === 'session'" class="restore-btn" @click.stop="history.restoreSession(groupKey)" :title="t('history.restoreSession')">
                 <span class="i-lucide:rotate-ccw" />{{ t('common.restore') }}
@@ -381,18 +384,18 @@ onUnmounted(() => {
                   </span>
                 </div>
                 <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : history.openRecord(record.url)">
-                  <div class="record-title" v-html="highlightText(record.title, history.searchKeyword)" />
+                  <div class="record-title" :title="record.title" v-html="highlightText(record.title, history.searchKeyword)" />
                   <div class="record-meta">
                     <span v-html="highlightText(record.domain, history.searchKeyword)" />
                     <span class="meta-dot">·</span>
                     <span>{{ formatTime(record.lastVisitTime, t) }}</span>
                     <span v-if="record.visitCount > 1" class="meta-dot">·</span>
                     <span v-if="record.visitCount > 1">{{ t('history.visitCountLabel', { count: record.visitCount }) }}</span>
-                    <span class="auto-tags">
-                      <span v-for="tag in autoTag(record.url, record.title)" :key="tag" class="auto-tag"
-                        :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
-                        {{ t('tags.' + tag) }}
-                      </span>
+                  </div>
+                  <div v-if="autoTag(record.url, record.title).length" class="auto-tags">
+                    <span v-for="tag in autoTag(record.url, record.title)" :key="tag" class="auto-tag"
+                      :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
+                      {{ t('tags.' + tag) }}
                     </span>
                   </div>
                 </div>
@@ -443,18 +446,18 @@ onUnmounted(() => {
               </span>
             </div>
             <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : history.openRecord(record.url)">
-              <div class="record-title" v-html="highlightText(record.title, history.searchKeyword)" />
+              <div class="record-title" :title="record.title" v-html="highlightText(record.title, history.searchKeyword)" />
               <div class="record-meta">
                 <span v-html="highlightText(record.domain, history.searchKeyword)" />
                 <span class="meta-dot">·</span>
                 <span>{{ formatTime(record.lastVisitTime, t) }}</span>
                 <span v-if="record.visitCount > 1" class="meta-dot">·</span>
                 <span v-if="record.visitCount > 1">{{ t('history.visitCountLabel', { count: record.visitCount }) }}</span>
-                <span class="auto-tags">
-                  <span v-for="tag in autoTag(record.url, record.title)" :key="tag" class="auto-tag"
-                    :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
-                    {{ t('tags.' + tag) }}
-                  </span>
+              </div>
+              <div v-if="autoTag(record.url, record.title).length" class="auto-tags">
+                <span v-for="tag in autoTag(record.url, record.title)" :key="tag" class="auto-tag"
+                  :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
+                  {{ t('tags.' + tag) }}
                 </span>
               </div>
             </div>
@@ -691,6 +694,16 @@ onUnmounted(() => {
 .group-header:hover { background: var(--primary-light); }
 .group-chevron-wrap { display: flex; align-items: center; }
 .group-name { flex: 1; }
+.entity-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--primary-color);
+  background: var(--primary-light);
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+  margin-right: 4px;
+}
 .group-count { font-size: 11px; font-weight: 400; color: var(--text-muted); }
 .group-chevron { font-size: 14px; transition: transform var(--transition-fast); }
 .group-header.collapsed .group-chevron { transform: rotate(-90deg); }
@@ -765,6 +778,7 @@ onUnmounted(() => {
   font-size: 11px; color: var(--text-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin-top: 2px;
+  display: flex; align-items: center; gap: 0;
 }
 .meta-dot { margin: 0 4px; }
 
@@ -785,7 +799,7 @@ onUnmounted(() => {
 .action-btn.danger:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 .action-btn.queue-active { color: #f59e0b; background: rgba(245,158,11,0.1); }
 
-.auto-tags { display: inline-flex; gap: 3px; margin-left: 4px; }
+.auto-tags { display: flex; gap: 3px; margin-top: 2px; flex-wrap: wrap; }
 .auto-tag {
   font-size: 9px; padding: 0 4px; border-radius: 3px;
   font-weight: 500; white-space: nowrap; line-height: 14px;

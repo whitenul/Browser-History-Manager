@@ -20,32 +20,32 @@ export interface PresetTheme {
 }
 
 export const PRESET_THEMES: PresetTheme[] = [
-  { id: 'indigo', name: 'theme.presets.indigo', icon: '💎', light: { '--primary-color': '#4f46e5', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--primary-light': 'rgba(79,70,229,0.08)' }, dark: { '--primary-color': '#818cf8', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(129,140,248,0.12)' } },
-  { id: 'emerald', name: 'theme.presets.emerald', icon: '🌿', light: { '--primary-color': '#059669', '--app-header-bg': '#059669', '--app-header-text': '#ffffff', '--primary-light': 'rgba(5,150,105,0.08)' }, dark: { '--primary-color': '#34d399', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(52,211,153,0.12)' } },
-  { id: 'rose', name: 'theme.presets.rose', icon: '🌹', light: { '--primary-color': '#e11d48', '--app-header-bg': '#e11d48', '--app-header-text': '#ffffff', '--primary-light': 'rgba(225,29,72,0.08)' }, dark: { '--primary-color': '#fb7185', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,113,133,0.12)' } },
-  { id: 'amber', name: 'theme.presets.amber', icon: '🔥', light: { '--primary-color': '#d97706', '--app-header-bg': '#d97706', '--app-header-text': '#ffffff', '--primary-light': 'rgba(217,119,6,0.08)' }, dark: { '--primary-color': '#fbbf24', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,191,36,0.12)' } },
-  { id: 'cyan', name: 'theme.presets.cyan', icon: '🌊', light: { '--primary-color': '#0891b2', '--app-header-bg': '#0891b2', '--app-header-text': '#ffffff', '--primary-light': 'rgba(8,145,178,0.08)' }, dark: { '--primary-color': '#22d3ee', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(34,211,238,0.12)' } },
-  { id: 'violet', name: 'theme.presets.violet', icon: '🔮', light: { '--primary-color': '#7c3aed', '--app-header-bg': '#7c3aed', '--app-header-text': '#ffffff', '--primary-light': 'rgba(124,58,237,0.08)' }, dark: { '--primary-color': '#a78bfa', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(167,139,250,0.12)' } },
-  { id: 'slate', name: 'theme.presets.slate', icon: '🪨', light: { '--primary-color': '#475569', '--app-header-bg': '#334155', '--app-header-text': '#ffffff', '--primary-light': 'rgba(71,85,105,0.08)' }, dark: { '--primary-color': '#94a3b8', '--app-header-bg': '#0f172a', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(148,163,184,0.12)' } },
-  { id: 'pink', name: 'theme.presets.pink', icon: '🌸', light: { '--primary-color': '#db2777', '--app-header-bg': '#db2777', '--app-header-text': '#ffffff', '--primary-light': 'rgba(219,39,119,0.08)' }, dark: { '--primary-color': '#f472b6', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(244,114,182,0.12)' } },
+  { id: 'indigo', name: 'theme.presets.indigo', icon: '💎', light: { '--primary-color': '#4f46e5', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--primary-light': 'rgba(79,70,229,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#818cf8', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(129,140,248,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
+  { id: 'emerald', name: 'theme.presets.emerald', icon: '🌿', light: { '--primary-color': '#059669', '--app-header-bg': '#059669', '--app-header-text': '#ffffff', '--primary-light': 'rgba(5,150,105,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#34d399', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(52,211,153,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
+  { id: 'rose', name: 'theme.presets.rose', icon: '🌹', light: { '--primary-color': '#e11d48', '--app-header-bg': '#e11d48', '--app-header-text': '#ffffff', '--primary-light': 'rgba(225,29,72,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#fb7185', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,113,133,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
+  { id: 'amber', name: 'theme.presets.amber', icon: '🔥', light: { '--primary-color': '#d97706', '--app-header-bg': '#d97706', '--app-header-text': '#ffffff', '--primary-light': 'rgba(217,119,6,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#fbbf24', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,191,36,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
+  { id: 'cyan', name: 'theme.presets.cyan', icon: '🌊', light: { '--primary-color': '#0891b2', '--app-header-bg': '#0891b2', '--app-header-text': '#ffffff', '--primary-light': 'rgba(8,145,178,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#22d3ee', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(34,211,238,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
+  { id: 'violet', name: 'theme.presets.violet', icon: '🔮', light: { '--primary-color': '#7c3aed', '--app-header-bg': '#7c3aed', '--app-header-text': '#ffffff', '--primary-light': 'rgba(124,58,237,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#a78bfa', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(167,139,250,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
+  { id: 'slate', name: 'theme.presets.slate', icon: '🪨', light: { '--primary-color': '#475569', '--app-header-bg': '#334155', '--app-header-text': '#ffffff', '--primary-light': 'rgba(71,85,105,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#94a3b8', '--app-header-bg': '#0f172a', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(148,163,184,0.12)', '--app-surface': '#0f172a', '--app-surface-rgb': '15,23,42' } },
+  { id: 'pink', name: 'theme.presets.pink', icon: '🌸', light: { '--primary-color': '#db2777', '--app-header-bg': '#db2777', '--app-header-text': '#ffffff', '--primary-light': 'rgba(219,39,119,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#f472b6', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(244,114,182,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
 ]
 
-export interface GradientTheme { name: string; gradient: string; primary: string }
+export interface GradientTheme { name: string; gradient: string; primary: string; surface: string; surfaceRgb: string }
 
 export const GRADIENT_THEMES: GradientTheme[] = [
-  { name: 'theme.gradients.ocean', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', primary: '#667eea' },
-  { name: 'theme.gradients.sunset', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', primary: '#f5576c' },
-  { name: 'theme.gradients.forest', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', primary: '#11998e' },
-  { name: 'theme.gradients.night', gradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)', primary: '#4ca1af' },
-  { name: 'theme.gradients.flame', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)', primary: '#f12711' },
-  { name: 'theme.gradients.aurora', gradient: 'linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)', primary: '#00c9ff' },
-  { name: 'theme.gradients.lavender', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', primary: '#a18cd1' },
-  { name: 'theme.gradients.glacier', gradient: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)', primary: '#5b86e5' },
-  { name: 'theme.gradients.desert', gradient: 'linear-gradient(135deg, #c2956a 0%, #e0c097 100%)', primary: '#c2956a' },
+  { name: 'theme.gradients.ocean', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', primary: '#667eea', surface: '#1e293b', surfaceRgb: '30,41,59' },
+  { name: 'theme.gradients.sunset', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', primary: '#f5576c', surface: '#1e293b', surfaceRgb: '30,41,59' },
+  { name: 'theme.gradients.forest', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', primary: '#11998e', surface: '#1e293b', surfaceRgb: '30,41,59' },
+  { name: 'theme.gradients.night', gradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)', primary: '#4ca1af', surface: '#0f172a', surfaceRgb: '15,23,42' },
+  { name: 'theme.gradients.flame', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)', primary: '#f12711', surface: '#1e293b', surfaceRgb: '30,41,59' },
+  { name: 'theme.gradients.aurora', gradient: 'linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)', primary: '#00c9ff', surface: '#1e293b', surfaceRgb: '30,41,59' },
+  { name: 'theme.gradients.lavender', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', primary: '#a18cd1', surface: '#1e293b', surfaceRgb: '30,41,59' },
+  { name: 'theme.gradients.glacier', gradient: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)', primary: '#5b86e5', surface: '#ffffff', surfaceRgb: '255,255,255' },
+  { name: 'theme.gradients.desert', gradient: 'linear-gradient(135deg, #c2956a 0%, #e0c097 100%)', primary: '#c2956a', surface: '#f8fafc', surfaceRgb: '248,250,252' },
 ]
 
-const LIGHT_VARS = { '--app-bg': '#f8fafc', '--app-surface': '#ffffff', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--text-primary': '#0f172a', '--text-secondary': '#334155', '--text-muted': '#64748b', '--border-color': '#e2e8f0', '--primary-color': '#4f46e5', '--primary-light': 'rgba(79,70,229,0.08)' }
-const DARK_VARS = { '--app-bg': '#0f172a', '--app-surface': '#1e293b', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--text-primary': '#f1f5f9', '--text-secondary': '#94a3b8', '--text-muted': '#64748b', '--border-color': '#334155', '--primary-color': '#818cf8', '--primary-light': 'rgba(129,140,248,0.12)' }
+const LIGHT_VARS = { '--app-bg': '#f8fafc', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--text-primary': '#0f172a', '--text-secondary': '#334155', '--text-muted': '#64748b', '--border-color': '#e2e8f0', '--primary-color': '#4f46e5', '--primary-light': 'rgba(79,70,229,0.08)' }
+const DARK_VARS = { '--app-bg': '#0f172a', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--text-primary': '#f1f5f9', '--text-secondary': '#94a3b8', '--text-muted': '#64748b', '--border-color': '#334155', '--primary-color': '#818cf8', '--primary-light': 'rgba(129,140,248,0.12)' }
 
 const RADIUS_MAP: Record<RadiusStyle, { sm: string; md: string; lg: string; xl: string }> = {
   none: { sm: '0px', md: '0px', lg: '0px', xl: '0px' },
@@ -73,7 +73,7 @@ export interface ThemeConfig {
   mode: ThemeMode
   activePreset: string
   activeGradient: string | null
-  customColors: { primary: string; bg: string; text: string } | null
+  customColors: { primary: string; bg: string; text: string; surfaceRgb: string } | null
   accentColor: string | null
   radiusStyle: RadiusStyle
   fontSize: FontSize
@@ -89,7 +89,7 @@ export interface ThemeConfig {
 export const useThemeStore = defineStore('theme', () => {
   const mode = ref<ThemeMode>('auto')
   const activeGradient = ref<string | null>(null)
-  const customColors = ref<{ primary: string; bg: string; text: string } | null>(null)
+  const customColors = ref<{ primary: string; bg: string; text: string; surfaceRgb: string } | null>(null)
   const activePreset = ref<string>('indigo')
   const showThemeModal = ref(false)
   const isDark = ref(false)
@@ -125,6 +125,8 @@ export const useThemeStore = defineStore('theme', () => {
       const gt = GRADIENT_THEMES.find(g => g.gradient === activeGradient.value)
       if (gt) {
         html.style.setProperty('--primary-color', gt.primary)
+        html.style.setProperty('--app-surface', gt.surface)
+        html.style.setProperty('--app-surface-rgb', gt.surfaceRgb)
         const r = parseInt(gt.primary.slice(1, 3), 16), g = parseInt(gt.primary.slice(3, 5), 16), b = parseInt(gt.primary.slice(5, 7), 16)
         html.style.setProperty('--primary-light', `rgba(${r},${g},${b},0.08)`)
       }
@@ -134,6 +136,7 @@ export const useThemeStore = defineStore('theme', () => {
       html.style.setProperty('--primary-color', customColors.value.primary)
       html.style.setProperty('--app-bg', customColors.value.bg)
       html.style.setProperty('--app-surface', customColors.value.bg)
+      html.style.setProperty('--app-surface-rgb', customColors.value.surfaceRgb)
       html.style.setProperty('--text-primary', customColors.value.text)
       const r = parseInt(customColors.value.primary.slice(1, 3), 16), g = parseInt(customColors.value.primary.slice(3, 5), 16), b = parseInt(customColors.value.primary.slice(5, 7), 16)
       html.style.setProperty('--primary-light', `rgba(${r},${g},${b},0.08)`)
@@ -189,7 +192,11 @@ export const useThemeStore = defineStore('theme', () => {
       ])
       if (result.themeMode) mode.value = result.themeMode as ThemeMode
       if (result.activeGradient) activeGradient.value = result.activeGradient as string
-      if (result.customColors) customColors.value = result.customColors as { primary: string; bg: string; text: string }
+      if (result.customColors) {
+        const cc = result.customColors as { primary: string; bg: string; text: string }
+        const bgRgb = `${parseInt(cc.bg.slice(1, 3), 16)},${parseInt(cc.bg.slice(3, 5), 16)},${parseInt(cc.bg.slice(5, 7), 16)}`
+        customColors.value = { ...cc, surfaceRgb: bgRgb }
+      }
       if (result.activePreset) activePreset.value = result.activePreset as string
       if (result.radiusStyle) radiusStyle.value = result.radiusStyle as RadiusStyle
       if (result.fontSize) fontSize.value = result.fontSize as FontSize
@@ -220,7 +227,12 @@ export const useThemeStore = defineStore('theme', () => {
 
   function setMode(m: ThemeMode) { mode.value = m; activeGradient.value = null; customColors.value = null; applyTheme(); saveTheme() }
   function setGradient(g: string) { activeGradient.value = g; customColors.value = null; applyTheme(); saveTheme() }
-  function setCustomColors(c: { primary: string; bg: string; text: string }) { customColors.value = c; activeGradient.value = null; applyTheme(); saveTheme() }
+  function setCustomColors(c: { primary: string; bg: string; text: string }) {
+    activeGradient.value = null
+    const bgRgb = `${parseInt(c.bg.slice(1, 3), 16)},${parseInt(c.bg.slice(3, 5), 16)},${parseInt(c.bg.slice(5, 7), 16)}`
+    customColors.value = { ...c, surfaceRgb: bgRgb }
+    applyTheme(); saveTheme()
+  }
   function setPreset(id: string) { activePreset.value = id; activeGradient.value = null; customColors.value = null; applyTheme(); saveTheme() }
   function setRadiusStyle(s: RadiusStyle) { radiusStyle.value = s; applyTheme(); saveTheme() }
   function setFontSize(s: FontSize) { fontSize.value = s; applyTheme(); saveTheme() }
@@ -275,6 +287,7 @@ export const useThemeStore = defineStore('theme', () => {
         if (c.customColors.primary && !isValidHex(c.customColors.primary)) return false
         if (c.customColors.bg && !isValidHex(c.customColors.bg)) return false
         if (c.customColors.text && !isValidHex(c.customColors.text)) return false
+        if (c.customColors.surfaceRgb && !/^\d+,\d+,\d+$/.test(c.customColors.surfaceRgb)) return false
       }
       if (c.accentColor && !isValidHex(c.accentColor)) return false
       if (c.activeGradient !== undefined && c.activeGradient !== null && typeof c.activeGradient !== 'string') return false
@@ -282,7 +295,11 @@ export const useThemeStore = defineStore('theme', () => {
       if (c.mode) mode.value = c.mode
       if (c.activePreset) activePreset.value = c.activePreset
       if (c.activeGradient !== undefined) activeGradient.value = c.activeGradient
-      if (c.customColors) customColors.value = c.customColors
+      if (c.customColors) {
+        const cc = c.customColors as { primary: string; bg: string; text: string; surfaceRgb?: string }
+        const bgRgb = cc.surfaceRgb || `${parseInt(cc.bg.slice(1, 3), 16)},${parseInt(cc.bg.slice(3, 5), 16)},${parseInt(cc.bg.slice(5, 7), 16)}`
+        customColors.value = { primary: cc.primary, bg: cc.bg, text: cc.text, surfaceRgb: bgRgb }
+      }
       if (c.accentColor !== undefined) accentColor.value = c.accentColor
       if (c.radiusStyle) radiusStyle.value = c.radiusStyle
       if (c.fontSize) fontSize.value = c.fontSize

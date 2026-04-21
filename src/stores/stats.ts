@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
-import { getDomain, stringToColor, formatNumber, PRODUCTIVE_KEYWORDS, UNPRODUCTIVE_KEYWORDS, getFaviconUrl } from '@/utils/helpers'
+import { getDomain, stringToColor, formatNumber, getTagProductivity, autoTag, getFaviconUrl, TAG_COLORS } from '@/utils/helpers'
+import { perfMark, perfMeasure } from '@/utils/perf'
 
 export interface StatOverview {
   totalVisits: number
@@ -77,48 +78,31 @@ export interface ContextualRec {
   score: number
 }
 
-const CATEGORY_MAP: Map<string, string> = new Map()
-const CATEGORY_KEYWORDS: [string, string[]][] = [
-  ['social', ['weibo', 'twitter', 'facebook', 'instagram', 'zhihu', 'douban', 'reddit', 'qq', 'weixin']],
-  ['video', ['youtube', 'bilibili', 'netflix', 'iqiyi', 'youku', 'twitch', 'douyin']],
-  ['shopping', ['taobao', 'jd', 'amazon', 'pinduoduo', 'ebay', 'tmall']],
-  ['news', ['news', 'sina', 'bbc', 'cnn', 'toutiao', 'ifeng']],
-  ['dev', ['github', 'stackoverflow', 'gitlab', 'npmjs', 'codepen', 'leetcode', 'csdn', 'juejin']],
-  ['search', ['google', 'baidu', 'bing', 'duckduckgo', 'sogou']],
-  ['email', ['gmail', 'outlook', 'mail', 'qq.com/mail']],
-  ['docs', ['docs', 'notion', 'confluence', 'wiki', 'docs.google']],
-]
-for (const [cat, keywords] of CATEGORY_KEYWORDS) {
-  for (const kw of keywords) CATEGORY_MAP.set(kw, cat)
-}
-
-const CATEGORY_COLORS: Record<string, string> = {
-  'social': '#6366f1', 'video': '#ef4444', 'shopping': '#f59e0b', 'news': '#10b981',
-  'dev': '#3b82f6', 'search': '#8b5cf6', 'email': '#ec4899', 'docs': '#14b8a6', 'other': '#64748b',
-}
-
-function getCategoryForDomain(domain: string): string {
-  const lower = domain.toLowerCase()
-  for (const [kw, cat] of CATEGORY_MAP) {
-    if (lower.includes(kw)) return cat
+function getCategoryForDomain(domain: string, tagCache?: Map<string, string[]>): string {
+  const url = `https://${domain}`
+  if (tagCache) {
+    const cached = tagCache.get(url)
+    if (cached) return cached[0] || 'other'
   }
-  return 'other'
+  const tags = autoTag(url, '')
+  return tags[0] || 'other'
 }
 
-function isProductive(domain: string): boolean {
-  const lower = domain.toLowerCase()
-  for (const kw of PRODUCTIVE_KEYWORDS) {
-    if (lower.includes(kw)) return true
+function getTagsForDomain(domain: string, tagCache?: Map<string, string[]>): string[] {
+  const url = `https://${domain}`
+  if (tagCache) {
+    const cached = tagCache.get(url)
+    if (cached) return cached
   }
-  return false
+  return autoTag(url, '')
 }
 
-function isUnproductive(domain: string): boolean {
-  const lower = domain.toLowerCase()
-  for (const kw of UNPRODUCTIVE_KEYWORDS) {
-    if (lower.includes(kw)) return true
-  }
-  return false
+function isProductive(tags: string[]): boolean {
+  return tags.some(tag => getTagProductivity(tag) === 'productive')
+}
+
+function isUnproductive(tags: string[]): boolean {
+  return tags.some(tag => getTagProductivity(tag) === 'unproductive')
 }
 
 function getTimeSlot(hour: number): string {
@@ -178,6 +162,7 @@ export const useStatsStore = defineStore('stats', () => {
   }
 
   function performComputation(records: HistoryRecord[]) {
+    const computeStart = perfMark('stats:compute')
     const now = Date.now()
     const weekAgo = now - 7 * 86400000
     const twoWeeksAgo = now - 14 * 86400000
@@ -218,6 +203,8 @@ export const useStatsStore = defineStore('stats', () => {
     const currentDay = new Date().getDay()
     const currentSlot = getTimeSlot(currentHour)
 
+    const domainTagCache = new Map<string, string[]>()
+
     for (let i = 0; i < filtered.length; i++) {
       const r = filtered[i]
       const d = new Date(r.lastVisitTime)
@@ -238,7 +225,13 @@ export const useStatsStore = defineStore('stats', () => {
         domainMap.set(r.domain, domainInfo)
       }
 
-      const cat = getCategoryForDomain(r.domain)
+      let domainTags = domainTagCache.get(r.domain)
+      if (!domainTags) {
+        domainTags = autoTag(`https://${r.domain}`, '')
+        domainTagCache.set(r.domain, domainTags)
+      }
+
+      const cat = domainTags[0] || 'other'
       catMap.set(cat, (catMap.get(cat) || 0) + 1)
 
       const heatKey = `${day}-${hour}`
@@ -266,12 +259,12 @@ export const useStatsStore = defineStore('stats', () => {
         previousWeekMap.set(r.domain, (previousWeekMap.get(r.domain) || 0) + 1)
       }
 
-      if (isProductive(r.domain)) {
+      if (isProductive(domainTags)) {
         productiveCount++
         if (productiveDomains.length < 5 && !productiveDomains.includes(r.domain)) {
           productiveDomains.push(r.domain)
         }
-      } else if (isUnproductive(r.domain)) {
+      } else if (isUnproductive(domainTags)) {
         unproductiveCount++
         if (unproductiveDomains.length < 5 && !unproductiveDomains.includes(r.domain)) {
           unproductiveDomains.push(r.domain)
@@ -302,7 +295,7 @@ export const useStatsStore = defineStore('stats', () => {
     })
 
     categoryStats.value = Array.from(catMap.entries())
-      .map(([name, count]) => ({ name, count, percentage: Math.round((count / total) * 100), color: CATEGORY_COLORS[name] || '#64748b' }))
+      .map(([name, count]) => ({ name, count, percentage: Math.round((count / total) * 100), color: TAG_COLORS[name] || '#64748b' }))
       .sort((a, b) => b.count - a.count)
 
     let maxHeat = 0
@@ -375,17 +368,20 @@ export const useStatsStore = defineStore('stats', () => {
       if (c > peakDayCount) { peakDay = d; peakDayCount = c }
     }
 
-    const sorted = [...filtered].sort((a, b) => a.lastVisitTime - b.lastVisitTime)
     let sessions = 0
     let sessionLen = 0
-    if (sorted.length > 0) {
+    if (filtered.length > 0) {
+      const sortedTimes = new Float64Array(filtered.length)
+      for (let i = 0; i < filtered.length; i++) {
+        sortedTimes[i] = filtered[i].lastVisitTime
+      }
+      sortedTimes.sort()
       sessions = 1
-      sessionLen = 1
-      for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i].lastVisitTime - sorted[i - 1].lastVisitTime > 30 * 60 * 1000) {
+      sessionLen = filtered.length
+      for (let i = 1; i < sortedTimes.length; i++) {
+        if (sortedTimes[i] - sortedTimes[i - 1] > 30 * 60 * 1000) {
           sessions++
         }
-        sessionLen++
       }
     }
     const avgSessionLen = sessions > 0 ? Math.round(sessionLen / sessions) : 0
@@ -443,6 +439,8 @@ export const useStatsStore = defineStore('stats', () => {
       .map(([domain, info]) => ({ domain, ...info }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
+
+    perfMeasure('stats:compute', computeStart, { recordCount: filtered.length, domainCount: domainMap.size })
   }
 
   return {

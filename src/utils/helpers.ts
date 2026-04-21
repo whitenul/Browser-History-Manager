@@ -1,5 +1,47 @@
+import { parse } from 'tldts'
+import {
+  buildEntityIndex,
+  getEntityForDomain,
+  getEntityRelationships,
+  getEntityById,
+  getRegisteredDomain,
+  extractDomainFeatures,
+  buildDomainGraph,
+  SessionCoVisitAnalyzer,
+  AdaptiveConfidenceAdjuster,
+  type DomainEntity,
+  type DomainRelationship,
+  type DomainFeatures,
+  type DomainGraphNode,
+  type DomainGraphEdge,
+  type CoVisitRecord,
+  type ConfidenceCorrection,
+} from './domainEntity'
+
+export {
+  getRegisteredDomain,
+  getPublicSuffix,
+  getSubdomain,
+  buildDomainGraph,
+  SessionCoVisitAnalyzer,
+  AdaptiveConfidenceAdjuster,
+  getEntityForDomain,
+  getAllEntities,
+} from './domainEntity'
+export type {
+  DomainEntity,
+  DomainRelationship,
+  DomainFeatures,
+  DomainGraphNode,
+  DomainGraphEdge,
+  CoVisitRecord,
+  ConfidenceCorrection,
+}
+
 export function getDomain(url: string): string {
   try {
+    const result = parse(url)
+    if (result.domain) return result.domain
     const hostname = new URL(url).hostname
     return hostname.replace(/^www\./, '')
   } catch {
@@ -1077,10 +1119,115 @@ const TAG_RULES: TagRule[] = [
   },
 ]
 
+interface SubtagRule {
+  subtag: string
+  parentTag: string
+  domains?: string[]
+  pathKeywords?: string[]
+  titleKeywords?: string[]
+  productivity: 'productive' | 'neutral' | 'unproductive'
+}
+
+const SUBTAG_RULES: SubtagRule[] = [
+  { subtag: 'frontend', parentTag: 'tech', domains: ['vuejs.org', 'react.dev', 'angular.io', 'svelte.dev', 'nextjs.org', 'nuxt.com', 'tailwindcss.com', 'unocss.dev', 'mui.com', 'ant.design', 'vitejs.dev', 'webpack.js.org'], pathKeywords: ['vue', 'react', 'angular', 'svelte', 'css', 'html', 'dom', 'webpack', 'vite', 'component', 'hook', 'render', 'bundle'], titleKeywords: ['前端', 'frontend', 'vue', 'react', 'angular', 'css', '组件', 'component'], productivity: 'productive' },
+  { subtag: 'backend', parentTag: 'tech', domains: ['expressjs.com', 'fastapi.tiangolo.com', 'django.com', 'flask.palletsprojects.com', 'spring.io', 'laravel.com', 'gin-gonic.com', 'graphql.org', 'hasura.io', 'trpc.io', 'prisma.io', 'drizzle.team'], pathKeywords: ['api', 'server', 'database', 'rest', 'graphql', 'microservice', 'middleware', 'orm', 'sql', 'nosql'], titleKeywords: ['后端', 'backend', 'api', '数据库', 'server'], productivity: 'productive' },
+  { subtag: 'competitiveProgramming', parentTag: 'tech', domains: ['leetcode.com', 'codeforces.com', 'hackerrank.com', 'codewars.com', 'atcoder.jp', 'topcoder.com', 'spoj.com', 'projecteuler.net'], pathKeywords: ['problem', 'contest', 'challenge', 'solution', 'submit'], titleKeywords: ['刷题', 'leetcode', '算法题', '竞赛', 'oj', '编程题'], productivity: 'productive' },
+  { subtag: 'devOps', parentTag: 'tech', domains: ['docker.com', 'kubernetes.io', 'jenkins.io', 'grafana.com', 'prometheus.io', 'sentry.io', 'circleci.com'], pathKeywords: ['deploy', 'pipeline', 'container', 'docker', 'k8s', 'ci/cd', 'monitoring'], titleKeywords: ['部署', 'deploy', '运维', 'devops', '容器', 'docker'], productivity: 'productive' },
+  { subtag: 'opensource', parentTag: 'tech', domains: ['github.com', 'gitlab.com', 'bitbucket.org', 'npmjs.com', 'pypi.org', 'crates.io'], pathKeywords: ['repos', 'packages', 'issues', 'pull', 'commit', 'releases', 'fork'], titleKeywords: ['开源', 'opensource', '仓库', 'repository', '贡献', 'contributing'], productivity: 'productive' },
+  { subtag: 'documentation', parentTag: 'tech', domains: ['developer.mozilla.org', 'docs.rs', 'pkg.go.dev', 'docs.python.org', 'typescriptlang.org', 'readthedocs.io'], pathKeywords: ['docs', 'documentation', 'reference', 'guide', 'manual', 'api-docs'], titleKeywords: ['文档', 'docs', '手册', '指南', 'reference'], productivity: 'productive' },
+  { subtag: 'security', parentTag: 'tech', domains: ['owasp.org', 'portswigger.net', 'hackthebox.com', 'tryhackme.com'], pathKeywords: ['vulnerability', 'exploit', 'pentest', 'cve'], titleKeywords: ['安全', 'security', '漏洞', '渗透', 'xss', 'csrf'], productivity: 'productive' },
+  { subtag: 'shortVideo', parentTag: 'video', domains: ['tiktok.com', 'douyin.com'], pathKeywords: ['shorts', 'short-video', 'reels'], titleKeywords: ['短视频', 'short video', '抖音', 'tiktok'], productivity: 'unproductive' },
+  { subtag: 'longVideo', parentTag: 'video', domains: ['youtube.com', 'bilibili.com', 'netflix.com', 'vimeo.com', 'iqiyi.com', 'youku.com'], pathKeywords: ['watch', 'video', 'episode', 'season'], titleKeywords: ['视频', 'video', '电影', 'movie', '番剧', '纪录片'], productivity: 'unproductive' },
+  { subtag: 'liveStream', parentTag: 'video', domains: ['twitch.tv', 'live.bilibili.com', 'douyu.com', 'huya.com'], pathKeywords: ['live', 'stream', 'broadcast'], titleKeywords: ['直播', 'live', 'stream'], productivity: 'unproductive' },
+  { subtag: 'instantMessaging', parentTag: 'social', domains: ['discord.com', 'telegram.org', 'slack.com', 'weixin.qq.com', 'web.whatsapp.com', 'messenger.com', 'teams.microsoft.com', 'skype.com'], pathKeywords: ['chat', 'dm', 'messages', 'channel'], titleKeywords: ['聊天', 'chat', '私信', '群聊', '消息'], productivity: 'neutral' },
+  { subtag: 'communityForum', parentTag: 'social', domains: ['reddit.com', 'zhihu.com', 'tieba.baidu.com', 'v2ex.com', 'douban.com', 'quora.com', 'stackexchange.com'], pathKeywords: ['forum', 'thread', 'topic', 'post', 'comment', 'discussion'], titleKeywords: ['论坛', '社区', '讨论', '问答', '帖子'], productivity: 'neutral' },
+  { subtag: 'professionalSocial', parentTag: 'social', domains: ['linkedin.com'], pathKeywords: ['profile', 'network', 'connection'], titleKeywords: ['职场', '人脉', 'professional'], productivity: 'productive' },
+  { subtag: 'photoSocial', parentTag: 'social', domains: ['instagram.com', 'pinterest.com', 'xiaohongshu.com'], pathKeywords: ['photo', 'pin', 'post', 'feed'], titleKeywords: ['图片', '照片', '分享'], productivity: 'unproductive' },
+  { subtag: 'onlineCourse', parentTag: 'education', domains: ['coursera.org', 'udemy.com', 'edx.org', 'pluralsight.com', 'skillshare.com', 'udacity.com', 'codecademy.com', 'datacamp.com', 'imooc.com', 'xuetangx.com', 'icourse163.org'], pathKeywords: ['course', 'lesson', 'lecture', 'enroll'], titleKeywords: ['课程', 'course', '在线课', 'mooc'], productivity: 'productive' },
+  { subtag: 'selfLearning', parentTag: 'education', domains: ['wikipedia.org', 'wikihow.com', 'runoob.com', 'w3schools.com', 'tutorialspoint.com', 'geeksforgeeks.org', 'brilliant.org', 'khanacademy.org'], pathKeywords: ['wiki', 'learn', 'tutorial', 'guide', 'how-to'], titleKeywords: ['学习', '教程', '入门', '指南', '百科'], productivity: 'productive' },
+  { subtag: 'academic', parentTag: 'education', domains: ['scholar.google.com', 'arxiv.org', 'researchgate.net', 'semanticscholar.org', 'academia.edu', 'springer.com', 'ieee.org', 'doi.org'], pathKeywords: ['paper', 'article', 'citation', 'abstract', 'research'], titleKeywords: ['论文', 'paper', '研究', '学术', '期刊'], productivity: 'productive' },
+  { subtag: 'ecommerce', parentTag: 'shopping', domains: ['taobao.com', 'jd.com', 'amazon.com', 'pinduoduo.com', 'tmall.com', 'ebay.com', 'walmart.com', 'suning.com', 'vip.com'], pathKeywords: ['product', 'item', 'cart', 'checkout', 'order', 'goods'], titleKeywords: ['购物', '购买', '下单', '商品'], productivity: 'unproductive' },
+  { subtag: 'reviews', parentTag: 'shopping', domains: ['smzdm.com', 'zol.com.cn', 'dianping.com'], pathKeywords: ['review', 'rating', 'compare'], titleKeywords: ['测评', '评测', '比价', '推荐'], productivity: 'neutral' },
+  { subtag: 'streaming', parentTag: 'music', domains: ['spotify.com', 'music.163.com', 'music.apple.com', 'tidal.com', 'deezer.com', 'y.qq.com', 'kugou.com', 'kuwo.cn'], pathKeywords: ['track', 'album', 'playlist', 'artist', 'song'], titleKeywords: ['音乐', 'music', '歌单', '专辑'], productivity: 'unproductive' },
+  { subtag: 'creation', parentTag: 'music', domains: ['soundcloud.com', 'bandcamp.com'], pathKeywords: ['upload', 'create', 'studio'], titleKeywords: ['创作', '原创', '制作'], productivity: 'productive' },
+  { subtag: 'pcGaming', parentTag: 'gaming', domains: ['store.steampowered.com', 'epicgames.com', 'gog.com'], pathKeywords: ['store', 'app', 'game', 'library'], titleKeywords: ['steam', 'pc游戏', '单机'], productivity: 'unproductive' },
+  { subtag: 'mobileGaming', parentTag: 'gaming', domains: ['taptap.com', '4399.com', '7k7k.com'], pathKeywords: ['mobile', 'android', 'ios'], titleKeywords: ['手游', '手机游戏'], productivity: 'unproductive' },
+  { subtag: 'trading', parentTag: 'finance', domains: ['xueqiu.com', 'tradingview.com', 'robinhood.com', 'binance.com', 'coinmarketcap.com', 'okx.com', 'eastmoney.com', 'finance.yahoo.com'], pathKeywords: ['quote', 'stock', 'crypto', 'trade', 'chart', 'kline'], titleKeywords: ['股票', '行情', '交易', 'k线', '加密'], productivity: 'neutral' },
+  { subtag: 'banking', parentTag: 'finance', domains: ['icbc.com.cn', 'ccb.com', 'boc.cn', 'cmbchina.com', 'paypal.com', 'wise.com'], pathKeywords: ['account', 'transfer', 'payment'], titleKeywords: ['银行', '转账', '支付'], productivity: 'neutral' },
+  { subtag: 'novel', parentTag: 'reading', domains: ['qidian.com', 'jjwxc.net', 'zongheng.com', '17k.com', 'weread.qq.com', 'kindle.amazon.com'], pathKeywords: ['chapter', 'novel', 'book', 'read'], titleKeywords: ['小说', 'novel', '章节', '连载'], productivity: 'unproductive' },
+  { subtag: 'articles', parentTag: 'reading', domains: ['medium.com', 'substack.com', 'sspai.com', 'pocket.com', 'readwise.io', 'feedly.com'], pathKeywords: ['article', 'post', 'blog', 'feed'], titleKeywords: ['文章', '阅读', 'rss', '订阅'], productivity: 'neutral' },
+  { subtag: 'uiDesign', parentTag: 'design', domains: ['figma.com', 'dribbble.com', 'behance.net', 'framer.com', 'penpot.app', 'sketch.com', 'awwwards.com'], pathKeywords: ['design', 'prototype', 'canvas', 'shot', 'portfolio'], titleKeywords: ['ui', 'ux', '设计', '原型', '交互'], productivity: 'productive' },
+  { subtag: 'designTools', parentTag: 'design', domains: ['canva.com', 'adobe.com', 'unsplash.com', 'pexels.com', 'pixabay.com', 'freepik.com'], pathKeywords: ['template', 'asset', 'image', 'icon', 'font'], titleKeywords: ['素材', '模板', '图标', '字体'], productivity: 'productive' },
+  { subtag: 'booking', parentTag: 'travel', domains: ['booking.com', 'ctrip.com', 'airbnb.com', 'agoda.com', 'hotels.com', 'qunar.com', 'expedia.com'], pathKeywords: ['booking', 'hotel', 'flight', 'reservation'], titleKeywords: ['预订', '机票', '酒店', '民宿'], productivity: 'neutral' },
+  { subtag: 'travelInfo', parentTag: 'travel', domains: ['tripadvisor.com', 'mafengwo.cn', 'lonelyplanet.com', 'wikivoyage.org'], pathKeywords: ['destination', 'attraction', 'guide', 'review'], titleKeywords: ['攻略', '景点', '旅行'], productivity: 'neutral' },
+  { subtag: 'delivery', parentTag: 'food', domains: ['meituan.com', 'ele.me', 'ubereats.com', 'doordash.com', 'dianping.com'], pathKeywords: ['order', 'delivery', 'restaurant'], titleKeywords: ['外卖', '配送', '点餐'], productivity: 'neutral' },
+  { subtag: 'recipes', parentTag: 'food', domains: ['xiachufang.com', 'cookpad.com', 'allrecipes.com', 'foodnetwork.com', 'seriouseats.com'], pathKeywords: ['recipe', 'cook', 'ingredient', 'dish'], titleKeywords: ['食谱', '烹饪', '做法', '菜谱'], productivity: 'neutral' },
+  { subtag: 'fitness', parentTag: 'health', domains: ['keep.com', 'myfitnesspal.com', 'strava.com', 'bodybuilding.com'], pathKeywords: ['workout', 'exercise', 'training', 'fitness'], titleKeywords: ['健身', '运动', '锻炼', '减肥'], productivity: 'neutral' },
+  { subtag: 'medical', parentTag: 'health', domains: ['webmd.com', 'mayoclinic.org', 'dxy.com', 'chunyuyisheng.com', 'guahao.com'], pathKeywords: ['symptom', 'diagnosis', 'treatment', 'doctor'], titleKeywords: ['医疗', '症状', '诊断', '医生'], productivity: 'neutral' },
+  { subtag: 'notes', parentTag: 'docs', domains: ['notion.so', 'obsidian.md', 'logseq.com', 'roamresearch.com', 'evernote.com', 'craft.do', 'bear.app'], pathKeywords: ['note', 'page', 'block', 'journal'], titleKeywords: ['笔记', '笔记', '知识库', 'notion'], productivity: 'productive' },
+  { subtag: 'projectManagement', parentTag: 'docs', domains: ['jira.atlassian.net', 'trello.com', 'asana.com', 'clickup.com', 'linear.app', 'shortcut.com'], pathKeywords: ['board', 'sprint', 'task', 'issue', 'project'], titleKeywords: ['项目管理', '看板', '任务', 'sprint'], productivity: 'productive' },
+  { subtag: 'email', parentTag: 'social', domains: ['mail.google.com', 'outlook.com', 'outlook.live.com', 'mail.qq.com', 'mail.163.com', 'proton.me', 'mail.yahoo.com'], pathKeywords: ['mail', 'inbox', 'compose', 'draft', 'sent'], titleKeywords: ['邮件', 'email', '收件箱'], productivity: 'productive' },
+  { subtag: 'meeting', parentTag: 'social', domains: ['zoom.us', 'teams.microsoft.com', 'meet.google.com', 'webex.com'], pathKeywords: ['meeting', 'conference', 'call', 'video-call'], titleKeywords: ['会议', '视频会议', 'meeting'], productivity: 'productive' },
+  { subtag: 'chat', parentTag: 'ai', domains: ['chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'poe.com', 'character.ai', 'copilot.microsoft.com', 'chat.zhipu.ai', 'kimi.moonshot.cn', 'doubao.com', 'tongyi.aliyun.com', 'yiyan.baidu.com'], pathKeywords: ['chat', 'conversation', 'prompt', 'completions'], titleKeywords: ['对话', 'chat', 'gpt', '大模型', 'ai助手'], productivity: 'productive' },
+  { subtag: 'imageGeneration', parentTag: 'ai', domains: ['midjourney.com', 'stability.ai', 'leonardo.ai', 'playground.ai', 'civitai.com', 'comfyui.com'], pathKeywords: ['generate', 'image', 'create', 'art'], titleKeywords: ['文生图', 'ai绘画', '图像生成', 'diffusion'], productivity: 'productive' },
+  { subtag: 'codeAssistant', parentTag: 'ai', domains: ['cursor.com', 'github.com/features/copilot', 'windsurf.ai', 'augmentcode.com', 'v0.dev', 'bolt.new', 'lovable.dev'], pathKeywords: ['code', 'suggest', 'complete', 'generate'], titleKeywords: ['代码助手', 'ai编程', 'copilot', '代码生成'], productivity: 'productive' },
+]
+
+const URL_SEMANTIC_PATTERNS: { pattern: string; tag: string; subtag?: string; confidence: number }[] = [
+  { pattern: '/docs/', tag: 'tech', subtag: 'documentation', confidence: 0.6 },
+  { pattern: '/documentation/', tag: 'tech', subtag: 'documentation', confidence: 0.6 },
+  { pattern: '/api/', tag: 'tech', subtag: 'backend', confidence: 0.5 },
+  { pattern: '/sdk/', tag: 'tech', confidence: 0.5 },
+  { pattern: '/tutorial/', tag: 'education', subtag: 'selfLearning', confidence: 0.6 },
+  { pattern: '/course/', tag: 'education', subtag: 'onlineCourse', confidence: 0.65 },
+  { pattern: '/learn/', tag: 'education', subtag: 'selfLearning', confidence: 0.5 },
+  { pattern: '/wiki/', tag: 'education', subtag: 'selfLearning', confidence: 0.55 },
+  { pattern: '/blog/', tag: 'reading', subtag: 'articles', confidence: 0.5 },
+  { pattern: '/post/', tag: 'reading', subtag: 'articles', confidence: 0.45 },
+  { pattern: '/article/', tag: 'reading', subtag: 'articles', confidence: 0.5 },
+  { pattern: '/questions/', tag: 'tech', subtag: 'opensource', confidence: 0.55 },
+  { pattern: '/issues/', tag: 'tech', subtag: 'opensource', confidence: 0.5 },
+  { pattern: '/watch', tag: 'video', subtag: 'longVideo', confidence: 0.5 },
+  { pattern: '/video/', tag: 'video', subtag: 'longVideo', confidence: 0.55 },
+  { pattern: '/live/', tag: 'video', subtag: 'liveStream', confidence: 0.55 },
+  { pattern: '/shorts/', tag: 'video', subtag: 'shortVideo', confidence: 0.6 },
+  { pattern: '/shop/', tag: 'shopping', subtag: 'ecommerce', confidence: 0.5 },
+  { pattern: '/product/', tag: 'shopping', subtag: 'ecommerce', confidence: 0.45 },
+  { pattern: '/recipe/', tag: 'food', subtag: 'recipes', confidence: 0.55 },
+  { pattern: '/booking/', tag: 'travel', subtag: 'booking', confidence: 0.55 },
+  { pattern: '/hotel/', tag: 'travel', subtag: 'booking', confidence: 0.55 },
+  { pattern: '/flight/', tag: 'travel', subtag: 'booking', confidence: 0.55 },
+  { pattern: '/search', tag: 'search', confidence: 0.4 },
+  { pattern: '/mail/', tag: 'social', subtag: 'email', confidence: 0.5 },
+  { pattern: '/inbox/', tag: 'social', subtag: 'email', confidence: 0.55 },
+  { pattern: '/chat/', tag: 'ai', subtag: 'chat', confidence: 0.45 },
+  { pattern: '/game/', tag: 'gaming', confidence: 0.5 },
+  { pattern: '/news/', tag: 'news', confidence: 0.5 },
+  { pattern: '/music/', tag: 'music', confidence: 0.5 },
+  { pattern: '/health/', tag: 'health', confidence: 0.5 },
+  { pattern: '/fitness/', tag: 'health', subtag: 'fitness', confidence: 0.55 },
+  { pattern: '/design/', tag: 'design', confidence: 0.5 },
+]
+
+const TAG_PRODUCTIVITY: Record<string, 'productive' | 'neutral' | 'unproductive'> = {
+  tech: 'productive', education: 'productive', docs: 'productive', cloud: 'productive',
+  design: 'productive', dev: 'productive', tools: 'productive', ai: 'productive',
+  search: 'neutral', news: 'neutral', health: 'neutral', government: 'neutral',
+  law: 'neutral', realestate: 'neutral', automotive: 'neutral', reading: 'neutral',
+  finance: 'neutral', travel: 'neutral', food: 'neutral', jobs: 'neutral',
+  sports: 'neutral', photography: 'neutral', forum: 'neutral', email: 'productive',
+  social: 'unproductive', video: 'unproductive', gaming: 'unproductive',
+  music: 'unproductive', shopping: 'unproductive', blog: 'neutral',
+}
+
+export function getTagProductivity(tag: string): 'productive' | 'neutral' | 'unproductive' {
+  return TAG_PRODUCTIVITY[tag] || 'neutral'
+}
+
 interface TagCandidate {
   tag: string
   confidence: number
-  source: 'domain' | 'domain-suffix' | 'title' | 'url-pattern' | 'url-query'
+  source: 'domain' | 'domain-suffix' | 'title' | 'url-pattern' | 'url-query' | 'entity-propagation' | 'feature-based'
 }
 
 export interface TagResult {
@@ -1090,7 +1237,85 @@ export interface TagResult {
 }
 
 const TAG_CACHE = new Map<string, string[]>()
+const TAG_DETAILED_CACHE = new Map<string, TagResult[]>()
 const TAG_CACHE_MAX = 10000
+let entityIndexInitialized = false
+
+export function clearTagCache(): void {
+  TAG_CACHE.clear()
+  TAG_DETAILED_CACHE.clear()
+}
+
+export function batchAutoTag(records: Array<{ url: string; title: string }>): Map<string, string[]> {
+  const results = new Map<string, string[]>()
+  for (const r of records) {
+    const key = `${r.url}|${r.title}`
+    let tags = TAG_CACHE.get(key)
+    if (!tags) {
+      tags = autoTag(r.url, r.title)
+    }
+    results.set(key, tags)
+  }
+  return results
+}
+
+function propagateEntityConfidence(domain: string, candidates: TagCandidate[]): void {
+  const entity = getEntityForDomain(domain)
+  if (!entity) return
+
+  const hasEntityTag = candidates.some(c => c.tag === entity.primaryTag && c.confidence >= 0.6)
+  if (!hasEntityTag) {
+    candidates.push({
+      tag: entity.primaryTag,
+      confidence: 0.65,
+      source: 'entity-propagation',
+    })
+  }
+
+  const relationships = getEntityRelationships(entity.id)
+  for (const rel of relationships) {
+    if (rel.type === 'sibling' || rel.type === 'subsidiary') {
+      const siblingEntity = getEntityById(rel.target)
+      if (siblingEntity && rel.confidence > 0.7) {
+        const hasSiblingTag = candidates.some(c => c.tag === siblingEntity.primaryTag)
+        if (!hasSiblingTag) {
+          candidates.push({
+            tag: siblingEntity.primaryTag,
+            confidence: 0.4 * rel.confidence,
+            source: 'entity-propagation',
+          })
+        }
+      }
+    }
+  }
+}
+
+function classifyByDomainFeatures(url: string, candidates: TagCandidate[]): void {
+  const features = extractDomainFeatures(url)
+  if (features.entityMatch) return
+
+  const FEATURE_TAG_MAP: Array<{ condition: (f: DomainFeatures) => boolean; tag: string; confidence: number }> = [
+    { condition: f => f.tldType === 'new-gtld' && ['dev', 'app', 'io', 'sh'].some(t => url.endsWith('.' + t)), tag: 'tech', confidence: 0.45 },
+    { condition: f => f.tldType === 'new-gtld' && ['ai'].some(t => url.endsWith('.' + t)), tag: 'ai', confidence: 0.5 },
+    { condition: f => f.tldType === 'new-gtld' && ['design', 'art'].some(t => url.endsWith('.' + t)), tag: 'design', confidence: 0.5 },
+    { condition: f => f.tldType === 'new-gtld' && ['music', 'video'].some(t => url.endsWith('.' + t)), tag: 'music', confidence: 0.4 },
+    { condition: f => f.tldType === 'new-gtld' && ['shop', 'store'].some(t => url.endsWith('.' + t)), tag: 'shopping', confidence: 0.45 },
+    { condition: f => f.tldType === 'new-gtld' && ['game', 'games'].some(t => url.endsWith('.' + t)), tag: 'gaming', confidence: 0.45 },
+    { condition: f => f.tldType === 'new-gtld' && ['blog'].some(t => url.endsWith('.' + t)), tag: 'blog', confidence: 0.45 },
+    { condition: f => f.tldType === 'country' && f.domainLength <= 4, tag: 'search', confidence: 0.3 },
+    { condition: f => f.pathDepth >= 4 && f.domainLength > 10, tag: 'tools', confidence: 0.3 },
+  ]
+
+  for (const rule of FEATURE_TAG_MAP) {
+    if (rule.condition(features)) {
+      const existing = candidates.find(c => c.tag === rule.tag)
+      if (!existing || existing.confidence < rule.confidence) {
+        candidates.push({ tag: rule.tag, confidence: rule.confidence, source: 'feature-based' })
+      }
+      break
+    }
+  }
+}
 
 export function autoTag(url: string, title: string): string[] {
   const cacheKey = `${url}|${title}`
@@ -1105,20 +1330,33 @@ export function autoTag(url: string, title: string): string[] {
 }
 
 export function autoTagDetailed(url: string, title: string): TagResult[] {
+  const cacheKey = `${url}|${title}`
+  const cached = TAG_DETAILED_CACHE.get(cacheKey)
+  if (cached) return cached
+
+  if (!entityIndexInitialized) {
+    buildEntityIndex()
+    entityIndexInitialized = true
+  }
+
   const candidates: TagCandidate[] = []
   const domain = getDomain(url)
-  const domainParts = domain.split('.')
   const titleLower = (title || '').toLowerCase()
   const urlLower = url.toLowerCase()
 
+  let urlPath = '/'
+  try { urlPath = new URL(url).pathname.toLowerCase() } catch { /* ignore */ }
+
+  const registeredDomain = getRegisteredDomain(url)
+
   for (const rule of TAG_RULES) {
-    const exactDomainMatch = rule.domains.some(d => domain === d)
+    const exactDomainMatch = rule.domains.some(d => domain === d || registeredDomain === d)
     if (exactDomainMatch) {
       candidates.push({ tag: rule.tag, confidence: 0.95, source: 'domain' })
       continue
     }
 
-    const suffixDomainMatch = rule.domains.some(d => domain.endsWith('.' + d))
+    const suffixDomainMatch = rule.domains.some(d => domain.endsWith('.' + d) || registeredDomain?.endsWith('.' + d))
     if (suffixDomainMatch) {
       candidates.push({ tag: rule.tag, confidence: 0.85, source: 'domain' })
       continue
@@ -1149,15 +1387,72 @@ export function autoTagDetailed(url: string, title: string): TagResult[] {
     }
   }
 
+  if (candidates.length === 0 || candidates.every(c => c.confidence < 0.5)) {
+    for (const pattern of URL_SEMANTIC_PATTERNS) {
+      if (urlPath.includes(pattern.pattern)) {
+        const existing = candidates.find(c => c.tag === pattern.tag)
+        if (!existing || existing.confidence < pattern.confidence) {
+          candidates.push({ tag: pattern.tag, confidence: pattern.confidence, source: 'url-pattern' })
+        }
+      }
+    }
+  }
+
+  propagateEntityConfidence(domain, candidates)
+
+  if (candidates.length === 0 || candidates.every(c => c.confidence < 0.4)) {
+    classifyByDomainFeatures(url, candidates)
+  }
+
   const tagMap = new Map<string, { confidence: number; subtags: string[] }>()
   for (const c of candidates) {
     const existing = tagMap.get(c.tag)
     if (existing) {
       existing.confidence = Math.max(existing.confidence, c.confidence)
     } else {
-      const rule = TAG_RULES.find(r => r.tag === c.tag)
-      tagMap.set(c.tag, { confidence: c.confidence, subtags: rule?.subtags || [] })
+      tagMap.set(c.tag, { confidence: c.confidence, subtags: [] })
     }
+  }
+
+  for (const [tag, data] of tagMap) {
+    const matchedSubtags: string[] = []
+    const subtagRules = SUBTAG_RULES.filter(r => r.parentTag === tag)
+
+    for (const rule of subtagRules) {
+      let matched = false
+      let subConf = 0
+
+      if (rule.domains) {
+        const domainMatch = rule.domains.some(d => domain === d || domain.endsWith('.' + d))
+        if (domainMatch) { matched = true; subConf = 0.9 }
+      }
+
+      if (!matched && rule.pathKeywords && urlPath) {
+        const pathMatch = rule.pathKeywords.some(kw => urlPath.includes(kw))
+        if (pathMatch) { matched = true; subConf = 0.65 }
+      }
+
+      if (!matched && rule.titleKeywords) {
+        const titleMatch = rule.titleKeywords.some(kw => titleLower.includes(kw))
+        if (titleMatch) { matched = true; subConf = 0.5 }
+      }
+
+      if (matched) {
+        matchedSubtags.push(rule.subtag)
+      }
+    }
+
+    if (matchedSubtags.length === 0) {
+      for (const pattern of URL_SEMANTIC_PATTERNS) {
+        if (pattern.subtag && pattern.tag === tag && urlPath.includes(pattern.pattern)) {
+          if (!matchedSubtags.includes(pattern.subtag)) {
+            matchedSubtags.push(pattern.subtag)
+          }
+        }
+      }
+    }
+
+    data.subtags = matchedSubtags
   }
 
   const hour = new Date().getHours()
@@ -1176,8 +1471,6 @@ export function autoTagDetailed(url: string, title: string): TagResult[] {
     else if (title.length > 40) tagMap.set('mediumArticle', { confidence: 0.6, subtags: [] })
   }
 
-  let urlPath = '/'
-  try { urlPath = new URL(url).pathname } catch { /* ignore invalid URLs */ }
   const depth = urlPath.split('/').filter(Boolean).length
   if (depth >= 5) tagMap.set('deepPage', { confidence: 0.4, subtags: [] })
 
@@ -1185,11 +1478,17 @@ export function autoTagDetailed(url: string, title: string): TagResult[] {
     .sort((a, b) => b[1].confidence - a[1].confidence)
     .slice(0, 4)
 
-  return sorted.map(([tag, data]) => ({
+  const result = sorted.map(([tag, data]) => ({
     tag,
     confidence: data.confidence,
     subtags: data.subtags,
   }))
+
+  if (TAG_DETAILED_CACHE.size < TAG_CACHE_MAX) {
+    TAG_DETAILED_CACHE.set(cacheKey, result)
+  }
+
+  return result
 }
 
 export function getTagConfidence(url: string, title: string, tag: string): number {

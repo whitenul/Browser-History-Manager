@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
-import { safeOpenUrl } from '@/utils/helpers'
+import { safeOpenUrl, autoTag, AdaptiveConfidenceAdjuster } from '@/utils/helpers'
 import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const history = useHistoryStore()
 const { t } = useI18n()
+
+const adjuster = new AdaptiveConfidenceAdjuster()
 
 function handleAction(action: string) {
   const record = ui.contextMenuTarget
@@ -18,9 +20,19 @@ function handleAction(action: string) {
     case 'favorite': history.toggleFavorite(record.url); break
     case 'tag': ui.openTagModal(record.url); break
     case 'preview': ui.openPreview(record); break
+    case 'recategorize': handleRecategorize(record); break
     case 'delete': ui.openDeleteConfirm(record); break
   }
   ui.closeContextMenu()
+}
+
+function handleRecategorize(record: any) {
+  const currentTags = autoTag(record.url, record.title)
+  if (currentTags.length > 0) {
+    const fromTag = currentTags[0]
+    ui.openTagModal(record.url)
+    adjuster.recordCorrection(record.domain, fromTag, '')
+  }
 }
 </script>
 
@@ -42,6 +54,9 @@ function handleAction(action: string) {
       </button>
       <button class="ctx-item" @click="handleAction('tag')">
         <span class="i-lucide:tag ctx-icon" />{{ t('contextMenu.manageTags') }}
+      </button>
+      <button class="ctx-item" @click="handleAction('recategorize')">
+        <span class="i-lucide:shuffle ctx-icon" />{{ t('contextMenu.recategorize') }}
       </button>
       <button class="ctx-item" @click="handleAction('preview')">
         <span class="i-lucide:eye ctx-icon" />{{ t('contextMenu.preview') }}
