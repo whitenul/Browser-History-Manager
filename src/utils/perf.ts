@@ -26,8 +26,8 @@ const metrics: PerfMetric[] = []
 const MAX_METRICS = 500
 
 export function perfMark(name: string, metadata?: Record<string, number | string>): number {
-  const start = performance.now()
-  return start
+  const mark = performance.mark(`${name}-start`, metadata ? { detail: metadata } : undefined)
+  return mark.startTime
 }
 
 export function perfMeasure(name: string, startMark: number, metadata?: Record<string, number | string>): PerfMetric {

@@ -238,12 +238,13 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
         <button
           v-for="tab in tabs"
           :key="tab.id"
+          :title="tab.title"
           :class="['tm-tab-item', { active: tab.active, discarded: tab.discarded }]"
           @click="switchTab(tab.id)"
         >
           <img :src="resolveFavicon(tab)" class="tm-tab-favicon" @error="onFaviconError($event, tab.url)" />
           <div class="tm-tab-info">
-            <div class="tm-tab-title" :title="tab.title">{{ tab.title }}</div>
+            <div class="tm-tab-title">{{ tab.title }}</div>
             <div class="tm-tab-domain">{{ getDomain(tab.url) }}</div>
             <div v-if="autoTag(tab.url, tab.title).length" class="tm-tab-tags">
               <span v-for="tag in autoTag(tab.url, tab.title).slice(0, 2)" :key="tag" class="tm-tab-tag"

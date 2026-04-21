@@ -371,6 +371,7 @@ onUnmounted(() => {
                 :key="record.id"
                 class="record-item"
                 :class="{ focused: visibleRecords.indexOf(record) === focusedIndex, selected: history.selectedRecords.has(record.id) }"
+                :title="record.title"
                 @contextmenu="onContextMenu($event, record)"
               >
                 <label v-if="history.isSelectMode" class="select-check" @click.stop="history.toggleSelectRecord(record.id)">
@@ -384,7 +385,7 @@ onUnmounted(() => {
                   </span>
                 </div>
                 <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : history.openRecord(record.url)">
-                  <div class="record-title" :title="record.title" v-html="highlightText(record.title, history.searchKeyword)" />
+                  <div class="record-title" v-html="highlightText(record.title, history.searchKeyword)" />
                   <div class="record-meta">
                     <span v-html="highlightText(record.domain, history.searchKeyword)" />
                     <span class="meta-dot">·</span>
@@ -433,6 +434,7 @@ onUnmounted(() => {
             :key="record.id"
             class="record-item"
             :class="{ focused: idx === focusedIndex, selected: history.selectedRecords.has(record.id) }"
+            :title="record.title"
             @contextmenu="onContextMenu($event, record)"
           >
             <label v-if="history.isSelectMode" class="select-check" @click.stop="history.toggleSelectRecord(record.id)">
@@ -446,7 +448,7 @@ onUnmounted(() => {
               </span>
             </div>
             <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : history.openRecord(record.url)">
-              <div class="record-title" :title="record.title" v-html="highlightText(record.title, history.searchKeyword)" />
+              <div class="record-title" v-html="highlightText(record.title, history.searchKeyword)" />
               <div class="record-meta">
                 <span v-html="highlightText(record.domain, history.searchKeyword)" />
                 <span class="meta-dot">·</span>

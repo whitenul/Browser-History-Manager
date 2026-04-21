@@ -169,7 +169,7 @@ async function collectAudio(): Promise<FingerprintResult> {
     const buffer = await Promise.race([
       context.startRendering(),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('AudioContext timeout')), 80)
+        setTimeout(() => { oscillator.disconnect(); compressor.disconnect(); reject(new Error('AudioContext timeout')) }, 80)
       ),
     ])
 
