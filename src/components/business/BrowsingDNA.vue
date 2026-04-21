@@ -393,7 +393,6 @@ onUnmounted(() => {
   padding: 20px; font-size: 12px; color: var(--text-muted);
 }
 .dna-loading-icon { font-size: 14px; animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 .dna-nebula-wrap {
   display: flex; justify-content: center; margin-bottom: 4px;
 }

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted, defineComponent, h, type VNode, PropType } from 'vue'
 import { useBookmarksStore } from '@/stores/bookmarks'
+import { useUIStore } from '@/stores/ui'
 import { getFaviconUrl, safeOpenUrl } from '@/utils/helpers'
 import { useI18n } from '@/i18n'
 
 const store = useBookmarksStore()
+const ui = useUIStore()
 const { t } = useI18n()
 const LEVEL_PAD = [12, 28, 44, 60]
 
@@ -27,7 +29,8 @@ function renderNode(node: any, level: number): VNode {
       style: `height:28px;padding:0 12px;padding-left:${pad}px;display:flex;align-items:center;cursor:pointer;user-select:none;transition:background-color .15s ease;text-decoration:none;color:var(--text-primary);`,
       href: node.url,
       target: '_blank',
-      onClick: (e: MouseEvent) => { e.preventDefault(); safeOpenUrl(node.url) },
+      onClick: (e: MouseEvent) => { e.preventDefault(); if (!ui.doubleClickMode) safeOpenUrl(node.url) },
+      onDblclick: (e: MouseEvent) => { e.preventDefault(); if (ui.doubleClickMode) safeOpenUrl(node.url) },
       onMouseenter(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--primary-light)' },
       onMouseleave(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' },
     }, [
@@ -74,7 +77,7 @@ const BmNode = defineComponent({
   setup(props) { return () => renderNode(props.node, props.level) },
 })
 
-onMounted(() => store.loadBookmarks())
+onMounted(async () => { await store.loadBookmarks(); await ui.loadDoubleClickMode() })
 </script>
 
 <template>
@@ -166,7 +169,6 @@ onMounted(() => store.loadBookmarks())
   border-top-color: var(--primary-color); border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .tree-container {
   flex: 1; overflow-y: auto; padding: 8px 0;

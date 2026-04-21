@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, shallowRef, watchEffect } from 'vue'
+import { ref, computed, shallowRef } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
 import { perfMark, perfMeasure } from '@/utils/perf'
 import {
@@ -42,17 +42,9 @@ export const useHistoryStore = defineStore('history', () => {
   const PAGE_SIZE = ref(100)
   const SESSION_GAP = ref(30 * 60 * 1000)
 
-  const _favoriteSet = ref(new Set<string>())
-  const _collapsedSet = ref(new Set<string>())
-  const _blacklistSet = ref(new Set<string>())
-
-  watchEffect(() => { _favoriteSet.value = new Set(favorites.value) })
-  watchEffect(() => { _collapsedSet.value = new Set(collapsedGroups.value) })
-  watchEffect(() => { _blacklistSet.value = new Set(blacklistedDomains.value) })
-
-  const favoriteSet = computed(() => _favoriteSet.value)
-  const collapsedSet = computed(() => _collapsedSet.value)
-  const blacklistSet = computed(() => _blacklistSet.value)
+  const favoriteSet = computed(() => new Set(favorites.value))
+  const collapsedSet = computed(() => new Set(collapsedGroups.value))
+  const blacklistSet = computed(() => new Set(blacklistedDomains.value))
 
   const filteredRecords = computed(() => {
     const source = allRecords.value

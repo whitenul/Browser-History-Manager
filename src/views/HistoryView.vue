@@ -142,6 +142,7 @@ onMounted(() => {
       if (el) el.scrollTop = savedScroll
     })
   }
+  ui.loadDoubleClickMode()
 })
 
 onUnmounted(() => {
@@ -384,7 +385,7 @@ onUnmounted(() => {
                     {{ record.domain.charAt(0).toUpperCase() }}
                   </span>
                 </div>
-                <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : history.openRecord(record.url)">
+                <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : (!ui.doubleClickMode ? history.openRecord(record.url) : undefined)" @dblclick="!history.isSelectMode && ui.doubleClickMode ? history.openRecord(record.url) : undefined">
                   <div class="record-title" v-html="highlightText(record.title, history.searchKeyword)" />
                   <div class="record-meta">
                     <span v-html="highlightText(record.domain, history.searchKeyword)" />
@@ -447,7 +448,7 @@ onUnmounted(() => {
                 {{ record.domain.charAt(0).toUpperCase() }}
               </span>
             </div>
-            <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : history.openRecord(record.url)">
+            <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : (!ui.doubleClickMode ? history.openRecord(record.url) : undefined)" @dblclick="!history.isSelectMode && ui.doubleClickMode ? history.openRecord(record.url) : undefined">
               <div class="record-title" v-html="highlightText(record.title, history.searchKeyword)" />
               <div class="record-meta">
                 <span v-html="highlightText(record.domain, history.searchKeyword)" />

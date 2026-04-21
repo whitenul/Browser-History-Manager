@@ -4,8 +4,8 @@ import { useUIStore } from '@/stores/ui'
 import { useThemeStore } from '@/stores/theme'
 import { useHistoryStore } from '@/stores/history'
 import { useI18n } from '@/i18n'
-import HistoryView from '@/views/HistoryView.vue'
-import StatsView from '@/views/StatsView.vue'
+const HistoryView = defineAsyncComponent(() => import('@/views/HistoryView.vue'))
+const StatsView = defineAsyncComponent(() => import('@/views/StatsView.vue'))
 const BookmarksView = defineAsyncComponent(() => import('@/views/BookmarksView.vue'))
 const SettingsView = defineAsyncComponent(() => import('@/views/SettingsView.vue'))
 const TabManagerView = defineAsyncComponent(() => import('@/views/TabManagerView.vue'))

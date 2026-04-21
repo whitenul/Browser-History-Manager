@@ -39,6 +39,23 @@ const tabs = [
 ]
 
 onMounted(async () => {
+  console.log('[POPUP] onMounted start')
+  try {
+    const result = await chrome.storage.local.get('sidebarMode')
+    console.log('[POPUP] sidebarMode from storage:', result.sidebarMode)
+    if (result.sidebarMode === true) {
+      console.log('[POPUP] sidebarMode is true, attempting sidePanel.open...')
+      const win = await chrome.windows.getCurrent()
+      console.log('[POPUP] current window id:', win.id)
+      await chrome.sidePanel.open({ windowId: win.id! })
+      console.log('[POPUP] sidePanel.open succeeded, closing popup')
+      window.close()
+      return
+    }
+    console.log('[POPUP] sidebarMode is not true, showing popup normally')
+  } catch (err: any) {
+    console.error('[POPUP] Error in sidebar redirect:', err?.message || err)
+  }
   await Promise.all([theme.loadTheme(), history.loadRecords()])
 })
 </script>
@@ -46,70 +63,44 @@ onMounted(async () => {
 <template>
   <div class="app-container" :class="{ 'has-gradient': theme.activeGradient }">
     <header class="app-header">
-      <div class="header-left">
-        <button v-if="ui.canGoBack" class="btn-back" @click="ui.goBack()" :title="t('common.back')">
-          <span class="i-lucide:arrow-left" />
-        </button>
-        <h1 class="header-title">{{ headerTitle }}</h1>
-        <span v-if="ui.activeTab === 'history' && history.displayedRecords.length" class="header-count">
-          {{ history.displayedRecords.length }}
-        </span>
-      </div>
+      <div class="header-title">{{ headerTitle }}</div>
       <div class="header-actions">
-        <button class="btn-icon btn-ghost" :title="t('commandPalette.placeholder')" @click="ui.showCommandPalette = true">
-          <span class="i-lucide:terminal" />
-        </button>
-        <button v-if="ui.activeTab === 'history'" class="btn-icon btn-ghost" :title="t('history.exportCsv')" @click="history.doExport()">
-          <span class="i-lucide:download" />
-        </button>
-        <button class="btn-icon btn-ghost" :title="t('theme.title')" @click="theme.toggleThemeModal()">
+        <button class="icon-btn" @click="theme.showThemeModal = true" title="Theme">
           <span class="i-lucide:palette" />
+        </button>
+        <button class="icon-btn" @click="ui.showCommandPalette = true" title="Command Palette">
+          <span class="i-lucide:command" />
         </button>
       </div>
     </header>
 
-    <nav class="app-tabs">
+    <main class="app-main">
+      <HistoryView v-if="ui.activeTab === 'history'" />
+      <StatsView v-else-if="ui.activeTab === 'stats'" />
+      <BookmarksView v-else-if="ui.activeTab === 'bookmarks'" />
+      <SettingsView v-else-if="ui.activeTab === 'settings'" />
+    </main>
+
+    <nav class="app-nav">
       <button
         v-for="tab in tabs"
         :key="tab.id"
-        class="tab-item"
-        :class="{ active: ui.activeTab === tab.id }"
-        @click="ui.switchTab(tab.id); ui.clearNavStack()"
+        :class="['nav-item', { active: ui.activeTab === tab.id }]"
+        @click="ui.activeTab = tab.id"
       >
-        <span :class="tab.icon" class="tab-icon" />
-        <span class="tab-label">{{ tab.label }}</span>
+        <span :class="tab.icon" />
+        <span class="nav-label">{{ tab.label }}</span>
       </button>
     </nav>
 
-    <main class="app-content">
-      <Transition :name="ui.isNavigatingBack ? 'fade-fast' : 'fade'" mode="out-in">
-        <HistoryView v-if="ui.activeTab === 'history'" :key="'history'" />
-        <StatsView v-else-if="ui.activeTab === 'stats'" :key="'stats'" />
-        <BookmarksView v-else-if="ui.activeTab === 'bookmarks'" :key="'bookmarks'" />
-        <SettingsView v-else :key="'settings'" />
-      </Transition>
-    </main>
-
     <ThemeModal v-if="theme.showThemeModal" />
-    <DeleteConfirmModal v-if="ui.showDeleteConfirm" />
-    <TagModal v-if="ui.showTagModal" />
-    <GroupRuleModal v-if="ui.showGroupRuleModal" />
-    <ContextMenu v-if="ui.showContextMenu" />
-    <PreviewPanel v-if="ui.showPreview" />
-    <BookmarkPickerModal v-if="ui.showBookmarkPicker" />
+    <DeleteConfirmModal />
+    <TagModal />
+    <GroupRuleModal />
+    <ContextMenu />
+    <PreviewPanel />
+    <BookmarkPickerModal />
     <CommandPalette />
-
-    <Teleport to="body">
-      <Transition name="toast">
-        <div v-if="ui.showUndoToast" class="toast undo-toast" @click="ui.executeUndo()">
-          <span>{{ ui.undoLabel }}</span>
-          <button class="undo-btn">{{ t('toast.undo') }}</button>
-        </div>
-        <div v-else-if="ui.showToast" class="toast" :class="ui.toastType">
-          {{ ui.toastMessage }}
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -117,112 +108,97 @@ onMounted(async () => {
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  width: 380px;
+  height: 600px;
   background: var(--app-bg);
   color: var(--text-primary);
-  transition: background var(--transition-normal), color var(--transition-normal);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  position: relative;
 }
-
-.app-container.has-gradient :deep(.app-header) {
-  background: var(--gradient-bg);
-  color: white;
+.app-container.has-gradient {
+  background: var(--gradient-bg, var(--app-bg));
 }
 
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  height: var(--header-height);
-  background: var(--app-header-bg);
-  color: var(--app-header-text);
-  flex-shrink: 0;
-  transition: background var(--transition-normal), color var(--transition-normal);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.btn-back {
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border: none; background: transparent;
-  border-radius: var(--radius-sm); cursor: pointer; color: inherit;
-  font-size: 16px; transition: all var(--transition-fast); flex-shrink: 0;
-}
-.btn-back:hover { background: rgba(255,255,255,0.15); }
-.header-title {
-  font-size: 16px; font-weight: 600; margin: 0;
-  letter-spacing: -0.01em;
-  transition: all var(--transition-fast);
-}
-.header-count { font-size: 12px; opacity: 0.75; }
-
-.header-actions { display: flex; gap: 6px; }
-.header-actions .btn-icon {
-  color: inherit; opacity: 0.8;
-  width: 32px; height: 32px; font-size: 16px;
-}
-.header-actions .btn-icon:hover { opacity: 1; background: rgba(255,255,255,0.15); }
-
-.app-tabs {
-  display: flex;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
   background: var(--app-surface);
   flex-shrink: 0;
-  transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.header-actions {
+  display: flex;
+  gap: 4px;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+  transition: all var(--transition-fast);
+}
+.icon-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
 }
 
-.tab-item {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  gap: 6px; padding: 10px 0; font-size: 13px; font-weight: 500;
-  color: var(--text-muted);
-  background: none; border: none; border-bottom: 2px solid transparent;
-  cursor: pointer; transition: all var(--transition-fast);
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
-.tab-item:hover {
-  color: var(--text-secondary);
+
+.app-nav {
+  display: flex;
+  border-top: 1px solid var(--border-color);
+  background: var(--app-surface);
+  flex-shrink: 0;
+  padding: 4px;
+  gap: 2px;
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: all var(--transition-fast);
+}
+.nav-item:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+.nav-item.active {
+  color: var(--primary-color);
   background: var(--primary-light);
 }
-.tab-item.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
+.nav-item span:first-child {
+  font-size: 18px;
 }
-
-.tab-icon { font-size: 14px; }
-.app-content { flex: 1; overflow: hidden; }
-
-.fade-enter-active, .fade-leave-active { transition: opacity 60ms ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
-.fade-fast-enter-active, .fade-fast-leave-active { transition: opacity 30ms ease-out; }
-.fade-fast-enter-from, .fade-fast-leave-to { opacity: 0; }
-
-.toast {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-  padding: 8px 16px; border-radius: var(--radius-md);
-  font-size: 13px; font-weight: 500; z-index: 9999;
-  box-shadow: var(--shadow-lg); animation: slideUp var(--transition-normal);
+.nav-label {
+  font-size: 10px;
+  font-weight: 500;
 }
-.toast.success { background: #10b981; color: white; }
-.toast.error { background: #ef4444; color: white; }
-.toast.info { background: #3b82f6; color: white; }
-
-.undo-toast {
-  display: flex; align-items: center; gap: 10px;
-  background: #1e293b; color: #e2e8f0;
-  cursor: pointer; padding: 8px 12px;
-}
-.undo-btn {
-  padding: 3px 10px; border: 1px solid rgba(99,102,241,0.5);
-  border-radius: var(--radius-sm); background: rgba(99,102,241,0.2);
-  color: #818cf8; font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: all var(--transition-fast);
-}
-.undo-btn:hover { background: #6366f1; color: white; }
-
-.toast-enter-active { transition: all 200ms ease; }
-.toast-leave-active { transition: all 300ms ease; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(10px); }
 </style>

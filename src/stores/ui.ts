@@ -23,6 +23,8 @@ export interface NavEntry {
 
 export const useUIStore = defineStore('ui', () => {
   const activeTab = ref<TabId>('history')
+  const doubleClickMode = ref(false)
+  const sidebarMode = ref(false)
   const showContextMenu = ref(false)
   const contextMenuPos = ref({ x: 0, y: 0 })
   const contextMenuTarget = ref<any>(null)
@@ -193,8 +195,35 @@ export const useUIStore = defineStore('ui', () => {
     bookmarkTarget.value = null
   }
 
+  async function loadDoubleClickMode() {
+    try {
+      const result = await chrome.storage.local.get('doubleClickMode')
+      if (typeof result.doubleClickMode === 'boolean') doubleClickMode.value = result.doubleClickMode
+    } catch { /* ignore */ }
+  }
+
+  async function saveDoubleClickMode() {
+    try {
+      await chrome.storage.local.set({ doubleClickMode: doubleClickMode.value })
+    } catch { /* ignore */ }
+  }
+
+  async function loadSidebarMode() {
+    try {
+      const result = await chrome.storage.local.get('sidebarMode')
+      if (typeof result.sidebarMode === 'boolean') sidebarMode.value = result.sidebarMode
+    } catch { /* ignore */ }
+  }
+
+  async function saveSidebarMode() {
+    try {
+      await chrome.storage.local.set({ sidebarMode: sidebarMode.value })
+      chrome.runtime.sendMessage({ action: 'updateSidebarMode', sidebarMode: sidebarMode.value }).catch(() => {})
+    } catch { /* ignore */ }
+  }
+
   return {
-    activeTab, showContextMenu, contextMenuPos, contextMenuTarget,
+    activeTab, doubleClickMode, sidebarMode, showContextMenu, contextMenuPos, contextMenuTarget,
     showDeleteConfirm, deleteTarget, showTagModal, tagModalTarget,
     showGroupRuleModal, toastMessage, toastType, showToast,
     showPreview, previewRecord,
@@ -208,5 +237,7 @@ export const useUIStore = defineStore('ui', () => {
     notify, notifyWithUndo, executeUndo,
     openPreview, closePreview,
     openBookmarkPicker, closeBookmarkPicker,
+    loadDoubleClickMode, saveDoubleClickMode,
+    loadSidebarMode, saveSidebarMode,
   }
 })

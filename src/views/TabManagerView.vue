@@ -126,6 +126,7 @@ onMounted(async () => {
   loadTabs()
   await optimizer.loadTabs()
   await optimizer.loadSettings()
+  await ui.loadDoubleClickMode()
 
   activatedListener = () => { loadTabs(); optimizer.loadTabs() }
   updatedListener = (_tabId, _changeInfo, tab) => {
@@ -240,7 +241,8 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
           :key="tab.id"
           :title="tab.title"
           :class="['tm-tab-item', { active: tab.active, discarded: tab.discarded }]"
-          @click="switchTab(tab.id)"
+          @click="!ui.doubleClickMode ? switchTab(tab.id) : undefined"
+          @dblclick="ui.doubleClickMode ? switchTab(tab.id) : undefined"
         >
           <img :src="resolveFavicon(tab)" class="tm-tab-favicon" @error="onFaviconError($event, tab.url)" />
           <div class="tm-tab-info">
@@ -294,7 +296,6 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .tm-current-card {
   background: var(--app-surface);

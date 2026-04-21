@@ -100,15 +100,3 @@ export const appCache = {
     memoryCache.clear()
   },
 }
-
-export function memoize<T extends (...args: any[]) => any>(fn: T, keyFn?: (...args: Parameters<T>) => string): T {
-  const cache = new Map<string, { value: any; timestamp: number }>()
-  return ((...args: Parameters<T>) => {
-    const key = keyFn ? keyFn(...args) : JSON.stringify(args)
-    const cached = cache.get(key)
-    if (cached && Date.now() - cached.timestamp < MEMORY_TTL) return cached.value
-    const value = fn(...args)
-    cache.set(key, { value, timestamp: Date.now() })
-    return value
-  }) as any as T
-}

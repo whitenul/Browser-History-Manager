@@ -333,7 +333,6 @@ function doImport() {
 .anim-icon.off { opacity: 0.3; }
 .anim-icon.slow { animation: spin 2s linear infinite; }
 .anim-icon.fast { animation: spin 0.5s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg) } }
 
 .scrollbar-preview { width: 6px; height: 24px; background: var(--border-color); margin: 0 auto; border-radius: 3px; }
 .scrollbar-preview.default { width: 10px; }

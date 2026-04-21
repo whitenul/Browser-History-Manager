@@ -190,17 +190,6 @@ export function debounce<T extends (...args: any[]) => any>(fn: T, wait: number)
   }
 }
 
-export function throttle<T extends (...args: any[]) => any>(fn: T, limit: number): (...args: Parameters<T>) => void {
-  let inThrottle = false
-  return (...args: Parameters<T>) => {
-    if (!inThrottle) {
-      fn(...args)
-      inThrottle = true
-      setTimeout(() => (inThrottle = false), limit)
-    }
-  }
-}
-
 export function formatTime(timestamp: number, t?: (key: string, params?: Record<string, string | number>) => string): string {
   const diff = Date.now() - timestamp
   const seconds = Math.floor(diff / 1000)
@@ -1241,24 +1230,6 @@ const TAG_DETAILED_CACHE = new Map<string, TagResult[]>()
 const TAG_CACHE_MAX = 10000
 let entityIndexInitialized = false
 
-export function clearTagCache(): void {
-  TAG_CACHE.clear()
-  TAG_DETAILED_CACHE.clear()
-}
-
-export function batchAutoTag(records: Array<{ url: string; title: string }>): Map<string, string[]> {
-  const results = new Map<string, string[]>()
-  for (const r of records) {
-    const key = `${r.url}|${r.title}`
-    let tags = TAG_CACHE.get(key)
-    if (!tags) {
-      tags = autoTag(r.url, r.title)
-    }
-    results.set(key, tags)
-  }
-  return results
-}
-
 function propagateEntityConfidence(domain: string, candidates: TagCandidate[]): void {
   const entity = getEntityForDomain(domain)
   if (!entity) return
@@ -1491,17 +1462,6 @@ export function autoTagDetailed(url: string, title: string): TagResult[] {
   return result
 }
 
-export function getTagConfidence(url: string, title: string, tag: string): number {
-  const results = autoTagDetailed(url, title)
-  const found = results.find(r => r.tag === tag)
-  return found?.confidence ?? 0
-}
-
-export function getTagSubtags(tag: string): string[] {
-  const rule = TAG_RULES.find(r => r.tag === tag)
-  return rule?.subtags ?? []
-}
-
 export const TAG_COLORS: Record<string, string> = {
   'social': '#3b82f6',
   'video': '#ef4444',
@@ -1583,28 +1543,3 @@ export const TAG_ICONS: Record<string, string> = {
   'mediumArticle': 'i-lucide:file-text',
   'deepPage': 'i-lucide:layers',
 }
-
-export const PRODUCTIVE_KEYWORDS = new Set([
-  'github', 'stackoverflow', 'gitlab', 'npmjs', 'codepen', 'leetcode', 'csdn', 'juejin',
-  'docs', 'notion', 'confluence', 'wiki', 'docs.google', 'medium', 'dev.to',
-  'coursera', 'udemy', 'w3schools', 'mdn', 'typescript', 'python',
-  'mail', 'gmail', 'outlook', 'slack', 'teams', 'zoom', 'figma',
-  'jira', 'trello', 'asana', 'linear',
-])
-
-export const UNPRODUCTIVE_KEYWORDS = new Set([
-  'youtube', 'bilibili', 'netflix', 'iqiyi', 'youku', 'twitch', 'douyin',
-  'weibo', 'twitter', 'facebook', 'instagram', 'reddit', 'zhihu', 'douban',
-  'taobao', 'jd', 'amazon', 'pinduoduo', 'tmall', 'ebay',
-  'game', 'play', 'music', 'spotify',
-])
-
-export const SOCIAL_KEYWORDS = [
-  'weibo', 'twitter', 'facebook', 'instagram', 'zhihu', 'douban', 'reddit',
-  'qq', 'weixin', 'xiaohongshu', 'threads', 'mastodon',
-]
-
-export const LEARNING_KEYWORDS = [
-  'coursera', 'udemy', 'khan', 'edu', 'mooc', 'leetcode', 'w3schools',
-  'runoob', 'imooc', 'xuetangx', 'juejin', 'csdn', 'segmentfault',
-]

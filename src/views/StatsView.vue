@@ -195,6 +195,7 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function autoRotateLoop() {
+  if (!isVisible.value) { autoRotateRaf = 0; return }
   if (isAutoRotating.value && !isDragging.value && activePanel.value === null) {
     rotation.value += autoRotateSpeed.value
   }
@@ -289,6 +290,15 @@ interface Particle {
 
 const particles = ref<Particle[]>([])
 let particleResizeObserver: ResizeObserver | null = null
+const isVisible = ref(true)
+
+function handleVisibility() {
+  isVisible.value = !document.hidden
+  if (isVisible.value) {
+    if (!particleRaf) particleRaf = requestAnimationFrame(drawParticles)
+    if (!autoRotateRaf) autoRotateRaf = requestAnimationFrame(autoRotateLoop)
+  }
+}
 
 function initParticles() {
   const canvas = particleCanvas.value
@@ -363,6 +373,7 @@ function drawParticles() {
     }
   }
   ctx.globalAlpha = 1
+  if (!isVisible.value) { particleRaf = 0; return }
   particleRaf = requestAnimationFrame(drawParticles)
 }
 
@@ -381,6 +392,7 @@ onMounted(() => {
   initParticles()
   particleRaf = requestAnimationFrame(drawParticles)
   window.addEventListener('keydown', onKeyDown)
+  document.addEventListener('visibilitychange', handleVisibility)
 })
 
 onUnmounted(() => {
@@ -389,6 +401,7 @@ onUnmounted(() => {
   if (autoRotateResumeTimer) clearTimeout(autoRotateResumeTimer)
   if (particleResizeObserver) particleResizeObserver.disconnect()
   window.removeEventListener('keydown', onKeyDown)
+  document.removeEventListener('visibilitychange', handleVisibility)
 })
 </script>
 
@@ -1075,10 +1088,6 @@ onUnmounted(() => {
   border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .overview-strip {

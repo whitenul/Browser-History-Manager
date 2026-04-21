@@ -1,5 +1,35 @@
+chrome.runtime.onInstalled.addListener(() => {
+  applySidebarMode().catch(() => {})
+})
 
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false })
+applySidebarMode().catch(() => {})
+
+async function applySidebarMode(): Promise<boolean> {
+  try {
+    const result = await chrome.storage.local.get('sidebarMode')
+    const enabled = result.sidebarMode === true
+    console.log('[BH] applySidebarMode: sidebarMode=', result.sidebarMode, 'enabled=', enabled)
+    if (enabled) {
+      await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+      await chrome.action.setPopup({ popup: '' })
+      console.log('[BH] sidebar mode applied')
+    } else {
+      await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false })
+      await chrome.action.setPopup({ popup: 'popup.html' })
+      console.log('[BH] popup mode applied')
+    }
+    return enabled
+  } catch (err: any) {
+    console.error('[BH] applySidebarMode failed:', err?.message || err)
+    return false
+  }
+}
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.sidebarMode) {
+    applySidebarMode().catch(() => {})
+  }
+})
 
 async function ensureContextMenu() {
   try {
@@ -21,6 +51,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 })
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === 'updateSidebarMode') {
+    applySidebarMode()
+      .then((enabled) => sendResponse({ success: true, sidebarMode: enabled }))
+      .catch((err: any) => sendResponse({ success: false, error: err.message || String(err) }))
+    return true
+  }
+
   if (msg.action === 'openSidePanel') {
     ;(async () => {
       try {

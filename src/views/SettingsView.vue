@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useHistoryStore } from '@/stores/history'
-import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { useFingerprintStore } from '@/stores/fingerprint'
 import { useI18n } from '@/i18n'
-import { safeOpenUrl, isValidDomain } from '@/utils/helpers'
+import { isValidDomain } from '@/utils/helpers'
 
 const { t } = useI18n()
 const history = useHistoryStore()
-const theme = useThemeStore()
 const ui = useUIStore()
 const fpStore = useFingerprintStore()
 
@@ -17,7 +15,8 @@ const newBlacklistDomain = ref('')
 const clearConfirm = ref(false)
 const fingerprintEnabled = ref(true)
 
-const isSidebar = document.location.pathname.includes('sidebar')
+const doubleClickMode = ref(false)
+const sidebarMode = ref(false)
 
 const settings = ref({
   defaultTimeRange: 'all',
@@ -34,41 +33,17 @@ onMounted(async () => {
     if (result.appSettings) Object.assign(settings.value, result.appSettings)
     history.applySettings(settings.value.pageSize, settings.value.sessionGapMinutes)
   } catch { /* ignore */ }
+  await ui.loadDoubleClickMode()
+  doubleClickMode.value = ui.doubleClickMode
+  await ui.loadSidebarMode()
+  sidebarMode.value = ui.sidebarMode
 })
 
 async function saveSettings() {
   try {
     await chrome.storage.local.set({ appSettings: settings.value })
     history.applySettings(settings.value.pageSize, settings.value.sessionGapMinutes)
-    ui.notify(t('settings.saved'), 'success')
   } catch { /* ignore */ }
-}
-
-async function openSidePanel() {
-  try {
-    if (chrome?.sidePanel?.open) {
-      const win = await chrome.windows.getCurrent()
-      await chrome.sidePanel.open({ windowId: win.id! })
-      ui.notify(t('settings.openingSidebar'), 'success')
-    } else {
-      chrome.runtime.sendMessage({ action: 'openSidePanel' }, (response) => {
-        if (chrome.runtime.lastError) {
-          ui.notify(t('settings.openSidebarHint'), 'info')
-        } else if (response?.success) {
-          ui.notify(t('settings.openingSidebar'), 'success')
-        } else {
-          ui.notify(response?.error || t('settings.openSidebarFailed'), 'error')
-        }
-      })
-    }
-  } catch (err: any) {
-    const msg = err?.message || String(err)
-    if (msg.includes('user gesture')) {
-      ui.notify(t('settings.openSidebarHint'), 'info')
-    } else {
-      ui.notify(t('settings.sidebarOpenFailed', { msg }), 'error')
-    }
-  }
 }
 
 async function clearAllData() {
@@ -87,7 +62,19 @@ async function addBlacklist() {
   newBlacklistDomain.value = ''
 }
 
-function openUrl(url: string) { safeOpenUrl(url) }
+watch(settings, () => {
+  saveSettings()
+}, { deep: true })
+
+watch(doubleClickMode, (val) => {
+  ui.doubleClickMode = val
+  ui.saveDoubleClickMode()
+})
+
+watch(sidebarMode, (val) => {
+  ui.sidebarMode = val
+  ui.saveSidebarMode()
+})
 </script>
 
 <template>
@@ -95,8 +82,8 @@ function openUrl(url: string) { safeOpenUrl(url) }
     <div class="settings-content">
       <div class="section">
         <div class="section-title">
-          <span class="i-lucide:sliders section-icon" />
-          {{ t('settings.defaultBehavior') }}
+          <span class="i-lucide:settings section-icon" />
+          {{ t('settings.general') }}
         </div>
         <div class="setting-row">
           <label>{{ t('settings.defaultTimeRange') }}</label>
@@ -134,31 +121,24 @@ function openUrl(url: string) { safeOpenUrl(url) }
           <label>{{ t('settings.sessionGap') }}</label>
           <input type="number" v-model.number="settings.sessionGapMinutes" min="5" max="120" class="setting-input" />
         </div>
-        <button class="btn-save" @click="saveSettings">{{ t('settings.saveSettings') }}</button>
       </div>
 
       <div class="section">
         <div class="section-title">
-          <span class="i-lucide:panel-left section-icon" />
-          {{ t('settings.uiMode') }}
+          <span class="i-lucide:layout section-icon" />
+          {{ t('settings.ui') }}
         </div>
-        <p class="section-desc">{{ t('settings.uiModeDesc') }}</p>
-        <div class="mode-cards">
-          <label :class="['mode-card', { active: !isSidebar }]">
-            <input type="radio" name="uiMode" :checked="!isSidebar" />
-            <span class="mode-card-icon"><span class="i-lucide:maximize-2" /></span>
-            <span class="mode-card-label">{{ t('settings.popupMode') }}</span>
-            <span class="mode-card-desc">{{ t('settings.popupModeDesc') }}</span>
-          </label>
-          <label :class="['mode-card', { active: isSidebar }]" @click.prevent="openSidePanel">
-            <input type="radio" name="uiMode" :checked="isSidebar" />
-            <span class="mode-card-icon"><span class="i-lucide:panel-right" /></span>
-            <span class="mode-card-label">{{ t('settings.sidePanelMode') }}</span>
-            <span class="mode-card-desc">{{ t('settings.sidePanelModeDesc') }}</span>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">{{ t('settings.sidebarMode') }}</div>
+            <div class="setting-desc">{{ t('settings.sidebarModeDesc') }}</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="sidebarMode" />
+            <span class="toggle-slider" />
           </label>
         </div>
-        <p class="section-hint">{{ t('settings.currentMode') }}: {{ isSidebar ? t('settings.sidebar') : t('settings.popup') }} · {{ t('settings.switchModeHint') }}</p>
-        <div v-if="!isSidebar" class="setting-row">
+        <div class="setting-row">
           <label>{{ t('settings.defaultSidebarTab') }}</label>
           <select v-model="settings.defaultSidebarTab" class="setting-select">
             <option value="history">{{ t('settings.sidebarTabHistory') }}</option>
@@ -166,6 +146,16 @@ function openUrl(url: string) { safeOpenUrl(url) }
             <option value="bookmarks">{{ t('settings.sidebarTabBookmarks') }}</option>
             <option value="settings">{{ t('settings.sidebarTabSettings') }}</option>
           </select>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">{{ t('settings.doubleClickMode') }}</div>
+            <div class="setting-desc">{{ t('settings.doubleClickModeDesc') }}</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="doubleClickMode" />
+            <span class="toggle-slider" />
+          </label>
         </div>
       </div>
 
@@ -192,18 +182,7 @@ function openUrl(url: string) { safeOpenUrl(url) }
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">
-          <span class="i-lucide:info section-icon" />
-          {{ t('settings.about') }}
-        </div>
-        <div class="about-card">
-          <div class="about-name">{{ t('settings.appName') }}</div>
-          <div class="about-version">v2.0.0</div>
-          <div class="about-desc">{{ t('settings.appDesc') }}</div>
-          <div class="about-tech">Vue 3 · TypeScript · Pinia · UnoCSS · Vite</div>
-        </div>
-      </div>
+      <div class="version-hint">v2.0.0</div>
 
       <div class="section danger-zone">
         <div class="section-title">
@@ -259,28 +238,6 @@ function openUrl(url: string) { safeOpenUrl(url) }
 .section-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
 .section-hint { font-size: 11px; color: var(--text-muted); margin: 8px 0 4px; opacity: 0.8; }
 
-.mode-cards {
-  display: flex; gap: 10px; margin-bottom: 4px;
-}
-.mode-card {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 14px 10px; border: 2px solid var(--border-color); border-radius: var(--radius-md);
-  background: var(--app-surface); cursor: default; transition: all var(--transition-fast);
-}
-.mode-card input { display: none; }
-.mode-card.active {
-  border-color: var(--primary-color);
-  background: rgba(99,102,241,0.06);
-}
-.mode-card[onclick] { cursor: pointer; }
-.mode-card[onclick]:hover {
-  border-color: var(--primary-color);
-  background: rgba(99,102,241,0.04);
-}
-.mode-card-icon { font-size: 24px; color: var(--primary-color); }
-.mode-card-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.mode-card-desc { font-size: 11px; color: var(--text-muted); text-align: center; }
-
 .setting-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 0; border-bottom: 1px solid var(--border-color);
@@ -295,13 +252,6 @@ function openUrl(url: string) { safeOpenUrl(url) }
   font-size: 12px; background: var(--app-surface); color: var(--text-primary); outline: none; width: 80px;
 }
 .setting-input:focus, .setting-select:focus { border-color: var(--primary-color); }
-
-.btn-save {
-  margin-top: 12px; width: 100%; padding: 9px; border: none; border-radius: var(--radius-md);
-  background: var(--primary-color); color: white; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all var(--transition-fast);
-}
-.btn-save:hover { opacity: 0.9; }
 
 .blacklist-form { display: flex; gap: 6px; margin-bottom: 10px; }
 .blacklist-form .setting-input { flex: 1; width: auto; }
@@ -327,14 +277,10 @@ function openUrl(url: string) { safeOpenUrl(url) }
 }
 .item-remove:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 
-.about-card {
-  padding: 16px; background: var(--app-surface); border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg); text-align: center;
+.version-hint {
+  text-align: center; font-size: 11px; color: var(--text-muted);
+  margin: 8px 0 16px; opacity: 0.6;
 }
-.about-name { font-size: 16px; font-weight: 700; color: var(--text-primary); }
-.about-version { font-size: 12px; color: var(--primary-color); margin: 4px 0 8px; }
-.about-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
-.about-tech { font-size: 11px; color: var(--text-muted); opacity: 0.7; }
 
 .danger-zone {}
 .btn-danger {
