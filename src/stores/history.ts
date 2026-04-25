@@ -3,11 +3,11 @@ import { ref, computed, shallowRef } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
 import { perfMark, perfMeasure } from '@/utils/perf'
 import {
-  getDomain, stringToColor, getTimeRange, groupByDomain,
+  getDomain, stringToColor, autoTag, getTimeRange, groupByDomain,
   groupByTimeline, groupByCustomRules, groupBySession,
   createCustomRule, matchRule, getGroupLabel, formatTime,
   formatDateTime, getFaviconUrl, highlightText, exportToCSV,
-  debounce, autoTag, safeOpenUrl, isValidDomain, urlStorageKey, type GroupResult,
+  debounce, safeOpenUrl, isValidDomain, urlStorageKey, type GroupResult,
 } from '@/utils/helpers'
 import { appCache } from '@/utils/cache'
 
@@ -39,7 +39,7 @@ export const useHistoryStore = defineStore('history', () => {
   const tagFilter = ref<{ tag: string; label: string } | null>(null)
   const domainFilter = ref<{ domain: string; label: string } | null>(null)
 
-  const PAGE_SIZE = ref(100)
+  const PAGE_SIZE = ref(30)
   const SESSION_GAP = ref(30 * 60 * 1000)
 
   const favoriteSet = computed(() => new Set(favorites.value))
@@ -94,12 +94,7 @@ export const useHistoryStore = defineStore('history', () => {
       if (hasTagFilter) {
         const customTags = recordTagsMap.value[r.url] || []
         if (!customTags.includes(tg!.tag)) {
-          let tags = tagCache!.get(r.url)
-          if (!tags) {
-            tags = autoTag(r.url, r.title)
-            tagCache!.set(r.url, tags)
-          }
-          if (!tags.includes(tg!.tag)) continue
+          if (!(r.tags || []).includes(tg!.tag)) continue
         }
       }
 
@@ -152,16 +147,21 @@ export const useHistoryStore = defineStore('history', () => {
         }
       }
 
-      allRecords.value = items.map((item: chrome.history.HistoryItem) => ({
-        id: item.id || '',
-        url: item.url || '',
-        title: item.title || item.url || '',
-        lastVisitTime: item.lastVisitTime || 0,
-        visitCount: item.visitCount || 0,
-        typedCount: item.typedCount || 0,
-        domain: getDomain(item.url || ''),
-        domainColor: stringToColor(getDomain(item.url || '')),
-      }))
+      allRecords.value = items.map((item: chrome.history.HistoryItem) => {
+        const url = item.url || ''
+        const title = item.title || url
+        return {
+          id: item.id || '',
+          url,
+          title,
+          lastVisitTime: item.lastVisitTime || 0,
+          visitCount: item.visitCount || 0,
+          typedCount: item.typedCount || 0,
+          domain: getDomain(url),
+          domainColor: stringToColor(getDomain(url)),
+          tags: autoTag(url, title),
+        }
+      })
 
       totalCount.value = allRecords.value.length
       hasMore.value = allRecords.value.length > PAGE_SIZE.value
@@ -185,16 +185,21 @@ export const useHistoryStore = defineStore('history', () => {
       if (Array.isArray(extra) && extra.length > 0) {
         const cacheKey = `history:${startTime}:${endTime}`
         await appCache.set(cacheKey, extra, true)
-        const mapped = extra.map((item: chrome.history.HistoryItem) => ({
-          id: item.id || '',
-          url: item.url || '',
-          title: item.title || item.url || '',
-          lastVisitTime: item.lastVisitTime || 0,
-          visitCount: item.visitCount || 0,
-          typedCount: item.typedCount || 0,
-          domain: getDomain(item.url || ''),
-          domainColor: stringToColor(getDomain(item.url || '')),
-        }))
+        const mapped = extra.map((item: chrome.history.HistoryItem) => {
+          const url = item.url || ''
+          const title = item.title || url
+          return {
+            id: item.id || '',
+            url,
+            title,
+            lastVisitTime: item.lastVisitTime || 0,
+            visitCount: item.visitCount || 0,
+            typedCount: item.typedCount || 0,
+            domain: getDomain(url),
+            domainColor: stringToColor(getDomain(url)),
+            tags: autoTag(url, title),
+          }
+        })
         allRecords.value = mapped
         totalCount.value = mapped.length
         hasMore.value = mapped.length > PAGE_SIZE.value

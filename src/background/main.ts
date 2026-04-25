@@ -120,8 +120,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 chrome.alarms.create('tabOptimizer', { periodInMinutes: 5 })
 
+async function runAutoSuspend() {
+  try {
+    const result = await chrome.storage.local.get('optimizerSettings')
+    const settings = result.optimizerSettings as Record<string, any> | undefined
+    if (!settings || !settings.autoSuspendMinutes) return
+
+    const threshold = (settings.autoSuspendMinutes as number) * 60 * 1000
+    const now = Date.now()
+    const allTabs = await chrome.tabs.query({})
+    const activeCount = allTabs.filter(t => !t.discarded).length
+
+    if (activeCount <= ((settings.minTabsBeforeSuspend as number) || 5)) return
+
+    for (const t of allTabs) {
+      if (t.active || t.discarded || t.pinned || t.audible) continue
+      if (t.id == null || t.lastAccessed == null) continue
+      if (now - t.lastAccessed > threshold) {
+        try { await chrome.tabs.discard(t.id) } catch { /* ignore */ }
+      }
+    }
+  } catch { /* ignore */ }
+}
+
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'tabOptimizer') {
-    chrome.runtime.sendMessage({ action: 'autoSuspendCheck' }).catch(() => {})
+    runAutoSuspend()
   }
 })

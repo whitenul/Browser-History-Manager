@@ -2,7 +2,20 @@
   "name": "browser-history-manager",
   "version": "2.0.0",
   "private": true,
+  "description": "A professional Chrome extension (MV3) for browsing history management with smart tagging, deep analytics, browsing DNA, tab optimization, and reading queue.",
+  "license": "MIT",
+  "author": "Browser History Manager Contributors",
   "type": "module",
+  "keywords": [
+    "chrome-extension",
+    "browser-history",
+    "history-manager",
+    "manifest-v3",
+    "vue3",
+    "typescript",
+    "pinia",
+    "unocss"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",

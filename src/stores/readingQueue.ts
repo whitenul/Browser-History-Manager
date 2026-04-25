@@ -15,6 +15,7 @@ const QUEUE_KEY = 'reading-queue'
 
 export const useReadingQueueStore = defineStore('readingQueue', () => {
   const items = ref<QueueItem[]>([])
+  const urlSet = computed(() => new Set(items.value.map(i => i.url)))
 
   const sortedItems = computed(() => {
     return [...items.value].sort((a, b) => {
@@ -40,7 +41,7 @@ export const useReadingQueueStore = defineStore('readingQueue', () => {
   }
 
   function addToQueue(url: string, title: string, domain: string, tags: string[] = []) {
-    if (items.value.some(i => i.url === url)) return
+    if (urlSet.value.has(url)) return
     const priority = computePriority(title, domain, tags)
     items.value.push({ url, title, domain, addedAt: Date.now(), priority, tags })
     saveQueue()
@@ -70,7 +71,7 @@ export const useReadingQueueStore = defineStore('readingQueue', () => {
   }
 
   function isInQueue(url: string): boolean {
-    return items.value.some(i => i.url === url)
+    return urlSet.value.has(url)
   }
 
   function toggleQueue(url: string, title: string, domain: string, tags: string[] = []) {

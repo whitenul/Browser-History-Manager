@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { safeOpenUrl, autoTag, AdaptiveConfidenceAdjuster } from '@/utils/helpers'
@@ -8,7 +9,12 @@ const ui = useUIStore()
 const history = useHistoryStore()
 const { t } = useI18n()
 
-const adjuster = new AdaptiveConfidenceAdjuster()
+const menuStyle = computed(() => {
+  const menuWidth = 180, menuHeight = 320
+  const x = Math.min(ui.contextMenuPos.x, window.innerWidth - menuWidth - 8)
+  const y = Math.min(ui.contextMenuPos.y, window.innerHeight - menuHeight - 8)
+  return { left: Math.max(4, x) + 'px', top: Math.max(4, y) + 'px' }
+})
 
 function handleAction(action: string) {
   const record = ui.contextMenuTarget
@@ -29,16 +35,14 @@ function handleAction(action: string) {
 function handleRecategorize(record: any) {
   const currentTags = autoTag(record.url, record.title)
   if (currentTags.length > 0) {
-    const fromTag = currentTags[0]
     ui.openTagModal(record.url)
-    adjuster.recordCorrection(record.domain, fromTag, '')
   }
 }
 </script>
 
 <template>
   <div class="ctx-overlay" @click="ui.closeContextMenu()" @contextmenu.prevent="ui.closeContextMenu()">
-    <div class="ctx-menu" :style="{ left: ui.contextMenuPos.x + 'px', top: ui.contextMenuPos.y + 'px' }" @click.stop>
+    <div class="ctx-menu" :style="menuStyle" @click.stop>
       <button class="ctx-item" @click="handleAction('open')">
         <span class="i-lucide:external-link ctx-icon" />{{ t('contextMenu.openLink') }}
       </button>

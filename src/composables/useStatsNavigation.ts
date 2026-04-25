@@ -1,19 +1,17 @@
 import { useHistoryStore } from '@/stores/history'
-import { useStatsStore } from '@/stores/stats'
 import { useUIStore } from '@/stores/ui'
 import type { FilterSnapshot } from '@/stores/ui'
 
 export const HEAT_COLORS = [
-  'var(--app-surface)',
-  'rgba(99,102,241,0.2)',
-  'rgba(99,102,241,0.4)',
-  'rgba(99,102,241,0.65)',
-  'rgba(99,102,241,0.9)',
+  'var(--heat-0)',
+  'var(--heat-1)',
+  'var(--heat-2)',
+  'var(--heat-3)',
+  'var(--heat-4)',
 ] as const
 
 export function useStatsNavigation() {
   const history = useHistoryStore()
-  const stats = useStatsStore()
   const ui = useUIStore()
 
   function isCurrentHeatCell(cell: { day: number; hour: number }) {
@@ -25,14 +23,6 @@ export function useStatsNavigation() {
     ui.navigateTo('history', label, {
       source: 'heatmap',
       filterSnapshot: { type: 'time', payload: { day, hourStart, hourEnd, label } },
-    })
-  }
-
-  function navigateWithTagFilter(tag: string, label: string) {
-    history.setTagFilter(tag, label)
-    ui.navigateTo('history', label, {
-      source: 'tagChart',
-      filterSnapshot: { type: 'tag', payload: { tag, label } },
     })
   }
 
@@ -48,7 +38,6 @@ export function useStatsNavigation() {
     HEAT_COLORS,
     isCurrentHeatCell,
     navigateWithTimeFilter,
-    navigateWithTagFilter,
     navigateWithDomainFilter,
   }
 }

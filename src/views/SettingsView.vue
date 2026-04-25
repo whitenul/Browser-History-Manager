@@ -4,7 +4,7 @@ import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'
 import { useFingerprintStore } from '@/stores/fingerprint'
 import { useI18n } from '@/i18n'
-import { isValidDomain } from '@/utils/helpers'
+import { isValidDomain, debounce } from '@/utils/helpers'
 
 const { t } = useI18n()
 const history = useHistoryStore()
@@ -15,6 +15,19 @@ const newBlacklistDomain = ref('')
 const clearConfirm = ref(false)
 const fingerprintEnabled = ref(true)
 
+async function loadFingerprintEnabled() {
+  try {
+    const r = await chrome.storage.local.get('fingerprintEnabled')
+    if (typeof r.fingerprintEnabled === 'boolean') fingerprintEnabled.value = r.fingerprintEnabled
+  } catch { /* ignore */ }
+}
+
+watch(fingerprintEnabled, async (val) => {
+  try { await chrome.storage.local.set({ fingerprintEnabled: val }) } catch { /* ignore */ }
+})
+
+loadFingerprintEnabled()
+
 const doubleClickMode = ref(false)
 const sidebarMode = ref(false)
 
@@ -22,7 +35,7 @@ const settings = ref({
   defaultTimeRange: 'all',
   defaultGroupMode: 'none',
   defaultSortMode: 'timeDesc',
-  pageSize: 100,
+  pageSize: 30,
   sessionGapMinutes: 30,
   defaultSidebarTab: 'stats' as string,
 })
@@ -62,8 +75,9 @@ async function addBlacklist() {
   newBlacklistDomain.value = ''
 }
 
+const debouncedSave = debounce(saveSettings, 500)
 watch(settings, () => {
-  saveSettings()
+  debouncedSave()
 }, { deep: true })
 
 watch(doubleClickMode, (val) => {

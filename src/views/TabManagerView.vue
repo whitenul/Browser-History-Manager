@@ -2,11 +2,13 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useTabOptimizerStore } from '@/stores/tabOptimizer'
-import { getFaviconUrlWithHint, onFaviconError, autoTag, TAG_COLORS } from '@/utils/helpers'
+import { useTabGroupStore } from '@/stores/tabGroup'
+import { getFaviconUrl, getDomain, onFaviconError, autoTag, TAG_COLORS, debounce } from '@/utils/helpers'
 import { useI18n } from '@/i18n'
 
 const ui = useUIStore()
 const optimizer = useTabOptimizerStore()
+const groupStore = useTabGroupStore()
 const { t } = useI18n()
 
 interface TabInfo {
@@ -22,38 +24,57 @@ interface TabInfo {
 const tabs = ref<TabInfo[]>([])
 const activeTab = ref<TabInfo | null>(null)
 const loading = ref(true)
-const showOptimizer = ref(false)
 const suspendResult = ref('')
+const tabSearch = ref('')
 
-function getDomain(url: string): string {
-  try { return new URL(url).hostname } catch { return url }
-}
+const filteredTabs = computed(() => {
+  if (!tabSearch.value) return tabs.value
+  const q = tabSearch.value.toLowerCase()
+  return tabs.value.filter(t =>
+    t.title?.toLowerCase().includes(q) || t.url?.toLowerCase().includes(q)
+  )
+})
 
 function resolveFavicon(tab: TabInfo): string {
-  if (tab.url) return getFaviconUrlWithHint(tab.url, tab.favIconUrl)
+  if (tab.url) return getFaviconUrl(tab.url)
   return ''
 }
 
+const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6']
+
+function letterAvatar(url: string): string {
+  let label = '?'
+  let color = AVATAR_COLORS[0]
+  try {
+    const hostname = new URL(url).hostname
+    const parts = hostname.replace(/^www\./, '').split('.')
+    label = (parts[0] || '?')[0].toUpperCase()
+    const hash = hostname.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+    color = AVATAR_COLORS[hash % AVATAR_COLORS.length]
+  } catch { /* keep defaults */ }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="${color}"/><text x="16" y="20" text-anchor="middle" fill="#fff" font-size="15" font-weight="600" font-family="-apple-system, BlinkMacSystemFont, sans-serif">${label}</text></svg>`
+}
+
 const hasTabsPermission = ref(true)
+let _loading = false
+let _initialLoad = true
 
 async function loadTabs() {
-  loading.value = true
+  if (_loading) return
+  _loading = true
+  if (_initialLoad) loading.value = true
   try {
     const win = await chrome.windows.getCurrent()
     const result = await chrome.tabs.query({ windowId: win.id })
-    let detailedTabs: chrome.tabs.Tab[]
 
-    try {
-      detailedTabs = await Promise.all(result.map(t => chrome.tabs.get(t.id!)))
-      hasTabsPermission.value = true
-    } catch {
-      detailedTabs = result
-      hasTabsPermission.value = false
-    }
+    hasTabsPermission.value = true
 
-    tabs.value = detailedTabs.map((tab, idx) => ({
+    const rawTabs: chrome.tabs.Tab[] = result
+    optimizer.syncFromQuery(rawTabs)
+
+    tabs.value = rawTabs.map((tab, idx) => ({
       id: tab.id!,
-      title: tab.title || (hasTabsPermission.value ? t('tabs.noTitle') : t('tabs.tabIndex', { index: idx + 1 })),
+      title: tab.title || t('tabs.noTitle'),
       url: tab.url || '',
       favIconUrl: tab.favIconUrl || '',
       active: tab.active,
@@ -62,7 +83,7 @@ async function loadTabs() {
     }))
     activeTab.value = tabs.value.find(t => t.active) || null
   } catch { /* ignore */ }
-  finally { loading.value = false }
+  finally { loading.value = false; _loading = false; _initialLoad = false }
 }
 
 async function switchTab(tabId: number) {
@@ -94,7 +115,10 @@ function copyCurrentUrl() {
 }
 
 async function openNewTab() {
-  try { await chrome.tabs.create({}) } catch { /* ignore */ }
+  const tab = await chrome.tabs.create({})
+  if (groupStore.enabled && tab.id) {
+    await groupStore.ensureGrouped([tab.id])
+  }
 }
 
 async function handleSuspendIdle() {
@@ -122,17 +146,20 @@ let activatedListener: ((activeInfo: { tabId: number; windowId: number }) => voi
 let updatedListener: ((_tabId: number, _changeInfo: any, tab: chrome.tabs.Tab) => void) | null = null
 let removedListener: ((tabId: number, _removeInfo: chrome.tabs.OnRemovedInfo) => void) | null = null
 
+const debouncedRefreshData = debounce(() => { loadTabs() }, 250)
+
 onMounted(async () => {
   loadTabs()
-  await optimizer.loadTabs()
+  await groupStore.init()
   await optimizer.loadSettings()
   await ui.loadDoubleClickMode()
+  await ui.loadPrivacyMode()
 
-  activatedListener = () => { loadTabs(); optimizer.loadTabs() }
+  activatedListener = () => { debouncedRefreshData() }
   updatedListener = (_tabId, _changeInfo, tab) => {
-    if (tab.active) { loadTabs(); optimizer.loadTabs() }
+    if (tab.active) debouncedRefreshData()
   }
-  removedListener = () => { loadTabs(); optimizer.loadTabs() }
+  removedListener = () => { debouncedRefreshData() }
 
   chrome.tabs.onActivated.addListener(activatedListener)
   chrome.tabs.onUpdated.addListener(updatedListener)
@@ -158,6 +185,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 
     <template v-else>
       <div class="tm-current-card">
+        <template v-if="!ui.privacyMode">
         <div class="tm-current-info">
           <img :src="activeTab ? resolveFavicon(activeTab) : ''" class="tm-current-favicon" @error="activeTab && onFaviconError($event, activeTab.url)" />
           <div class="tm-current-detail">
@@ -165,6 +193,13 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
             <div class="tm-current-url">{{ getDomain(activeTab?.url || '') }}</div>
           </div>
         </div>
+        </template>
+        <template v-else>
+        <div class="tm-privacy-active">
+          <div class="tm-privacy-avatar" v-html="letterAvatar(activeTab?.url || '')" />
+          <span class="tm-privacy-label">{{ t('tabs.activeTab') }}</span>
+        </div>
+        </template>
         <div class="tm-actions">
           <button class="tm-action-btn" :title="t('tabs.refreshCurrent')" @click="refreshCurrentTab">
             <span class="i-lucide:refresh-cw" />
@@ -178,14 +213,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
         </div>
       </div>
 
-      <div class="tm-optimizer-toggle" @click="showOptimizer = !showOptimizer">
-        <span class="i-lucide:zap tm-section-icon" />
-        <span>{{ t('tabs.memoryOptimize') }}</span>
-        <span class="tm-optimizer-badge">{{ t('tabs.savingsAvailable', { mb: optimizer.potentialSavingsMB }) }}</span>
-        <span :class="['i-lucide:chevron-down tm-toggle-arrow', { rotated: showOptimizer }]" />
-      </div>
-
-      <div v-if="showOptimizer" class="tm-optimizer-panel">
+      <div v-if="ui.showOptimizer" class="tm-optimizer-panel">
         <div class="tm-mem-bar">
           <div class="tm-mem-label">
             <span>{{ t('tabs.activeTabsCount', { active: activeTabCount, total: tabs.length }) }}</span>
@@ -235,15 +263,24 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
         <span v-if="!hasTabsPermission" class="tm-perm-hint">{{ t('tabs.basicFeaturesOnly') }}</span>
       </div>
 
+      <div v-if="tabs.length > 5" class="tm-search">
+        <span class="i-lucide:search tm-search-icon" />
+        <input v-model="tabSearch" class="tm-search-input" :placeholder="t('tabs.searchTabs')" />
+        <button v-if="tabSearch" class="tm-search-clear" @click="tabSearch = ''">
+          <span class="i-lucide:x" />
+        </button>
+      </div>
+
       <div class="tm-tab-list">
         <button
-          v-for="tab in tabs"
+          v-for="(tab, idx) in filteredTabs"
           :key="tab.id"
-          :title="tab.title"
-          :class="['tm-tab-item', { active: tab.active, discarded: tab.discarded }]"
+          :title="ui.privacyMode ? undefined : tab.title"
+          :class="['tm-tab-item', { active: tab.active, discarded: tab.discarded, 'tm-privacy-item': ui.privacyMode }]"
           @click="!ui.doubleClickMode ? switchTab(tab.id) : undefined"
           @dblclick="ui.doubleClickMode ? switchTab(tab.id) : undefined"
         >
+          <template v-if="!ui.privacyMode">
           <img :src="resolveFavicon(tab)" class="tm-tab-favicon" @error="onFaviconError($event, tab.url)" />
           <div class="tm-tab-info">
             <div class="tm-tab-title">{{ tab.title }}</div>
@@ -257,6 +294,11 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
           </div>
           <span v-if="tab.discarded" class="tm-discarded-tag">{{ t('tabs.discarded') }}</span>
           <span v-if="tab.pinned" class="i-lucide:pin tm-pin-icon" />
+          </template>
+          <template v-else>
+          <div class="tm-privacy-avatar" v-html="letterAvatar(tab.url)" />
+          <span class="tm-privacy-index">{{ idx + 1 }}</span>
+          </template>
           <button
             class="tm-tab-close"
             :title="t('tabs.closeTabTitle')"
@@ -524,6 +566,23 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   color: #6366f1;
 }
 
+.tm-search {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; background: var(--app-surface);
+  border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+  margin-bottom: 4px;
+}
+.tm-search-icon { color: var(--text-muted); font-size: 14px; }
+.tm-search-input {
+  flex: 1; border: none; background: none; outline: none;
+  font-size: 13px; color: var(--text-primary);
+}
+.tm-search-clear {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 14px; padding: 0;
+}
+.tm-search-clear:hover { color: var(--text-primary); }
+
 .tm-tab-list {
   display: flex;
   flex-direction: column;
@@ -644,10 +703,37 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   color: #f59e0b;
 }
 
-.tm-empty {
-  text-align: center;
-  padding: 24px 0;
+
+
+.tm-privacy-active {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.tm-privacy-avatar {
+  flex-shrink: 0;
+  line-height: 0;
+}
+.tm-privacy-avatar :deep(svg) { display: block; }
+
+.tm-privacy-label {
   font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.tm-privacy-item {
+  padding: 6px 10px !important;
+  gap: 8px !important;
+}
+
+.tm-privacy-index {
+  font-size: 11px;
+  font-weight: 700;
   color: var(--text-muted);
+  min-width: 16px;
+  text-align: center;
 }
 </style>

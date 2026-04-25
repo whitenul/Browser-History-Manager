@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import type { HistoryRecord } from '@/utils/helpers'
 
 export type TabId = 'tabs' | 'history' | 'stats' | 'bookmarks' | 'settings'
 
@@ -25,11 +26,13 @@ export const useUIStore = defineStore('ui', () => {
   const activeTab = ref<TabId>('history')
   const doubleClickMode = ref(false)
   const sidebarMode = ref(false)
+  const privacyMode = ref(false)
+  const showOptimizer = ref(false)
   const showContextMenu = ref(false)
   const contextMenuPos = ref({ x: 0, y: 0 })
-  const contextMenuTarget = ref<any>(null)
+  const contextMenuTarget = ref<HistoryRecord | null>(null)
   const showDeleteConfirm = ref(false)
-  const deleteTarget = ref<any>(null)
+  const deleteTarget = ref<HistoryRecord | null>(null)
   const showTagModal = ref(false)
   const tagModalTarget = ref<string>('')
   const showGroupRuleModal = ref(false)
@@ -37,9 +40,9 @@ export const useUIStore = defineStore('ui', () => {
   const toastType = ref<'success' | 'error' | 'info'>('success')
   const showToast = ref(false)
   const showPreview = ref(false)
-  const previewRecord = ref<any>(null)
+  const previewRecord = ref<HistoryRecord | null>(null)
   const showBookmarkPicker = ref(false)
-  const bookmarkTarget = ref<any>(null)
+  const bookmarkTarget = ref<HistoryRecord | null>(null)
   const showCommandPalette = ref(false)
   const undoStack = ref<UndoAction[]>([])
   const showUndoToast = ref(false)
@@ -76,7 +79,7 @@ export const useUIStore = defineStore('ui', () => {
     activeTab.value = tab
   }
 
-  function goBack(_clearFilter = false) {
+  function goBack() {
     const entry = navStack.value.pop()
     if (entry) {
       saveCurrentScroll()
@@ -105,7 +108,7 @@ export const useUIStore = defineStore('ui', () => {
     navStack.value = []
   }
 
-  function openContextMenu(x: number, y: number, target: any) {
+  function openContextMenu(x: number, y: number, target: HistoryRecord) {
     contextMenuPos.value = { x, y }
     contextMenuTarget.value = target
     showContextMenu.value = true
@@ -116,7 +119,7 @@ export const useUIStore = defineStore('ui', () => {
     contextMenuTarget.value = null
   }
 
-  function openDeleteConfirm(record: any) {
+  function openDeleteConfirm(record: HistoryRecord) {
     deleteTarget.value = record
     showDeleteConfirm.value = true
   }
@@ -139,6 +142,7 @@ export const useUIStore = defineStore('ui', () => {
   function notify(message: string, type: 'success' | 'error' | 'info' = 'success') {
     toastMessage.value = message
     toastType.value = type
+    showUndoToast.value = false
     showToast.value = true
     setTimeout(() => { showToast.value = false }, 3000)
   }
@@ -175,7 +179,7 @@ export const useUIStore = defineStore('ui', () => {
     currentUndoTimer.value = null
   }
 
-  function openPreview(record: any) {
+  function openPreview(record: HistoryRecord) {
     previewRecord.value = record
     showPreview.value = true
   }
@@ -185,7 +189,7 @@ export const useUIStore = defineStore('ui', () => {
     previewRecord.value = null
   }
 
-  function openBookmarkPicker(record: any) {
+  function openBookmarkPicker(record: HistoryRecord) {
     bookmarkTarget.value = record
     showBookmarkPicker.value = true
   }
@@ -222,8 +226,21 @@ export const useUIStore = defineStore('ui', () => {
     } catch { /* ignore */ }
   }
 
+  async function loadPrivacyMode() {
+    try {
+      const result = await chrome.storage.local.get('privacyMode')
+      if (typeof result.privacyMode === 'boolean') privacyMode.value = result.privacyMode
+    } catch { /* ignore */ }
+  }
+
+  async function savePrivacyMode() {
+    try {
+      await chrome.storage.local.set({ privacyMode: privacyMode.value })
+    } catch { /* ignore */ }
+  }
+
   return {
-    activeTab, doubleClickMode, sidebarMode, showContextMenu, contextMenuPos, contextMenuTarget,
+    activeTab, doubleClickMode, sidebarMode, privacyMode, showOptimizer, showContextMenu, contextMenuPos, contextMenuTarget,
     showDeleteConfirm, deleteTarget, showTagModal, tagModalTarget,
     showGroupRuleModal, toastMessage, toastType, showToast,
     showPreview, previewRecord,
@@ -239,5 +256,6 @@ export const useUIStore = defineStore('ui', () => {
     openBookmarkPicker, closeBookmarkPicker,
     loadDoubleClickMode, saveDoubleClickMode,
     loadSidebarMode, saveSidebarMode,
+    loadPrivacyMode, savePrivacyMode,
   }
 })

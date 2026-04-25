@@ -103,6 +103,13 @@ function onScroll(e: Event) {
   }
 }
 
+function scrollToFocused() {
+  nextTick(() => {
+    const el = document.querySelector('.record-item.focused') as HTMLElement
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  })
+}
+
 function onKeydown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
     e.preventDefault()
@@ -112,10 +119,12 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     focusedIndex.value = Math.min(focusedIndex.value + 1, visibleRecords.value.length - 1)
+    scrollToFocused()
   }
   if (e.key === 'ArrowUp') {
     e.preventDefault()
     focusedIndex.value = Math.max(focusedIndex.value - 1, 0)
+    scrollToFocused()
   }
   if (e.key === 'Enter' && focusedIndex.value >= 0) {
     const record = visibleRecords.value[focusedIndex.value]
@@ -379,11 +388,8 @@ onUnmounted(() => {
                   <input type="checkbox" :checked="history.selectedRecords.has(record.id)" />
                 </label>
                 <div class="record-favicon">
-                  <img :src="getFaviconUrl(record.url)" alt=""
+                  <img :src="getFaviconUrl(record.url)" alt="" class="favicon-img"
                     @error="onFaviconError($event, record.url)" />
-                  <span class="favicon-fallback hidden" :style="{ backgroundColor: record.domainColor }">
-                    {{ record.domain.charAt(0).toUpperCase() }}
-                  </span>
                 </div>
                 <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : (!ui.doubleClickMode ? history.openRecord(record.url) : undefined)" @dblclick="!history.isSelectMode && ui.doubleClickMode ? history.openRecord(record.url) : undefined">
                   <div class="record-title" v-html="highlightText(record.title, history.searchKeyword)" />
@@ -394,8 +400,8 @@ onUnmounted(() => {
                     <span v-if="record.visitCount > 1" class="meta-dot">·</span>
                     <span v-if="record.visitCount > 1">{{ t('history.visitCountLabel', { count: record.visitCount }) }}</span>
                   </div>
-                  <div v-if="autoTag(record.url, record.title).length" class="auto-tags">
-                    <span v-for="tag in autoTag(record.url, record.title)" :key="tag" class="auto-tag"
+                  <div v-if="record.tags?.length" class="auto-tags">
+                    <span v-for="tag in record.tags" :key="tag" class="auto-tag"
                       :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
                       {{ t('tags.' + tag) }}
                     </span>
@@ -406,7 +412,7 @@ onUnmounted(() => {
                     class="action-btn"
                     :class="{ 'queue-active': readingQueue.isInQueue(record.url) }"
                     :title="readingQueue.isInQueue(record.url) ? t('readingQueue.removeFromQueue') : t('readingQueue.addToQueue')"
-                    @click.stop="readingQueue.toggleQueue(record.url, record.title, record.domain, autoTag(record.url, record.title))"
+                    @click.stop="readingQueue.toggleQueue(record.url, record.title, record.domain, record.tags || [])"
                   >
                     <span :class="readingQueue.isInQueue(record.url) ? 'i-lucide:bookmark-check' : 'i-lucide:clock'" />
                   </button>
@@ -442,11 +448,8 @@ onUnmounted(() => {
               <input type="checkbox" :checked="history.selectedRecords.has(record.id)" />
             </label>
             <div class="record-favicon">
-              <img :src="getFaviconUrl(record.url)" alt=""
+              <img :src="getFaviconUrl(record.url)" alt="" class="favicon-img"
                 @error="onFaviconError($event, record.url)" />
-              <span class="favicon-fallback hidden" :style="{ backgroundColor: record.domainColor }">
-                {{ record.domain.charAt(0).toUpperCase() }}
-              </span>
             </div>
             <div class="record-info" @click="history.isSelectMode ? history.toggleSelectRecord(record.id) : (!ui.doubleClickMode ? history.openRecord(record.url) : undefined)" @dblclick="!history.isSelectMode && ui.doubleClickMode ? history.openRecord(record.url) : undefined">
               <div class="record-title" v-html="highlightText(record.title, history.searchKeyword)" />
@@ -457,8 +460,8 @@ onUnmounted(() => {
                 <span v-if="record.visitCount > 1" class="meta-dot">·</span>
                 <span v-if="record.visitCount > 1">{{ t('history.visitCountLabel', { count: record.visitCount }) }}</span>
               </div>
-              <div v-if="autoTag(record.url, record.title).length" class="auto-tags">
-                <span v-for="tag in autoTag(record.url, record.title)" :key="tag" class="auto-tag"
+              <div v-if="record.tags?.length" class="auto-tags">
+                <span v-for="tag in record.tags" :key="tag" class="auto-tag"
                   :style="{ backgroundColor: (TAG_COLORS[tag] || '#64748b') + '18', color: TAG_COLORS[tag] || '#64748b' }">
                   {{ t('tags.' + tag) }}
                 </span>
@@ -469,7 +472,7 @@ onUnmounted(() => {
                 class="action-btn"
                 :class="{ 'queue-active': readingQueue.isInQueue(record.url) }"
                 :title="readingQueue.isInQueue(record.url) ? t('readingQueue.removeFromQueue') : t('readingQueue.addToQueue')"
-                @click.stop="readingQueue.toggleQueue(record.url, record.title, record.domain, autoTag(record.url, record.title))"
+                @click.stop="readingQueue.toggleQueue(record.url, record.title, record.domain, record.tags || [])"
               >
                 <span :class="readingQueue.isInQueue(record.url) ? 'i-lucide:bookmark-check' : 'i-lucide:clock'" />
               </button>
@@ -745,10 +748,17 @@ onUnmounted(() => {
 .record-item {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 12px; border-bottom: 1px solid var(--border-color);
-  transition: background var(--transition-fast); cursor: default;
+  position: relative; cursor: default;
 }
-.record-item:hover { background: var(--primary-light); }
-.record-item.focused { background: var(--primary-light); }
+.record-item::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--primary-light); border-radius: 0;
+  opacity: 0; transition: opacity var(--transition-fast);
+  pointer-events: none; z-index: 0;
+}
+.record-item:hover::after { opacity: 1; }
+.record-item > * { position: relative; z-index: 1; }
+.record-item.focused::after { opacity: 1; }
 .record-item.selected { background: var(--primary-light); border-left: 3px solid var(--primary-color); }
 
 .select-check {
@@ -762,7 +772,11 @@ onUnmounted(() => {
   overflow: hidden; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
 }
-.record-favicon img { width: 100%; height: 100%; object-fit: contain; }
+.record-favicon img, .favicon-img {
+  width: 100%; height: 100%; object-fit: contain;
+  transition: opacity 0.15s ease;
+}
+.favicon-img[src=""] { opacity: 0; }
 .favicon-fallback {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;

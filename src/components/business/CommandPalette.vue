@@ -66,18 +66,6 @@ const allCommands = computed<Command[]>(() => {
     { id: 'action-blacklist', label: t('commandPalette.commands.manageBlacklist'), icon: 'i-lucide:ban', category: t('commandPalette.categories.actions'), action: () => ui.navigateTo('settings', t('commandPalette.commands.manageBlacklist')) },
   )
 
-  if (stats.contextualRecs.length > 0) {
-    stats.contextualRecs.forEach((rec, i) => {
-      cmds.push({
-        id: `ctx-${i}`,
-        label: t('commandPalette.commands.ctxRecommend', { domain: rec.domain }),
-        icon: 'i-lucide:compass',
-        category: t('commandPalette.categories.smartRecommend'),
-        action: () => { if (isValidDomain(rec.domain)) safeOpenUrl('https://' + rec.domain) },
-      })
-    })
-  }
-
   if (stats.topSites.length > 0) {
     stats.topSites.slice(0, 5).forEach((site, i) => {
       cmds.push({
@@ -157,11 +145,6 @@ function executeCommand(cmd: Command) {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-    e.preventDefault()
-    ui.showCommandPalette = !ui.showCommandPalette
-    return
-  }
   if (!ui.showCommandPalette) return
 
   if (e.key === 'Escape') {

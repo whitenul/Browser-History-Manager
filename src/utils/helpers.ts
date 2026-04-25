@@ -64,17 +64,15 @@ export function isValidDomain(domain: string): boolean {
   return /^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(domain) && domain.length <= 253
 }
 
+const faviconDomainCache = new Map<string, string>()
+
 export function getFaviconUrl(url: string): string {
   try {
-    return `/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`
-  } catch {
-    return ''
-  }
-}
-
-export function getFaviconUrlWithHint(url: string, _favIconUrl?: string): string {
-  try {
-    return `/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`
+    const domain = new URL(url).hostname.replace(/^www\./, '')
+    if (faviconDomainCache.has(domain)) return faviconDomainCache.get(domain)!
+    const faviconUrl = `/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`
+    faviconDomainCache.set(domain, faviconUrl)
+    return faviconUrl
   } catch {
     return ''
   }
@@ -267,6 +265,7 @@ export interface HistoryRecord {
   typedCount?: number
   domain: string
   domainColor: string
+  tags?: string[]
 }
 
 export interface GroupResult {
@@ -1230,6 +1229,20 @@ const TAG_DETAILED_CACHE = new Map<string, TagResult[]>()
 const TAG_CACHE_MAX = 10000
 let entityIndexInitialized = false
 
+const domainToTagMap = new Map<string, { tag: string; confidence: number }>()
+
+function buildDomainTagIndex() {
+  for (const rule of TAG_RULES) {
+    for (const d of rule.domains) {
+      if (!domainToTagMap.has(d)) {
+        domainToTagMap.set(d, { tag: rule.tag, confidence: 0.95 })
+      }
+    }
+  }
+}
+
+buildDomainTagIndex()
+
 function propagateEntityConfidence(domain: string, candidates: TagCandidate[]): void {
   const entity = getEntityForDomain(domain)
   if (!entity) return
@@ -1300,7 +1313,7 @@ export function autoTag(url: string, title: string): string[] {
   return tags
 }
 
-export function autoTagDetailed(url: string, title: string): TagResult[] {
+export function autoTagDetailed(url: string, title: string, visitHour?: number): TagResult[] {
   const cacheKey = `${url}|${title}`
   const cached = TAG_DETAILED_CACHE.get(cacheKey)
   if (cached) return cached
@@ -1320,12 +1333,13 @@ export function autoTagDetailed(url: string, title: string): TagResult[] {
 
   const registeredDomain = getRegisteredDomain(url)
 
+  const exactMatch = domainToTagMap.get(domain) || (registeredDomain ? domainToTagMap.get(registeredDomain) : undefined)
+  if (exactMatch) {
+    candidates.push({ tag: exactMatch.tag, confidence: exactMatch.confidence, source: 'domain' })
+  }
+
   for (const rule of TAG_RULES) {
-    const exactDomainMatch = rule.domains.some(d => domain === d || registeredDomain === d)
-    if (exactDomainMatch) {
-      candidates.push({ tag: rule.tag, confidence: 0.95, source: 'domain' })
-      continue
-    }
+    if (exactMatch && rule.tag === exactMatch.tag) continue
 
     const suffixDomainMatch = rule.domains.some(d => domain.endsWith('.' + d) || registeredDomain?.endsWith('.' + d))
     if (suffixDomainMatch) {
@@ -1426,7 +1440,7 @@ export function autoTagDetailed(url: string, title: string): TagResult[] {
     data.subtags = matchedSubtags
   }
 
-  const hour = new Date().getHours()
+  const hour = visitHour ?? new Date().getHours()
   if (hour >= 22 || hour < 6) {
     tagMap.set('lateNight', { confidence: 0.9, subtags: [] })
   } else if (hour >= 6 && hour < 9) {

@@ -111,6 +111,20 @@ export const useTabOptimizerStore = defineStore('tabOptimizer', () => {
     finally { isLoading.value = false }
   }
 
+  function syncFromQuery(rawTabs: chrome.tabs.Tab[]) {
+    tabs.value = rawTabs.map(t => ({
+      id: t.id!,
+      title: t.title || '',
+      url: t.url || '',
+      favIconUrl: t.favIconUrl || '',
+      active: t.active,
+      discarded: t.discarded ?? false,
+      lastAccessed: t.lastAccessed ?? Date.now(),
+      groupId: t.groupId ?? -1,
+      windowId: t.windowId,
+    }))
+  }
+
   async function loadSettings() {
     try {
       const result = await chrome.storage.local.get('optimizerSettings')
@@ -212,7 +226,7 @@ export const useTabOptimizerStore = defineStore('tabOptimizer', () => {
   return {
     tabs, settings, isLoading, totalSuspended,
     duplicateGroups, idleTabs, estimatedMemoryMB, potentialSavingsMB,
-    loadTabs, loadSettings, saveSettings,
+    loadTabs, syncFromQuery, loadSettings, saveSettings,
     suspendTab, suspendIdleTabs, closeDuplicateTabs, suspendAllInactive,
     refreshPinnedAudible,
   }

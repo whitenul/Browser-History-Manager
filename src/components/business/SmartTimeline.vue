@@ -19,10 +19,6 @@ interface TimeSegment {
   records: HistoryRecord[]
 }
 
-const PRODUCTIVE_TAGS = new Set(['tech', 'dev', 'docs', 'learning', 'cloud', 'tools', 'ai'])
-const ENTERTAINMENT_TAGS = new Set(['video', 'gaming', 'music', 'social', 'reading'])
-const NEWS_TAGS = new Set(['news', 'blog', 'forum'])
-
 const SEGMENT_DEFS = computed(() => [
   { key: 'night0', label: t('timeline.segments.night'), icon: 'i-lucide:moon', hourRange: [0, 6] as [number, number], color: '#6366f1' },
   { key: 'dawn', label: t('timeline.segments.dawn'), icon: 'i-lucide:sunrise', hourRange: [6, 9] as [number, number], color: '#fbbf24' },
@@ -78,35 +74,9 @@ const topDomain = computed(() => {
 })
 
 const storySummary = computed(() => {
-  const patterns = detectedPatterns.value
-  const parts: string[] = []
-
-  if (patterns.length === 0) {
-    const total = todayRecords.value.length
-    if (total === 0) return t('timeline.noRecordsToday')
-    return t('timeline.browsedPagesActive', { count: total, label: activePeriod.value.label })
-  }
-
-  const primary = patterns[0]
-  if (primary.type === 'deep-work') parts.push(t('timeline.deepWork'))
-  else if (primary.type === 'fragmented') parts.push(t('timeline.fragmentedBrowsing'))
-  else if (primary.type === 'entertainment') parts.push(t('timeline.entertainmentTime'))
-  else if (primary.type === 'info-gathering') parts.push(t('timeline.infoGathering'))
-
-  const activeSeg = activePeriod.value
-  if (activeSeg.records.length > 0) {
-    const techCount = activeSeg.records.filter(r => {
-      const tags = autoTag(r.url, r.title)
-      return tags.some(t => PRODUCTIVE_TAGS.has(t))
-    }).length
-    if (techCount > 0 && primary.type !== 'entertainment') {
-      parts.push(t('timeline.techSitesBrowsed', { label: activeSeg.label, count: techCount }))
-    } else {
-      parts.push(t('timeline.mostActivePeriod', { label: activeSeg.label }))
-    }
-  }
-
-  return parts.join(t('timeline.summarySeparator'))
+  const total = todayRecords.value.length
+  if (total === 0) return t('timeline.noRecordsToday')
+  return t('timeline.browsedPagesActive', { count: total, label: activePeriod.value.label })
 })
 
 const yesterdayDiffPercent = computed(() => {
@@ -123,82 +93,6 @@ const yesterdayComparison = computed(() => {
   return t('timeline.vsYesterdayLess', { percent: abs })
 })
 
-interface DetectedPattern {
-  type: 'deep-work' | 'fragmented' | 'entertainment' | 'info-gathering'
-  label: string
-  icon: string
-  color: string
-  segmentKey: string
-}
-
-const detectedPatterns = computed<DetectedPattern[]>(() => {
-  const patterns: DetectedPattern[] = []
-
-  for (const seg of segments.value) {
-    if (seg.records.length === 0) continue
-
-    const tags = seg.records.flatMap(r => autoTag(r.url, r.title))
-    const productiveCount = tags.filter(t => PRODUCTIVE_TAGS.has(t)).length
-    const entertainmentCount = tags.filter(t => ENTERTAINMENT_TAGS.has(t)).length
-    const newsCount = tags.filter(t => NEWS_TAGS.has(t)).length
-    const uniqueDomains = new Set(seg.records.map(r => r.domain)).size
-
-    const hourSpan = seg.hourRange[1] - seg.hourRange[0]
-    if (productiveCount >= 3 && hourSpan >= 2) {
-      patterns.push({
-        type: 'deep-work', label: t('timeline.deepWorkLabel'), icon: 'i-lucide:target',
-        color: '#10b981', segmentKey: seg.key,
-      })
-      continue
-    }
-
-    if (uniqueDomains >= 5 && seg.records.length >= 5) {
-      const timeWindow = 30 * 60 * 1000
-      const sorted = [...seg.records].sort((a, b) => a.lastVisitTime - b.lastVisitTime)
-      for (let i = 0; i <= sorted.length - 5; i++) {
-        const windowDomains = new Set<string>()
-        for (let j = i; j < sorted.length; j++) {
-          if (sorted[j].lastVisitTime - sorted[i].lastVisitTime > timeWindow) break
-          windowDomains.add(sorted[j].domain)
-        }
-        if (windowDomains.size >= 5) {
-          patterns.push({
-            type: 'fragmented', label: t('timeline.fragmentedLabel'), icon: 'i-lucide:shuffle',
-            color: '#f59e0b', segmentKey: seg.key,
-          })
-          break
-        }
-      }
-      if (patterns.some(p => p.segmentKey === seg.key && p.type === 'fragmented')) continue
-    }
-
-    if (entertainmentCount >= 3) {
-      patterns.push({
-        type: 'entertainment', label: t('timeline.entertainmentLabel'), icon: 'i-lucide:party-popper',
-        color: '#ec4899', segmentKey: seg.key,
-      })
-      continue
-    }
-
-    if (newsCount >= 2 && productiveCount >= 1) {
-      patterns.push({
-        type: 'info-gathering', label: t('timeline.infoGatheringLabel'), icon: 'i-lucide:radio',
-        color: '#06b6d4', segmentKey: seg.key,
-      })
-    }
-  }
-
-  return patterns
-})
-
-const segmentPatterns = computed(() => {
-  const map = new Map<string, DetectedPattern>()
-  for (const p of detectedPatterns.value) {
-    if (!map.has(p.segmentKey)) map.set(p.segmentKey, p)
-  }
-  return map
-})
-
 function getSegmentBarWidth(seg: TimeSegment): string {
   const ratio = seg.records.length / maxSegmentCount.value
   return Math.max(4, ratio * 100) + '%'
@@ -213,14 +107,6 @@ function getSegmentDots(seg: TimeSegment) {
   })
   return Array.from(domainMap.values()).sort((a, b) => b.count - a.count).slice(0, 8)
 }
-
-function restoreSegment(seg: TimeSegment) {
-  const urls = [...new Set(seg.records.map(r => r.url))]
-  ui.notifyWithUndo(t('timeline.openSegmentPages', { label: seg.label, count: urls.length }), () => {})
-    for (const url of urls) {
-      safeOpenUrl(url, false)
-    }
-  }
 
 const currentHour = new Date().getHours()
 
@@ -273,19 +159,6 @@ function toggleExpand(key: string) {
       <div class="story-summary">{{ storySummary }}</div>
     </div>
 
-    <div class="patterns-section" v-if="detectedPatterns.length > 0">
-      <div class="patterns-title">
-        <span class="i-lucide:sparkles patterns-icon" />
-        {{ t('timeline.smartDetect') }}
-      </div>
-      <div class="patterns-list">
-        <div v-for="p in detectedPatterns" :key="p.segmentKey + p.type" class="pattern-chip" :style="{ '--chip-color': p.color }">
-          <span :class="p.icon" class="pattern-chip-icon" />
-          <span class="pattern-chip-label">{{ p.label }}</span>
-        </div>
-      </div>
-    </div>
-
     <div class="timeline-section">
       <div class="timeline-title">
         <span class="i-lucide:clock timeline-icon" />
@@ -303,7 +176,6 @@ function toggleExpand(key: string) {
             <span class="segment-label">{{ seg.label }}</span>
             <span class="segment-range">{{ String(seg.hourRange[0]).padStart(2, '0') }}:00-{{ String(seg.hourRange[1]).padStart(2, '0') }}:00</span>
             <span class="segment-count">{{ seg.records.length }}</span>
-            <div v-if="segmentPatterns.has(seg.key)" class="segment-pattern-dot" :style="{ backgroundColor: segmentPatterns.get(seg.key)!.color }" />
             <span class="i-lucide:chevron-down segment-expand-icon" :class="{ rotated: expandedSegment === seg.key }" />
           </div>
           <div class="segment-bar-row">
@@ -339,10 +211,6 @@ function toggleExpand(key: string) {
                 {{ t('timeline.moreRecords', { count: seg.records.length - 10 }) }}
               </div>
             </div>
-            <button class="segment-restore" @click.stop="restoreSegment(seg)">
-              <span class="i-lucide:rotate-ccw" />
-              {{ t('timeline.restore') }}
-            </button>
           </div>
         </div>
       </div>
@@ -388,24 +256,6 @@ function toggleExpand(key: string) {
   padding: 6px 8px; background: var(--app-bg); border-radius: 6px;
 }
 
-.patterns-section {
-  padding: 10px 12px; background: var(--app-surface);
-  border: 1px solid var(--border-color); border-radius: 10px;
-}
-.patterns-title {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;
-}
-.patterns-icon { font-size: 12px; color: #f59e0b; }
-.patterns-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.pattern-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;
-  background: color-mix(in srgb, var(--chip-color) 12%, transparent);
-  color: var(--chip-color);
-}
-.pattern-chip-icon { font-size: 11px; }
-
 .timeline-section {
   padding: 10px 12px; background: var(--app-surface);
   border: 1px solid var(--border-color); border-radius: 10px;
@@ -440,9 +290,6 @@ function toggleExpand(key: string) {
 .segment-count {
   font-size: 10px; font-weight: 700; color: var(--text-secondary);
   margin-left: auto; min-width: 16px; text-align: right;
-}
-.segment-pattern-dot {
-  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
 }
 .segment-expand-icon {
   font-size: 12px; color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0;
@@ -501,17 +348,4 @@ function toggleExpand(key: string) {
 .detail-more {
   font-size: 9px; color: var(--text-muted); padding: 2px 6px; text-align: center;
 }
-
-.segment-restore {
-  display: flex; align-items: center; justify-content: center; gap: 4px;
-  width: 100%; margin-top: 6px; padding: 5px 0;
-  border: 1px solid var(--border-color); border-radius: 4px;
-  background: var(--app-surface); color: var(--primary-color);
-  font-size: 10px; font-weight: 600; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.segment-restore:hover {
-  background: var(--primary-light); border-color: var(--primary-color);
-}
-.segment-restore span { font-size: 11px; }
 </style>

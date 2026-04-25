@@ -24,7 +24,7 @@ function openUrl(url?: string) {
   <div class="preview-overlay" @click="ui.closePreview()">
     <div class="preview-card" @click.stop>
       <div class="preview-header">
-        <img :src="getFaviconUrl(ui.previewRecord?.url)" class="preview-favicon" @error="onFaviconError($event, ui.previewRecord?.url || '')" />
+        <img :src="getFaviconUrl(ui.previewRecord?.url || '')" class="preview-favicon" @error="onFaviconError($event, ui.previewRecord?.url || '')" />
         <div class="preview-title-wrap">
           <div class="preview-title">{{ ui.previewRecord?.title || t('preview.noTitle') }}</div>
           <div class="preview-domain">{{ ui.previewRecord?.domain }}</div>
@@ -36,11 +36,11 @@ function openUrl(url?: string) {
       <div class="preview-body">
         <div class="preview-row">
           <span class="preview-label">{{ t('preview.url') }}</span>
-          <span class="preview-value preview-url">{{ sanitizeUrl(ui.previewRecord?.url) }}</span>
+          <span class="preview-value preview-url">{{ sanitizeUrl(ui.previewRecord?.url || '') }}</span>
         </div>
         <div class="preview-row">
           <span class="preview-label">{{ t('preview.visitTime') }}</span>
-          <span class="preview-value">{{ formatTime(ui.previewRecord?.lastVisitTime, t) }}</span>
+          <span class="preview-value">{{ formatTime(ui.previewRecord?.lastVisitTime || 0, t) }}</span>
         </div>
         <div class="preview-row">
           <span class="preview-label">{{ t('preview.visitCount') }}</span>
@@ -48,7 +48,7 @@ function openUrl(url?: string) {
         </div>
         <div class="preview-row">
           <span class="preview-label">{{ t('preview.favorited') }}</span>
-          <span class="preview-value">{{ history.favoriteSet.has(ui.previewRecord?.url) ? t('preview.yes') : t('preview.no') }}</span>
+          <span class="preview-value">{{ history.favoriteSet.has(ui.previewRecord?.url || '') ? t('preview.yes') : t('preview.no') }}</span>
         </div>
       </div>
       <div class="preview-actions">

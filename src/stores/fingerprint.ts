@@ -243,7 +243,8 @@ function computeTagDistribution(records: { url: string; title: string }[]): {
 function computeBehavioralDimensions(): BehavioralDimension[] {
   const stats = useStatsStore()
   const history = useHistoryStore()
-  const records = history.allRecords
+  const allRecs = history.allRecords
+  const records = allRecs.length > 1000 ? allRecs.slice(0, 1000) : allRecs
   const total = stats.overview.totalVisits || 1
 
   const { tagMap, totalTagged } = computeTagDistribution(records)

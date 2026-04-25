@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { onMounted, computed, defineAsyncComponent } from 'vue'
+import { onMounted, onUnmounted, computed, defineAsyncComponent } from 'vue'
 import { useUIStore } from '@/stores/ui'
+import { useTabGroupStore } from '@/stores/tabGroup'
+import { useTabOptimizerStore } from '@/stores/tabOptimizer'
 import { useThemeStore } from '@/stores/theme'
 import { useHistoryStore } from '@/stores/history'
 import { useI18n } from '@/i18n'
@@ -19,6 +21,8 @@ const BookmarkPickerModal = defineAsyncComponent(() => import('@/components/busi
 const CommandPalette = defineAsyncComponent(() => import('@/components/business/CommandPalette.vue'))
 
 const ui = useUIStore()
+const groupStore = useTabGroupStore()
+const optimizer = useTabOptimizerStore()
 const theme = useThemeStore()
 const history = useHistoryStore()
 const { t } = useI18n()
@@ -50,7 +54,30 @@ onMounted(async () => {
     ui.switchTab('tabs')
   }
   await Promise.all([theme.loadTheme(), history.loadRecords()])
+
+  try {
+    const result = await chrome.storage.local.get('appSettings')
+    if (result.appSettings) {
+      const s = result.appSettings as Record<string, any>
+      if (s.defaultTimeRange) history.setTimeRange(s.defaultTimeRange)
+      if (s.defaultGroupMode) history.setGroupMode(s.defaultGroupMode)
+      if (s.defaultSortMode) history.setSortMode(s.defaultSortMode)
+    }
+  } catch { /* ignore */ }
+
+  document.addEventListener('keydown', onGlobalKeydown)
 })
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onGlobalKeydown)
+})
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault()
+    ui.showCommandPalette = !ui.showCommandPalette
+  }
+}
 </script>
 
 <template>
@@ -93,6 +120,20 @@ onMounted(async () => {
         >
           <span :class="tab.icon" class="tab-icon" />
           <span class="tab-label">{{ tab.label }}</span>
+          <span v-if="tab.id === 'tabs'" class="shell-tab-tools">
+            <span :class="['shell-tool', { active: groupStore.enabled }]" :title="groupStore.enabled ? 'Group ON' : 'Group OFF'"
+              @click.stop="groupStore.enabled ? groupStore.disableMode() : groupStore.enableMode()">
+              <span class="i-lucide:layout-grid" />
+            </span>
+            <span :class="['shell-tool', { active: ui.privacyMode }]" :title="ui.privacyMode ? 'Privacy ON' : 'Privacy OFF'"
+              @click.stop="ui.privacyMode = !ui.privacyMode; ui.savePrivacyMode()">
+              <span class="i-lucide:eye-off" />
+            </span>
+            <span :class="['shell-tool', { active: ui.showOptimizer }]" :title="ui.showOptimizer ? 'Optimizer ON' : 'Optimizer OFF'"
+              @click.stop="ui.showOptimizer = !ui.showOptimizer">
+              <span class="i-lucide:zap" />
+            </span>
+          </span>
         </button>
       </nav>
     </header>
@@ -114,7 +155,7 @@ onMounted(async () => {
     <ContextMenu v-if="ui.showContextMenu" />
     <PreviewPanel v-if="ui.showPreview" />
     <BookmarkPickerModal v-if="ui.showBookmarkPicker" />
-    <CommandPalette />
+    <CommandPalette v-if="ui.showCommandPalette" />
 
     <Teleport to="body">
       <Transition name="toast">
@@ -203,11 +244,12 @@ onMounted(async () => {
 }
 
 .shell-tab {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  gap: 6px; padding: 10px 0; font-size: 13px; font-weight: 500;
+  flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px 8px; font-size: 13px; font-weight: 500;
   color: var(--text-muted);
   background: none; border: none; border-bottom: 2px solid transparent;
   cursor: pointer; transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 .shell-tab:hover {
   color: var(--text-secondary);
@@ -218,6 +260,29 @@ onMounted(async () => {
   border-bottom-color: var(--primary-color);
 }
 .tab-icon { font-size: 14px; }
+
+.shell-tab-tools {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: 4px;
+}
+
+.shell-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.shell-tool:hover { background: rgba(148,163,184,0.1); }
+.shell-tool.active { color: #10b981; }
+.shell-tool.active:nth-child(3) { color: #8b5cf6; }
+.shell-tool.active:nth-child(5) { color: #f59e0b; }
 
 .app-shell--popup .shell-content {
   flex: 1;
