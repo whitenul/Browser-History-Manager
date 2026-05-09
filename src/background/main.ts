@@ -1,8 +1,10 @@
 chrome.runtime.onInstalled.addListener(() => {
   applySidebarMode().catch(() => {})
+  verifyDnrRules()
 })
 
 applySidebarMode().catch(() => {})
+verifyDnrRules()
 
 async function applySidebarMode(): Promise<boolean> {
   try {
@@ -141,6 +143,22 @@ async function runAutoSuspend() {
       }
     }
   } catch { /* ignore */ }
+}
+
+async function verifyDnrRules() {
+  try {
+    const rulesets = await chrome.declarativeNetRequest.getEnabledRulesets()
+    console.log('[BH] DNR rulesets loaded:', JSON.stringify(rulesets))
+    const hasIframeBypass = rulesets.includes('iframe_bypass_rules')
+    if (!hasIframeBypass) {
+      console.warn('[BH] WARNING: iframe_bypass_rules not found! Available:', rulesets)
+      console.warn('[BH] Check that manifest.json has declarative_net_request.rule_resources pointing to rules.json')
+    } else {
+      console.log('[BH] ✅ iframe_bypass_rules ruleset is active')
+    }
+  } catch (err: any) {
+    console.error('[BH] Failed to verify DNR rules:', err?.message || err)
+  }
 }
 
 chrome.alarms.onAlarm.addListener((alarm) => {

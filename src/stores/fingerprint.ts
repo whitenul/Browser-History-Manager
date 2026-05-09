@@ -375,11 +375,15 @@ function computeBehavioralDimensions(): BehavioralDimension[] {
   const nightOwlIndex = Math.min(1, nightCount / total)
   const morningIndex = Math.min(1, morningCount / total)
 
+  const heatMap = new Map<string, number>()
+  for (const c of stats.heatmap) {
+    heatMap.set(`${c.day}-${c.hour}`, c.count)
+  }
+
   const heatSequence: number[] = []
   for (let day = 0; day < 7; day++) {
     for (let hour = 0; hour < 24; hour++) {
-      const cell = stats.heatmap.find(c => c.day === day && c.hour === hour)
-      heatSequence.push(cell?.count || 0)
+      heatSequence.push(heatMap.get(`${day}-${hour}`) || 0)
     }
   }
   let rhythmicity = 0

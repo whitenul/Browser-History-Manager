@@ -44,6 +44,7 @@ export const useUIStore = defineStore('ui', () => {
   const showBookmarkPicker = ref(false)
   const bookmarkTarget = ref<HistoryRecord | null>(null)
   const showCommandPalette = ref(false)
+  const isBrowsingMode = ref(false)
   const undoStack = ref<UndoAction[]>([])
   const showUndoToast = ref(false)
   const undoLabel = ref('')
@@ -245,7 +246,8 @@ export const useUIStore = defineStore('ui', () => {
     showGroupRuleModal, toastMessage, toastType, showToast,
     showPreview, previewRecord,
     showBookmarkPicker, bookmarkTarget,
-    showCommandPalette, undoStack, showUndoToast, undoLabel,
+    showCommandPalette, isBrowsingMode,
+    undoStack, showUndoToast, undoLabel,
     navStack, canGoBack, isNavigatingBack, scrollMemory,
     switchTab, navigateTo, goBack, clearNavStack, saveCurrentScroll, getScrollPosition,
     openContextMenu, closeContextMenu,

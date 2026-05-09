@@ -16,11 +16,14 @@ const QUEUE_KEY = 'reading-queue'
 export const useReadingQueueStore = defineStore('readingQueue', () => {
   const items = ref<QueueItem[]>([])
   const urlSet = computed(() => new Set(items.value.map(i => i.url)))
+  const nowRef = ref(Date.now())
+  let nowTimer: ReturnType<typeof setInterval> | null = null
 
   const sortedItems = computed(() => {
+    const now = nowRef.value
     return [...items.value].sort((a, b) => {
-      const pa = a.priority * 0.6 + (1 - Math.min(1, (Date.now() - a.addedAt) / (7 * 24 * 3600 * 1000))) * 0.4
-      const pb = b.priority * 0.6 + (1 - Math.min(1, (Date.now() - b.addedAt) / (7 * 24 * 3600 * 1000))) * 0.4
+      const pa = a.priority * 0.6 + (1 - Math.min(1, (now - a.addedAt) / (7 * 24 * 3600 * 1000))) * 0.4
+      const pb = b.priority * 0.6 + (1 - Math.min(1, (now - b.addedAt) / (7 * 24 * 3600 * 1000))) * 0.4
       return pb - pa
     })
   })
@@ -31,6 +34,10 @@ export const useReadingQueueStore = defineStore('readingQueue', () => {
     try {
       const data = await appCache.get<QueueItem[]>(QUEUE_KEY)
       if (data) items.value = data
+      nowRef.value = Date.now()
+      if (!nowTimer) {
+        nowTimer = setInterval(() => { nowRef.value = Date.now() }, 60000)
+      }
     } catch {}
   }
 

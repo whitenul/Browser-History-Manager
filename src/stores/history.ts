@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, shallowRef } from 'vue'
+import { ref, computed, shallowRef, triggerRef, watch } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
 import { perfMark, perfMeasure } from '@/utils/perf'
 import {
@@ -7,9 +7,10 @@ import {
   groupByTimeline, groupByCustomRules, groupBySession,
   createCustomRule, matchRule, getGroupLabel, formatTime,
   formatDateTime, getFaviconUrl, highlightText, exportToCSV,
-  debounce, safeOpenUrl, isValidDomain, urlStorageKey, type GroupResult,
+  debounce, safeOpenUrl, isValidDomain, urlStorageKey, ensureTagRulesLoaded, type GroupResult,
 } from '@/utils/helpers'
 import { appCache } from '@/utils/cache'
+import { handleActionError, handleStorageError } from '@/utils/errorHandler'
 
 export const useHistoryStore = defineStore('history', () => {
   const allRecords = shallowRef<HistoryRecord[]>([])
@@ -46,9 +47,11 @@ export const useHistoryStore = defineStore('history', () => {
   const collapsedSet = computed(() => new Set(collapsedGroups.value))
   const blacklistSet = computed(() => new Set(blacklistedDomains.value))
 
-  const filteredRecords = computed(() => {
+  const filteredRecords = shallowRef<HistoryRecord[]>([])
+
+  function computeFilteredRecords() {
     const source = allRecords.value
-    if (!source.length) return []
+    if (!source.length) { filteredRecords.value = []; return }
 
     const blSet = blacklistSet.value
     const hasBlacklist = blSet.size > 0
@@ -63,8 +66,6 @@ export const useHistoryStore = defineStore('history', () => {
     const hasDomainFilter = !!df
     const ati = activeTagId.value
     const hasActiveTag = !!ati
-
-    const tagCache = hasTagFilter ? new Map<string, string[]>() : null
 
     const result: HistoryRecord[] = []
     for (let i = 0; i < source.length; i++) {
@@ -119,8 +120,16 @@ export const useHistoryStore = defineStore('history', () => {
       case 'domainDesc': result.sort((a, b) => b.domain.localeCompare(a.domain)); break
     }
 
-    return result
-  })
+    filteredRecords.value = result
+  }
+
+  const debouncedCompute = debounce(computeFilteredRecords, 80)
+
+  watch(
+    [allRecords, searchKeyword, timeFilter, tagFilter, domainFilter, activeTagId, sortMode, blacklistedDomains, recordTagsMap],
+    () => { debouncedCompute() },
+    { deep: false, immediate: true }
+  )
 
   const pagedRecords = computed(() => {
     const end = PAGE_SIZE.value * (currentPage.value + 1)
@@ -133,6 +142,7 @@ export const useHistoryStore = defineStore('history', () => {
     const loadStart = perfMark('history:load')
     isLoading.value = true
     try {
+      await ensureTagRulesLoaded()
       const { startTime, endTime } = getTimeRange(timeRange.value)
       const cacheKey = `history:${startTime}:${endTime}`
       let items = await appCache.get<chrome.history.HistoryItem[]>(cacheKey, true)
@@ -205,7 +215,7 @@ export const useHistoryStore = defineStore('history', () => {
         hasMore.value = mapped.length > PAGE_SIZE.value
         applyFilters()
       }
-    } catch { /* ignore */ }
+    } catch (e) { handleActionError(e, 'Load records', true) }
   }
 
   function applyFilters() {
@@ -281,7 +291,7 @@ export const useHistoryStore = defineStore('history', () => {
       allRecords.value = allRecords.value.filter(r => r.id !== record.id)
       applyFilters()
     } catch (e) {
-      console.error('Delete failed:', e)
+      handleActionError(e, 'Delete failed')
     }
   }
 
@@ -294,7 +304,7 @@ export const useHistoryStore = defineStore('history', () => {
       isSelectMode.value = false
       applyFilters()
     } catch (e) {
-      console.error('Batch delete failed:', e)
+      handleActionError(e, 'Batch delete failed')
     }
   }
 
@@ -351,14 +361,14 @@ export const useHistoryStore = defineStore('history', () => {
       const result = await chrome.storage.local.get('favorites')
       const data = result.favorites
       favorites.value = Array.isArray(data) ? data : []
-    } catch { /* ignore */ }
+    } catch (e) { handleStorageError(e, 'favorites') }
   }
 
   async function saveFavorites() {
     try {
       const safeFavorites = favorites.value.map(urlStorageKey)
       await chrome.storage.local.set({ favorites: safeFavorites })
-    } catch { /* ignore */ }
+    } catch (e) { handleStorageError(e, 'favorites') }
   }
 
   async function loadCustomRules() {
@@ -366,13 +376,13 @@ export const useHistoryStore = defineStore('history', () => {
       const result = await chrome.storage.local.get('customRules')
       const data = result.customRules
       customRules.value = Array.isArray(data) ? data : []
-    } catch { /* ignore */ }
+    } catch (e) { handleStorageError(e, 'customRules') }
   }
 
   async function saveCustomRules() {
     try {
       await chrome.storage.local.set({ customRules: customRules.value })
-    } catch { /* ignore */ }
+    } catch (e) { handleStorageError(e, 'customRules') }
   }
 
   async function addCustomRule(name: string, pattern: string, type: string) {
@@ -397,7 +407,7 @@ export const useHistoryStore = defineStore('history', () => {
       recordTagsMap.value = (mapData && typeof mapData === 'object' && !Array.isArray(mapData)) 
         ? mapData as Record<string, string[]> 
         : {}
-    } catch { /* ignore */ }
+    } catch (e) { handleStorageError(e, 'customTags') }
   }
 
   async function saveTags() {
@@ -407,7 +417,7 @@ export const useHistoryStore = defineStore('history', () => {
         safeMap[urlStorageKey(url)] = tags
       }
       await chrome.storage.local.set({ customTags: customTags.value, recordTagsMap: safeMap })
-    } catch { /* ignore */ }
+    } catch (e) { handleStorageError(e, 'customTags') }
   }
 
   async function addTag(name: string, color: string) {
@@ -442,13 +452,13 @@ export const useHistoryStore = defineStore('history', () => {
       const result = await chrome.storage.local.get('blacklistedDomains')
       const data = result.blacklistedDomains
       blacklistedDomains.value = Array.isArray(data) ? data : []
-    } catch { /* ignore */ }
+    } catch (e) { handleStorageError(e, 'blacklistedDomains') }
   }
 
   async function saveBlacklist() {
     try {
       await chrome.storage.local.set({ blacklistedDomains: blacklistedDomains.value })
-    } catch { /* ignore */ }
+    } catch (e) { handleStorageError(e, 'blacklistedDomains') }
   }
 
   async function addBlacklistDomain(domain: string) {

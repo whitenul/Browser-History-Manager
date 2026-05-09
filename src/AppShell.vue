@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed, defineAsyncComponent } from 'vue'
+import { onMounted, onUnmounted, computed, defineAsyncComponent, onErrorCaptured, ref } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useTabGroupStore } from '@/stores/tabGroup'
 import { useTabOptimizerStore } from '@/stores/tabOptimizer'
@@ -19,6 +19,7 @@ const ContextMenu = defineAsyncComponent(() => import('@/components/business/Con
 const PreviewPanel = defineAsyncComponent(() => import('@/components/business/PreviewPanel.vue'))
 const BookmarkPickerModal = defineAsyncComponent(() => import('@/components/business/BookmarkPickerModal.vue'))
 const CommandPalette = defineAsyncComponent(() => import('@/components/business/CommandPalette.vue'))
+const MiniBrowser = defineAsyncComponent(() => import('@/components/business/MiniBrowser.vue'))
 
 const ui = useUIStore()
 const groupStore = useTabGroupStore()
@@ -28,6 +29,15 @@ const history = useHistoryStore()
 const { t } = useI18n()
 
 const isSidebar = document.location.pathname.includes('sidebar')
+
+const hasError = ref(false)
+const errorMessage = ref('')
+onErrorCaptured((err) => {
+  console.error('[AppShell] Component error:', err)
+  hasError.value = true
+  errorMessage.value = err instanceof Error ? err.message : String(err)
+  return false
+})
 
 const tabTitles: Record<string, string> = {
   tabs: t('nav.tabs'),
@@ -77,11 +87,20 @@ function onGlobalKeydown(e: KeyboardEvent) {
     e.preventDefault()
     ui.showCommandPalette = !ui.showCommandPalette
   }
+  if (e.key === 'Escape' && ui.isBrowsingMode) {
+    e.preventDefault()
+    ui.isBrowsingMode = false
+  }
 }
 </script>
 
 <template>
-  <div :class="['app-shell', isSidebar ? 'app-shell--sidebar' : 'app-shell--popup', { 'has-gradient': theme.activeGradient }]">
+  <div v-if="hasError" class="error-boundary">
+    <span class="i-lucide:alert-triangle error-icon" />
+    <p class="error-text">{{ errorMessage || 'Something went wrong' }}</p>
+    <button class="error-retry" @click="hasError = false; errorMessage = ''">Retry</button>
+  </div>
+  <div v-else :class="['app-shell', isSidebar ? 'app-shell--sidebar' : 'app-shell--popup', { 'has-gradient': theme.activeGradient }]">
     <header :class="isSidebar ? 'shell-header--sidebar' : 'shell-header--popup'">
       <div class="shell-top">
         <div class="shell-left">
@@ -157,6 +176,25 @@ function onGlobalKeydown(e: KeyboardEvent) {
     <BookmarkPickerModal v-if="ui.showBookmarkPicker" />
     <CommandPalette v-if="ui.showCommandPalette" />
 
+    <!-- Mini Browser Overlay (Sidebar only) -->
+    <Teleport to="body">
+      <Transition name="browser-overlay">
+        <div v-if="ui.isBrowsingMode && isSidebar" class="browser-overlay">
+          <MiniBrowser @close="ui.isBrowsingMode = false" />
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- FAB Button (Sidebar only) -->
+    <button
+      v-if="isSidebar && !ui.isBrowsingMode"
+      class="fab-browser"
+      :title="t('browser.open')"
+      @click="ui.isBrowsingMode = true"
+    >
+      <span class="i-lucide:globe" />
+    </button>
+
     <Teleport to="body">
       <Transition name="toast">
         <div v-if="ui.showUndoToast" class="toast undo-toast" @click="ui.executeUndo()">
@@ -172,6 +210,40 @@ function onGlobalKeydown(e: KeyboardEvent) {
 </template>
 
 <style scoped>
+.error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  padding: 24px;
+  color: var(--text-secondary);
+}
+.error-icon {
+  font-size: 32px;
+  color: #f59e0b;
+}
+.error-text {
+  font-size: 13px;
+  text-align: center;
+  max-width: 280px;
+}
+.error-retry {
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--app-surface);
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.error-retry:hover {
+  background: var(--primary-light);
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -396,4 +468,53 @@ function onGlobalKeydown(e: KeyboardEvent) {
 .toast-enter-active { transition: all 200ms ease; }
 .toast-leave-active { transition: all 300ms ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(10px); }
+
+/* ========== Mini Browser Overlay ========== */
+.browser-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9998;
+  background: var(--app-bg);
+}
+
+.browser-overlay-enter-active,
+.browser-overlay-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.browser-overlay-enter-from,
+.browser-overlay-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* FAB Button */
+.fab-browser {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+.fab-browser:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5);
+}
+.fab-browser:active {
+  transform: scale(0.95);
+}
 </style>
