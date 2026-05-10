@@ -77,6 +77,18 @@ export function useMiniBrowser() {
     e.stopPropagation()
   }
 
+  function zoomIn() {
+    browser.setZoom(browser.zoomLevel + 10)
+  }
+
+  function zoomOut() {
+    browser.setZoom(browser.zoomLevel - 10)
+  }
+
+  function resetZoom() {
+    browser.setZoom(100)
+  }
+
   return {
     browser, ui,
     enterBrowsingMode,
@@ -87,5 +99,6 @@ export function useMiniBrowser() {
     onDragOver,
     onDragEnter,
     onDragLeave,
+    zoomIn, zoomOut, resetZoom,
   }
 }
