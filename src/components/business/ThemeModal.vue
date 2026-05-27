@@ -1,98 +1,57 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from '@/i18n'
-import { useThemeStore, PRESET_THEMES, GRADIENT_THEMES } from '@/stores/theme'
-import type { RadiusStyle, FontSize, FontFamily, HeaderStyle, CardStyle, AnimationSpeed, ScrollbarStyle, BackgroundPattern } from '@/stores/theme'
+import { useThemeStore, PRESET_THEMES, GRADIENT_PRESETS } from '@/stores/theme'
+import type { BackgroundType, CardStyle, HeaderStyle, RadiusPreset, AnimationSpeed, ScrollbarStyle, FontSize, FontFamily } from '@/stores/theme'
 
 const { t } = useI18n()
 const theme = useThemeStore()
-const activeSection = ref<'color' | 'layout' | 'typo' | 'effects' | 'advanced'>('color')
-const customPrimary = ref(theme.customColors?.primary || '#4f46e5')
-const customBg = ref(theme.customColors?.bg || '#f8fafc')
-const customText = ref(theme.customColors?.text || '#0f172a')
-const customAccent = ref(theme.accentColor || '#f59e0b')
+const activeSection = ref<'color' | 'background' | 'layout' | 'typo' | 'effects' | 'advanced'>('color')
 const importText = ref('')
 const showImportArea = ref(false)
+const imageUrlInput = ref('')
 
-const sections = computed(() => [
+const sections = [
   { id: 'color' as const, label: t('theme.color'), icon: 'i-lucide:palette' },
+  { id: 'background' as const, label: 'Background', icon: 'i-lucide:image' },
   { id: 'layout' as const, label: t('theme.layout'), icon: 'i-lucide:layout' },
   { id: 'typo' as const, label: t('theme.typography'), icon: 'i-lucide:type' },
   { id: 'effects' as const, label: t('theme.effects'), icon: 'i-lucide:sparkles' },
   { id: 'advanced' as const, label: t('theme.advanced'), icon: 'i-lucide:settings-2' },
-])
+]
 
-const modeOptions = computed(() => [
-  { value: 'auto' as const, label: t('theme.modeOptions.auto'), icon: 'i-lucide:monitor' },
-  { value: 'light' as const, label: t('theme.modeOptions.light'), icon: 'i-lucide:sun' },
-  { value: 'dark' as const, label: t('theme.modeOptions.dark'), icon: 'i-lucide:moon' },
-])
+const bgTypes: { value: BackgroundType; label: string; icon: string }[] = [
+  { value: 'none', label: 'None', icon: 'i-lucide:ban' },
+  { value: 'gradient', label: 'Gradient', icon: 'i-lucide:blend' },
+  { value: 'stars', label: 'Stars', icon: 'i-lucide:stars' },
+  { value: 'aurora', label: 'Aurora', icon: 'i-lucide:sun' },
+  { value: 'image', label: 'Image', icon: 'i-lucide:image' },
+]
 
-const headerOptions = computed<{ value: HeaderStyle; label: string; desc: string }[]>(() => [
-  { value: 'solid', label: t('theme.headerOptions.solid'), desc: t('theme.headerDescOptions.solid') },
-  { value: 'gradient', label: t('theme.headerOptions.gradient'), desc: t('theme.headerDescOptions.gradient') },
-  { value: 'glass', label: t('theme.headerOptions.glass'), desc: t('theme.headerDescOptions.glass') },
-  { value: 'minimal', label: t('theme.headerOptions.minimal'), desc: t('theme.headerDescOptions.minimal') },
-])
-
-const cardOptions = computed<{ value: CardStyle; label: string; desc: string }[]>(() => [
-  { value: 'flat', label: t('theme.cardOptions.flat'), desc: t('theme.cardDescOptions.flat') },
-  { value: 'bordered', label: t('theme.cardOptions.bordered'), desc: t('theme.cardDescOptions.bordered') },
-  { value: 'shadowed', label: t('theme.cardOptions.shadowed'), desc: t('theme.cardDescOptions.shadowed') },
-  { value: 'elevated', label: t('theme.cardOptions.elevated'), desc: t('theme.cardDescOptions.elevated') },
-])
-
-const radiusOptions = computed<{ value: RadiusStyle; label: string; preview: string }[]>(() => [
-  { value: 'none', label: t('theme.radiusOptions.none'), preview: '0px' },
-  { value: 'small', label: t('theme.radiusOptions.small'), preview: '4px' },
-  { value: 'medium', label: t('theme.radiusOptions.medium'), preview: '8px' },
-  { value: 'large', label: t('theme.radiusOptions.large'), preview: '16px' },
-])
-
-const fontOptions = computed<{ value: FontSize; label: string; size: string }[]>(() => [
-  { value: 'small', label: t('theme.fontSizeOptions.small'), size: '11px' },
-  { value: 'medium', label: t('theme.fontSizeOptions.medium'), size: '13px' },
-  { value: 'large', label: t('theme.fontSizeOptions.large'), size: '15px' },
-])
-
-const fontFamilyOptions = computed<{ value: FontFamily; label: string; preview: string }[]>(() => [
-  { value: 'system', label: t('theme.fontFamilyOptions.system'), preview: 'Aa' },
-  { value: 'serif', label: t('theme.fontFamilyOptions.serif'), preview: 'Aa' },
-  { value: 'mono', label: t('theme.fontFamilyOptions.mono'), preview: 'Aa' },
-  { value: 'rounded', label: t('theme.fontFamilyOptions.rounded'), preview: 'Aa' },
-])
-
-const animOptions = computed<{ value: AnimationSpeed; label: string }[]>(() => [
-  { value: 'off', label: t('theme.animationOptions.none') },
-  { value: 'slow', label: t('theme.animationOptions.slow') },
-  { value: 'normal', label: t('theme.animationOptions.normal') },
-  { value: 'fast', label: t('theme.animationOptions.fast') },
-])
-
-const scrollOptions = computed<{ value: ScrollbarStyle; label: string }[]>(() => [
-  { value: 'thin', label: t('theme.scrollbarOptions.thin') },
-  { value: 'default', label: t('theme.scrollbarOptions.standard') },
-  { value: 'hidden', label: t('theme.scrollbarOptions.hidden') },
-])
-
-const patternOptions = computed<{ value: BackgroundPattern; label: string }[]>(() => [
-  { value: 'none', label: t('theme.patternOptions.none') },
-  { value: 'dots', label: t('theme.patternOptions.dots') },
-  { value: 'grid', label: t('theme.patternOptions.grid') },
-  { value: 'diagonal', label: t('theme.patternOptions.diagonal') },
-  { value: 'noise', label: t('theme.patternOptions.noise') },
-])
-
-function applyCustom() { theme.setCustomColors({ primary: customPrimary.value, bg: customBg.value, text: customText.value }) }
-function applyAccent() { theme.setAccentColor(customAccent.value) }
-function clearAccent() { theme.setAccentColor(null) }
-function close() { theme.showThemeModal = false }
-
-function doExport() {
-  const json = theme.exportConfig()
-  navigator.clipboard.writeText(json).then(() => { showImportArea.value = false }).catch(() => { showImportArea.value = true; importText.value = json })
+function handleImageUpload(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const dataUrl = reader.result as string
+    theme.setBackground({ type: 'image', imageUrl: dataUrl })
+  }
+  reader.readAsDataURL(file)
 }
 
+function applyImageUrl() {
+  if (imageUrlInput.value.trim()) {
+    theme.setBackground({ type: 'image', imageUrl: imageUrlInput.value.trim() })
+    imageUrlInput.value = ''
+  }
+}
+
+function close() { theme.showThemeModal = false }
+function doExport() {
+  const json = theme.exportConfig()
+  navigator.clipboard.writeText(json).catch(() => { showImportArea.value = true; importText.value = json })
+}
 function doImport() {
   if (theme.importConfig(importText.value)) { showImportArea.value = false; importText.value = '' }
 }
@@ -101,10 +60,10 @@ function doImport() {
 <template>
   <Teleport to="body">
     <div class="theme-overlay" @click="close">
-      <div class="theme-modal" @click.stop>
+      <div class="theme-modal glass-panel" @click.stop>
         <div class="modal-header">
           <span class="i-lucide:palette header-icon" />
-          <span class="header-title">{{ t('theme.title') }}</span>
+          <span class="header-title gradient-text">{{ t('theme.title') }}</span>
           <button class="close-btn" @click="close"><span class="i-lucide:x" /></button>
         </div>
 
@@ -119,36 +78,84 @@ function doImport() {
           <div v-if="activeSection === 'color'">
             <div class="sub-label">{{ t('theme.mode') }}</div>
             <div class="mode-row">
-              <button v-for="opt in modeOptions" :key="opt.value" class="mode-btn" :class="{ active: theme.mode === opt.value }" @click="theme.setMode(opt.value)">
-                <span :class="opt.icon" />{{ opt.label }}
+              <button v-for="m in (['auto','light','dark'] as const)" :key="m" class="mode-btn" :class="{ active: theme.mode === m }" @click="theme.setMode(m)">
+                <span :class="m === 'auto' ? 'i-lucide:monitor' : m === 'light' ? 'i-lucide:sun' : 'i-lucide:moon'" />{{ m }}
               </button>
             </div>
             <div class="sub-label">{{ t('theme.presetPalette') }}</div>
             <div class="preset-grid">
-              <button v-for="p in PRESET_THEMES" :key="p.id" class="preset-card" :class="{ active: theme.activePreset === p.id && !theme.activeGradient && !theme.customColors }" @click="theme.setPreset(p.id)">
-                <div class="preset-preview" :style="{ backgroundColor: p.light['--primary-color'] }"><span class="preset-icon">{{ p.icon }}</span></div>
+              <button v-for="p in PRESET_THEMES" :key="p.id" class="preset-card" :class="{ active: theme.activePresetId === p.id && !theme.customColors }" @click="theme.setPreset(p.id)">
+                <div class="preset-preview" :style="{ backgroundColor: p.light['--color-primary'] }"><span class="preset-icon">{{ p.icon }}</span></div>
                 <span class="preset-name">{{ t(p.name) }}</span>
               </button>
             </div>
-            <div class="sub-label">{{ t('theme.gradientThemes') }}</div>
-            <div class="gradient-grid">
-              <button v-for="g in GRADIENT_THEMES" :key="g.name" class="gradient-card" :class="{ active: theme.activeGradient === g.gradient }" @click="theme.setGradient(g.gradient)">
-                <div class="gradient-preview" :style="{ background: g.gradient }" />
-                <span class="gradient-name">{{ t(g.name) }}</span>
+            <div class="sub-label">Custom Colors</div>
+            <div class="color-row">
+              <label class="color-field"><span>Primary</span><input type="color" :value="theme.customColors?.['--color-primary'] || '#4f46e5'" @input="theme.setCustomColors({ ...theme.customColors, '--color-primary': ($event.target as HTMLInputElement).value })" class="color-input" /></label>
+              <label class="color-field"><span>Accent</span><input type="color" :value="theme.customColors?.['--color-accent'] || '#7c3aed'" @input="theme.setCustomColors({ ...theme.customColors, '--color-accent': ($event.target as HTMLInputElement).value })" class="color-input" /></label>
+            </div>
+            <button v-if="theme.customColors" class="reset-btn" @click="theme.setCustomColors(null)"><span class="i-lucide:x" />Clear Custom</button>
+          </div>
+
+          <!-- 背景 -->
+          <div v-if="activeSection === 'background'">
+            <div class="sub-label">Background Type</div>
+            <div class="bg-type-row">
+              <button v-for="bt in bgTypes" :key="bt.value" class="bg-type-btn" :class="{ active: theme.background.type === bt.value }" @click="theme.setBackground({ type: bt.value })">
+                <span :class="bt.icon" />{{ bt.label }}
               </button>
             </div>
-            <div class="sub-label">{{ t('theme.customColors') }}</div>
-            <div class="color-row">
-              <label class="color-field"><span class="color-label">{{ t('theme.primaryColor') }}</span><div class="color-input-wrap"><input type="color" v-model="customPrimary" class="color-input" /><span class="color-hex">{{ customPrimary }}</span></div></label>
-              <label class="color-field"><span class="color-label">{{ t('theme.bgColor') }}</span><div class="color-input-wrap"><input type="color" v-model="customBg" class="color-input" /><span class="color-hex">{{ customBg }}</span></div></label>
-              <label class="color-field"><span class="color-label">{{ t('theme.textColor') }}</span><div class="color-input-wrap"><input type="color" v-model="customText" class="color-input" /><span class="color-hex">{{ customText }}</span></div></label>
+
+            <!-- Gradient -->
+            <div v-if="theme.background.type === 'gradient'" class="sub-section">
+              <div class="sub-label">Gradient Presets</div>
+              <div class="gradient-grid">
+                <button v-for="g in GRADIENT_PRESETS" :key="g.id" class="gradient-card" :class="{ active: theme.background.gradient === g.gradient }" @click="theme.setBackground({ gradient: g.gradient })">
+                  <div class="gradient-preview" :style="{ background: g.gradient }" />
+                  <span class="gradient-name">{{ g.name }}</span>
+                </button>
+              </div>
             </div>
-            <button class="apply-btn" @click="applyCustom"><span class="i-lucide:check" />{{ t('theme.applyCustomColors') }}</button>
-            <div class="sub-label" style="margin-top:12px">{{ t('theme.accentColor') }}</div>
-            <div class="accent-row">
-              <label class="color-field"><span class="color-label">{{ t('theme.accentColor') }}</span><div class="color-input-wrap"><input type="color" v-model="customAccent" class="color-input" /><span class="color-hex">{{ customAccent }}</span></div></label>
-              <button class="apply-btn sm" @click="applyAccent">{{ t('theme.apply') }}</button>
-              <button v-if="theme.accentColor" class="reset-btn sm" @click="clearAccent">{{ t('theme.clear') }}</button>
+
+            <!-- Image -->
+            <div v-if="theme.background.type === 'image'" class="sub-section">
+              <div class="sub-label">Upload Image</div>
+              <label class="upload-area">
+                <input type="file" accept="image/*" @change="handleImageUpload" class="hidden-input" />
+                <span class="i-lucide:upload" /><span>Click to upload</span>
+              </label>
+              <div class="sub-label" style="margin-top:8px">Or paste URL</div>
+              <div class="url-row">
+                <input v-model="imageUrlInput" class="url-input" placeholder="https://..." @keydown.enter="applyImageUrl" />
+                <button class="apply-btn sm" @click="applyImageUrl">Apply</button>
+              </div>
+              <div v-if="theme.background.imageUrl" class="image-preview-wrap">
+                <div class="image-preview" :style="{ backgroundImage: `url(${theme.background.imageUrl})` }" />
+              </div>
+            </div>
+
+            <!-- Blur & Opacity (for image/gradient) -->
+            <div v-if="['image', 'gradient'].includes(theme.background.type)" class="sub-section">
+              <div class="sub-label">Adjustments</div>
+              <div class="slider-row">
+                <span class="slider-label">Blur</span>
+                <input type="range" :value="theme.background.blur" min="0" max="30" step="1" @input="theme.setBackground({ blur: +($event.target as HTMLInputElement).value })" class="slider" />
+                <span class="slider-value">{{ theme.background.blur }}px</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Opacity</span>
+                <input type="range" :value="theme.background.opacity" min="0" max="1" step="0.05" @input="theme.setBackground({ opacity: +($event.target as HTMLInputElement).value })" class="slider" />
+                <span class="slider-value">{{ Math.round(theme.background.opacity * 100) }}%</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Overlay</span>
+                <input type="range" :value="theme.background.overlayOpacity" min="0" max="0.8" step="0.05" @input="theme.setBackground({ overlayOpacity: +($event.target as HTMLInputElement).value })" class="slider" />
+                <span class="slider-value">{{ Math.round(theme.background.overlayOpacity * 100) }}%</span>
+              </div>
+              <div class="slider-row">
+                <span class="slider-label">Overlay Color</span>
+                <input type="color" :value="theme.background.overlayColor" @input="theme.setBackground({ overlayColor: ($event.target as HTMLInputElement).value })" class="color-input" />
+              </div>
             </div>
           </div>
 
@@ -156,73 +163,73 @@ function doImport() {
           <div v-if="activeSection === 'layout'">
             <div class="sub-label">{{ t('theme.headerStyle') }}</div>
             <div class="option-grid-4">
-              <button v-for="opt in headerOptions" :key="opt.value" class="option-card" :class="{ active: theme.headerStyle === opt.value }" @click="theme.setHeaderStyle(opt.value)">
-                <div class="option-preview header-preview" :class="opt.value" />
-                <span class="option-label">{{ opt.label }}</span>
-                <span class="option-desc">{{ opt.desc }}</span>
+              <button v-for="hs in (['solid','gradient','glass','minimal'] as HeaderStyle[])" :key="hs" class="option-card" :class="{ active: theme.headerStyle === hs }" @click="theme.setHeaderStyle(hs)">
+                <div class="option-preview header-preview" :class="hs" />
+                <span class="option-label">{{ hs }}</span>
               </button>
             </div>
             <div class="sub-label">{{ t('theme.cardStyle') }}</div>
-            <div class="option-grid-4">
-              <button v-for="opt in cardOptions" :key="opt.value" class="option-card" :class="{ active: theme.cardStyle === opt.value }" @click="theme.setCardStyle(opt.value)">
-                <div class="option-preview card-preview" :class="opt.value" />
-                <span class="option-label">{{ opt.label }}</span>
-                <span class="option-desc">{{ opt.desc }}</span>
+            <div class="option-grid-5">
+              <button v-for="cs in (['flat','bordered','shadowed','elevated','glass'] as CardStyle[])" :key="cs" class="option-card" :class="{ active: theme.cardStyle === cs }" @click="theme.setCardStyle(cs)">
+                <div class="option-preview card-preview" :class="cs" />
+                <span class="option-label">{{ cs }}</span>
               </button>
             </div>
-            <div class="sub-label">{{ t('theme.radiusStyle') }}</div>
-            <div class="option-grid-4">
-              <button v-for="opt in radiusOptions" :key="opt.value" class="option-card" :class="{ active: theme.radiusStyle === opt.value }" @click="theme.setRadiusStyle(opt.value)">
-                <div class="option-preview radius-preview" :style="{ borderRadius: opt.preview }" />
-                <span class="option-label">{{ opt.label }}</span>
+            <div class="sub-label">Radius</div>
+            <div class="option-grid-5">
+              <button v-for="rp in (['none','small','medium','large','full'] as RadiusPreset[])" :key="rp" class="option-card" :class="{ active: theme.radiusPreset === rp }" @click="theme.setRadiusPreset(rp)">
+                <div class="radius-demo" :class="rp" />
+                <span class="option-label">{{ rp }}</span>
               </button>
             </div>
-            <div class="sub-label">{{ t('theme.compactMode') }}</div>
             <button class="toggle-btn" :class="{ active: theme.compactMode }" @click="theme.toggleCompact()">
-              <span class="i-lucide:minimize-2" />{{ t('theme.compactMode') }}<span class="toggle-status">{{ theme.compactMode ? t('theme.on') : t('theme.off') }}</span>
+              <span class="i-lucide:minimize-2" />Compact<span class="toggle-status">{{ theme.compactMode ? 'ON' : 'OFF' }}</span>
             </button>
           </div>
 
           <!-- 排版 -->
           <div v-if="activeSection === 'typo'">
-            <div class="sub-label">{{ t('theme.fontSize') }}</div>
+            <div class="sub-label">Font Size</div>
             <div class="option-grid-3">
-              <button v-for="opt in fontOptions" :key="opt.value" class="option-card" :class="{ active: theme.fontSize === opt.value }" @click="theme.setFontSize(opt.value)">
-                <span class="font-preview" :style="{ fontSize: opt.size }">Aa</span>
-                <span class="option-label">{{ opt.label }}</span>
+              <button v-for="fs in (['small','medium','large'] as FontSize[])" :key="fs" class="option-card" :class="{ active: theme.fontSize === fs }" @click="theme.setFontSize(fs)">
+                <span class="font-preview" :style="{ fontSize: fs === 'small' ? '11px' : fs === 'medium' ? '13px' : '15px' }">Aa</span>
+                <span class="option-label">{{ fs }}</span>
               </button>
             </div>
-            <div class="sub-label">{{ t('theme.fontFamily') }}</div>
+            <div class="sub-label">Font Family</div>
             <div class="option-grid-4">
-              <button v-for="opt in fontFamilyOptions" :key="opt.value" class="option-card" :class="{ active: theme.fontFamily === opt.value }" @click="theme.setFontFamily(opt.value)">
-                <span class="font-preview" :style="{ fontFamily: opt.value === 'system' ? 'system-ui' : opt.value === 'serif' ? 'Georgia, serif' : opt.value === 'mono' ? 'Consolas, monospace' : 'system-ui' }">{{ opt.preview }}</span>
-                <span class="option-label">{{ opt.label }}</span>
+              <button v-for="ff in (['system','serif','mono','rounded'] as FontFamily[])" :key="ff" class="option-card" :class="{ active: theme.fontFamily === ff }" @click="theme.setFontFamily(ff)">
+                <span class="font-preview">{{ ff === 'system' ? 'Aa' : ff === 'serif' ? 'Aa' : ff === 'mono' ? 'Aa' : 'Aa' }}</span>
+                <span class="option-label">{{ ff }}</span>
               </button>
             </div>
           </div>
 
           <!-- 效果 -->
           <div v-if="activeSection === 'effects'">
-            <div class="sub-label">{{ t('theme.animationSpeed') }}</div>
+            <div class="sub-label">Animation Speed</div>
             <div class="option-grid-4">
-              <button v-for="opt in animOptions" :key="opt.value" class="option-card" :class="{ active: theme.animationSpeed === opt.value }" @click="theme.setAnimationSpeed(opt.value)">
-                <span class="anim-icon" :class="{ off: opt.value === 'off', slow: opt.value === 'slow', fast: opt.value === 'fast' }">⟳</span>
-                <span class="option-label">{{ opt.label }}</span>
+              <button v-for="as_ in (['off','slow','normal','fast'] as AnimationSpeed[])" :key="as_" class="option-card" :class="{ active: theme.animationSpeed === as_ }" @click="theme.setAnimationSpeed(as_)">
+                <span class="anim-icon" :class="{ off: as_ === 'off', slow: as_ === 'slow', fast: as_ === 'fast' }">⟳</span>
+                <span class="option-label">{{ as_ }}</span>
               </button>
             </div>
-            <div class="sub-label">{{ t('theme.scrollbarStyle') }}</div>
+            <div class="sub-label">Scrollbar</div>
             <div class="option-grid-3">
-              <button v-for="opt in scrollOptions" :key="opt.value" class="option-card" :class="{ active: theme.scrollbarStyle === opt.value }" @click="theme.setScrollbarStyle(opt.value)">
-                <div class="scrollbar-preview" :class="opt.value" />
-                <span class="option-label">{{ opt.label }}</span>
+              <button v-for="ss in (['thin','default','hidden'] as ScrollbarStyle[])" :key="ss" class="option-card" :class="{ active: theme.scrollbarStyle === ss }" @click="theme.setScrollbarStyle(ss)">
+                <span class="option-label">{{ ss }}</span>
               </button>
             </div>
-            <div class="sub-label">{{ t('theme.backgroundPattern') }}</div>
-            <div class="option-grid-5">
-              <button v-for="opt in patternOptions" :key="opt.value" class="option-card" :class="{ active: theme.backgroundPattern === opt.value }" @click="theme.setBackgroundPattern(opt.value)">
-                <div class="pattern-preview" :class="opt.value" />
-                <span class="option-label">{{ opt.label }}</span>
-              </button>
+            <div class="sub-label">Glass Settings</div>
+            <div class="slider-row">
+              <span class="slider-label">Blur</span>
+              <input type="range" :value="theme.glassBlur" min="0" max="30" step="1" @input="theme.setGlassBlur(+($event.target as HTMLInputElement).value)" class="slider" />
+              <span class="slider-value">{{ theme.glassBlur }}px</span>
+            </div>
+            <div class="slider-row">
+              <span class="slider-label">Opacity</span>
+              <input type="range" :value="theme.glassOpacity" min="0.1" max="1" step="0.05" @input="theme.setGlassOpacity(+($event.target as HTMLInputElement).value)" class="slider" />
+              <span class="slider-value">{{ Math.round(theme.glassOpacity * 100) }}%</span>
             </div>
           </div>
 
@@ -230,15 +237,15 @@ function doImport() {
           <div v-if="activeSection === 'advanced'">
             <div class="sub-label">{{ t('theme.importExport') }}</div>
             <div class="action-row">
-              <button class="action-btn" @click="doExport"><span class="i-lucide:download" />{{ t('theme.exportConfig') }}</button>
-              <button class="action-btn" @click="showImportArea = !showImportArea"><span class="i-lucide:upload" />{{ t('theme.importConfig') }}</button>
+              <button class="action-btn" @click="doExport"><span class="i-lucide:download" />Export</button>
+              <button class="action-btn" @click="showImportArea = !showImportArea"><span class="i-lucide:upload" />Import</button>
             </div>
             <div v-if="showImportArea" class="import-area">
-              <textarea v-model="importText" class="import-textarea" :placeholder="t('theme.importPlaceholder')" rows="4" />
-              <button class="apply-btn" @click="doImport"><span class="i-lucide:check" />{{ t('theme.applyImport') }}</button>
+              <textarea v-model="importText" class="import-textarea" placeholder="Paste theme JSON..." rows="4" />
+              <button class="apply-btn" @click="doImport"><span class="i-lucide:check" />Apply</button>
             </div>
             <div class="sub-label" style="margin-top:16px">{{ t('theme.reset') }}</div>
-            <button class="danger-btn" @click="theme.resetAll()"><span class="i-lucide:rotate-ccw" />{{ t('theme.resetAllSettings') }}</button>
+            <button class="btn-danger" @click="theme.resetAll()"><span class="i-lucide:rotate-ccw" />Reset All</button>
           </div>
         </div>
       </div>
@@ -247,117 +254,123 @@ function doImport() {
 </template>
 
 <style scoped>
-.theme-overlay { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; }
-.theme-modal { width: 380px; max-height: 520px; background: var(--app-surface); border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
-.modal-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
-.header-icon { font-size: 16px; color: var(--primary-color); }
+.theme-overlay { position: fixed; inset: 0; z-index: 400; background: var(--color-bg-overlay); backdrop-filter: blur(var(--glass-blur)); display: flex; align-items: center; justify-content: center; animation: fadeIn 0.15s ease; }
+.theme-modal { width: 380px; max-height: 520px; border-radius: var(--radius-xl); box-shadow: var(--shadow-modal); display: flex; flex-direction: column; overflow: hidden; }
+.modal-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--color-border); background: rgba(var(--card-surface-rgb), 0.8); }
+.header-icon { font-size: 16px; color: var(--color-primary); }
 .header-title { font-size: 14px; font-weight: 600; flex: 1; }
-.close-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 14px; border-radius: var(--radius-sm); }
-.close-btn:hover { background: var(--primary-light); color: var(--text-primary); }
+.close-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--color-text-muted); cursor: pointer; font-size: 14px; border-radius: var(--radius-sm); transition: all var(--transition-hover); }
+.close-btn:hover { background: var(--color-primary-light); color: var(--color-text-primary); }
 
-.section-tabs { display: flex; border-bottom: 1px solid var(--border-color); }
-.section-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 3px; padding: 8px 0; font-size: 11px; font-weight: 500; color: var(--text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--transition-fast); }
-.section-tab:hover { color: var(--text-secondary); background: var(--primary-light); }
-.section-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+.section-tabs { display: flex; border-bottom: 1px solid var(--color-border); background: rgba(var(--card-surface-rgb), 0.5); overflow-x: auto; }
+.section-tab { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 3px; padding: 8px 6px; font-size: 10px; font-weight: 500; color: var(--color-text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--transition-hover); }
+.section-tab:hover { color: var(--color-text-secondary); background: var(--color-primary-light); }
+.section-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 
-.modal-body { flex: 1; overflow-y: auto; padding: 12px 14px; }
-.sub-label { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.modal-body { flex: 1; overflow-y: auto; padding: 12px 14px; background: rgba(var(--card-surface-rgb), 0.7); backdrop-filter: blur(var(--glass-blur)); }
+.sub-label { font-size: 10px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 6px; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
 .sub-label:first-child { margin-top: 0; }
+.sub-section { margin-top: 8px; }
 
 .mode-row { display: flex; gap: 6px; margin-bottom: 4px; }
-.mode-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 0; font-size: 11px; font-weight: 500; color: var(--text-muted); background: var(--app-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.mode-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
-.mode-btn.active { background: var(--primary-light); color: var(--primary-color); border-color: var(--primary-color); }
+.mode-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 0; font-size: 11px; font-weight: 500; color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.mode-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.mode-btn.active { background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
 
 .preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.preset-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--app-bg); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.preset-card:hover { border-color: var(--primary-color); }
-.preset-card.active { border-color: var(--primary-color); background: var(--primary-light); }
+.preset-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--color-bg-base); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.preset-card:hover { border-color: var(--color-primary); }
+.preset-card.active { border-color: var(--color-primary); background: var(--color-primary-light); }
 .preset-preview { width: 28px; height: 28px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
 .preset-icon { font-size: 12px; }
-.preset-name { font-size: 9px; color: var(--text-secondary); font-weight: 500; }
+.preset-name { font-size: 9px; color: var(--color-text-secondary); font-weight: 500; }
 
-.gradient-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.gradient-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--app-bg); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.gradient-card:hover { border-color: var(--primary-color); }
-.gradient-card.active { border-color: var(--primary-color); background: var(--primary-light); }
-.gradient-preview { width: 100%; height: 24px; border-radius: var(--radius-sm); }
-.gradient-name { font-size: 9px; color: var(--text-secondary); font-weight: 500; }
-
-.color-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
-.color-field { display: flex; align-items: center; justify-content: space-between; }
-.color-label { font-size: 11px; color: var(--text-secondary); }
-.color-input-wrap { display: flex; align-items: center; gap: 6px; }
-.color-input { width: 28px; height: 28px; border: 2px solid var(--border-color); border-radius: var(--radius-sm); cursor: pointer; padding: 0; background: none; }
+.color-row { display: flex; gap: 12px; margin-bottom: 8px; }
+.color-field { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--color-text-secondary); cursor: pointer; }
+.color-input { width: 28px; height: 28px; border: 2px solid var(--color-border); border-radius: var(--radius-sm); cursor: pointer; padding: 0; background: none; }
 .color-input::-webkit-color-swatch-wrapper { padding: 2px; }
 .color-input::-webkit-color-swatch { border: none; border-radius: 2px; }
-.color-hex { font-size: 10px; color: var(--text-muted); font-family: monospace; }
 
-.accent-row { display: flex; align-items: center; gap: 6px; }
-.accent-row .color-field { flex: 1; }
+.bg-type-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+.bg-type-btn { display: flex; align-items: center; gap: 3px; padding: 5px 8px; font-size: 10px; font-weight: 500; color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.bg-type-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.bg-type-btn.active { background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
 
-.apply-btn { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 7px; font-size: 12px; font-weight: 600; color: white; background: var(--primary-color); border: none; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.apply-btn:hover { opacity: 0.9; }
-.apply-btn.sm { width: auto; padding: 4px 10px; font-size: 11px; }
+.gradient-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.gradient-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--color-bg-base); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.gradient-card:hover { border-color: var(--color-primary); }
+.gradient-card.active { border-color: var(--color-primary); background: var(--color-primary-light); }
+.gradient-preview { width: 100%; height: 24px; border-radius: var(--radius-sm); }
+.gradient-name { font-size: 9px; color: var(--color-text-secondary); font-weight: 500; }
 
-.reset-btn { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; padding: 5px; margin-top: 4px; font-size: 10px; color: var(--text-muted); background: transparent; border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.reset-btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
-.reset-btn.sm { width: auto; padding: 4px 8px; margin-top: 0; }
+.upload-area { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; border: 2px dashed var(--color-border); border-radius: var(--radius-md); cursor: pointer; color: var(--color-text-muted); font-size: 12px; transition: all var(--transition-hover); }
+.upload-area:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.hidden-input { display: none; }
+
+.url-row { display: flex; gap: 6px; }
+.url-input { flex: 1; padding: 6px 8px; font-size: 11px; background: var(--color-bg-base); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: var(--radius-sm); outline: none; }
+.url-input:focus { border-color: var(--color-primary); }
+
+.image-preview-wrap { margin-top: 8px; }
+.image-preview { width: 100%; height: 80px; border-radius: var(--radius-md); background-size: cover; background-position: center; }
+
+.slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.slider-label { font-size: 11px; color: var(--color-text-secondary); min-width: 60px; }
+.slider { flex: 1; accent-color: var(--color-primary); }
+.slider-value { font-size: 10px; color: var(--color-text-muted); min-width: 36px; text-align: right; font-family: monospace; }
 
 .option-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 4px; }
 .option-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 4px; }
 .option-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 4px; }
-.option-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--app-bg); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.option-card:hover { border-color: var(--primary-color); }
-.option-card.active { border-color: var(--primary-color); background: var(--primary-light); }
-.option-label { font-size: 9px; color: var(--text-secondary); font-weight: 500; }
-.option-desc { font-size: 8px; color: var(--text-muted); }
+.option-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--color-bg-base); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.option-card:hover { border-color: var(--color-primary); }
+.option-card.active { border-color: var(--color-primary); background: var(--color-primary-light); }
+.option-label { font-size: 9px; color: var(--color-text-secondary); font-weight: 500; }
 
-.option-preview { width: 100%; height: 24px; background: var(--app-bg); border: 1px solid var(--border-color); }
-.header-preview.solid { background: var(--primary-color); border: none; }
-.header-preview.gradient { background: linear-gradient(90deg, var(--primary-color), rgba(99,102,241,0.5)); border: none; }
-.header-preview.glass { background: rgba(99,102,241,0.2); backdrop-filter: blur(2px); border: 1px solid rgba(99,102,241,0.3); }
-.header-preview.minimal { background: transparent; border-bottom: 2px solid var(--primary-color); }
+.option-preview { width: 100%; height: 24px; background: var(--color-bg-base); border: 1px solid var(--color-border); }
+.header-preview.solid { background: var(--color-primary); border: none; }
+.header-preview.gradient { background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light)); border: none; }
+.header-preview.glass { background: var(--color-primary-light); backdrop-filter: blur(2px); border: 1px solid var(--color-primary-light); }
+.header-preview.minimal { background: transparent; border-bottom: 2px solid var(--color-primary); }
 
-.card-preview.flat { background: var(--app-surface); border: none; }
-.card-preview.bordered { background: var(--app-surface); border: 1px solid var(--border-color); }
-.card-preview.shadowed { background: var(--app-surface); border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-.card-preview.elevated { background: var(--app-surface); border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.card-preview.flat { background: var(--color-bg-surface); border: none; }
+.card-preview.bordered { background: var(--color-bg-surface); border: 1px solid var(--color-border); }
+.card-preview.shadowed { background: var(--color-bg-surface); border: none; box-shadow: var(--shadow-sm); }
+.card-preview.elevated { background: var(--color-bg-surface); border: 1px solid var(--color-border); box-shadow: var(--shadow-md); }
+.card-preview.glass { background: rgba(var(--card-surface-rgb), 0.5); backdrop-filter: blur(var(--glass-blur)); border: 1px solid rgba(255,255,255,0.1); }
 
-.radius-preview { width: 20px; height: 20px; background: var(--primary-color); opacity: 0.5; margin: 0 auto; }
-.option-card.active .radius-preview { opacity: 1; }
+.radius-demo { width: 20px; height: 20px; background: var(--color-primary); opacity: 0.5; margin: 0 auto; }
+.option-card.active .radius-demo { opacity: 1; }
+.radius-demo.none { border-radius: 0; }
+.radius-demo.small { border-radius: var(--radius-sm); }
+.radius-demo.medium { border-radius: var(--radius-md); }
+.radius-demo.large { border-radius: var(--radius-lg); }
+.radius-demo.full { border-radius: var(--radius-full); }
 
-.font-preview { font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+.font-preview { font-size: 16px; font-weight: 600; color: var(--color-text-primary); line-height: 1.2; }
 
-.anim-icon { font-size: 18px; color: var(--text-muted); display: inline-block; }
+.anim-icon { font-size: 18px; color: var(--color-text-muted); display: inline-block; }
 .anim-icon.off { opacity: 0.3; }
 .anim-icon.slow { animation: spin 2s linear infinite; }
 .anim-icon.fast { animation: spin 0.5s linear infinite; }
 
-.scrollbar-preview { width: 6px; height: 24px; background: var(--border-color); margin: 0 auto; border-radius: 3px; }
-.scrollbar-preview.default { width: 10px; }
-.scrollbar-preview.hidden { opacity: 0.2; width: 2px; }
-
-.pattern-preview { width: 100%; height: 24px; border: 1px solid var(--border-color); border-radius: 2px; }
-.pattern-preview.dots { background-image: radial-gradient(circle, var(--text-muted) 0.5px, transparent 0.5px); background-size: 6px 6px; opacity: 0.3; }
-.pattern-preview.grid { background-image: linear-gradient(var(--border-color) 1px, transparent 1px), linear-gradient(90deg, var(--border-color) 1px, transparent 1px); background-size: 8px 8px; opacity: 0.5; }
-.pattern-preview.diagonal { background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, var(--border-color) 4px, var(--border-color) 5px); opacity: 0.5; }
-.pattern-preview.noise { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E"); opacity: 0.5; }
-
-.toggle-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; font-size: 12px; color: var(--text-muted); background: var(--app-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.toggle-btn:hover { border-color: var(--primary-color); }
-.toggle-btn.active { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-light); }
-.toggle-status { margin-left: auto; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; }
-.toggle-btn.active .toggle-status { background: rgba(99,102,241,0.15); }
+.toggle-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; font-size: 12px; color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); margin-top: 8px; }
+.toggle-btn:hover { border-color: var(--color-primary); }
+.toggle-btn.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-light); }
+.toggle-status { margin-left: auto; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--radius-sm); }
 
 .action-row { display: flex; gap: 6px; margin-bottom: 8px; }
-.action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px; font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--app-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.action-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
+.action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px; font-size: 11px; font-weight: 500; color: var(--color-text-secondary); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.action-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.apply-btn { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 7px; font-size: 12px; font-weight: 600; color: var(--color-text-inverse); background: var(--color-primary); border: none; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.apply-btn:hover { filter: brightness(1.1); }
+.apply-btn.sm { width: auto; padding: 6px 12px; }
+
+.reset-btn { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; padding: 5px; margin-top: 4px; font-size: 10px; color: var(--color-text-muted); background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.reset-btn:hover { color: var(--color-primary); border-color: var(--color-primary); }
 
 .import-area { margin-bottom: 8px; }
-.import-textarea { width: 100%; padding: 8px; font-size: 10px; font-family: monospace; background: var(--app-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); resize: vertical; outline: none; }
-.import-textarea:focus { border-color: var(--primary-color); }
-
-.danger-btn { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 7px; font-size: 12px; font-weight: 500; color: #ef4444; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.3); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast); }
-.danger-btn:hover { background: #ef4444; color: white; }
+.import-textarea { width: 100%; padding: 8px; font-size: 10px; font-family: monospace; background: var(--color-bg-base); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: var(--radius-md); resize: vertical; outline: none; }
+.import-textarea:focus { border-color: var(--color-primary); }
 </style>

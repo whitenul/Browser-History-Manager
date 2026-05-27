@@ -117,14 +117,14 @@ const BmFolderItem = defineComponent({
   setup(props, { emit }): () => VNode {
     return (): VNode => h('div', {}, [
       h('div', {
-        style: `display:flex;align-items:center;gap:6px;padding:${props.folder.depth > 1 ? '4px' : '6px'} ${8 + props.folder.depth * 16}px;cursor:pointer;border-radius:4px;transition:background .15s ease;${props.selectedId === props.folder.id ? 'background:var(--primary-light);color:var(--primary-color)' : ''}`,
+        style: `display:flex;align-items:center;gap:6px;padding:${props.folder.depth > 1 ? '4px' : '6px'} ${8 + props.folder.depth * 16}px;cursor:pointer;border-radius:4px;transition:background .15s ease;${props.selectedId === props.folder.id ? 'background:var(--color-primary-light);color:var(--color-primary)' : ''}`,
         onClick: () => emit('select', props.folder.id),
-        onMouseenter(e: Event) { if (props.selectedId !== props.folder.id) (e.currentTarget as HTMLElement).style.background = 'rgba(148,163,184,0.06)' },
+        onMouseenter(e: Event) { if (props.selectedId !== props.folder.id) (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light)' },
         onMouseleave(e: Event) { if (props.selectedId !== props.folder.id) (e.currentTarget as HTMLElement).style.background = 'transparent' },
       }, [
         h('span', {
           class: props.folder.children ? 'i-lucide i-lucide-folder' : 'i-lucide i-lucide-folder-open',
-          style: `width:14px;height:14px;color:#fbbf24;display:inline-flex;align-items:center;flex-shrink:0;`,
+          style: `width:14px;height:14px;color:var(--color-warning);display:inline-flex;align-items:center;flex-shrink:0;`,
         }),
         h('span', { style: `font-size:13px;font-weight:${props.selectedId === props.folder.id ? '600' : '400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;` }, props.folder.title),
       ]),
@@ -140,56 +140,56 @@ export default { components: { BmFolderItem } }
 
 <style scoped>
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  position: fixed; inset: 0; background: var(--color-bg-overlay);
   display: flex; align-items: center; justify-content: center;
-  z-index: 100; animation: fadeIn var(--transition-fast);
+  z-index: 100; animation: fadeIn var(--transition-hover);
 }
 .modal-content {
   width: 340px; max-height: 420px;
-  background: var(--app-surface); border-radius: var(--radius-xl);
+  background: var(--color-bg-surface); border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg); padding: 20px;
-  animation: slideUp var(--transition-normal);
+  animation: slideUp var(--transition-modal);
 }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; color: var(--color-text-primary); }
 .close-btn {
   width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--text-muted); font-size: 16px;
+  cursor: pointer; color: var(--color-text-muted); font-size: 16px;
 }
-.close-btn:hover { background: var(--primary-light); }
+.close-btn:hover { background: var(--color-primary-light); }
 
 .target-info {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; background: var(--app-bg); border: 1px solid var(--border-color);
+  padding: 10px 12px; background: var(--color-bg-base); border: 1px solid var(--color-border);
   border-radius: var(--radius-md); margin-bottom: 12px;
 }
-.target-favicon { width: 22px; height: 22px; border-radius: 3px; object-fit: contain; flex-shrink: 0; }
+.target-favicon { width: 22px; height: 22px; border-radius: var(--radius-sm); object-fit: contain; flex-shrink: 0; }
 .target-text { flex: 1; min-width: 0; }
-.target-title { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.target-url { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.target-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.target-url { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
 
-.folder-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.folder-label { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 6px; }
 
 .folder-tree {
   max-height: 200px; overflow-y: auto;
-  border: 1px solid var(--border-color); border-radius: var(--radius-md);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
   padding: 4px 0; margin-bottom: 14px;
 }
 .folder-tree::-webkit-scrollbar { width: 5px; }
-.folder-tree::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+.folder-tree::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-sm); }
 
 .footer-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn-cancel {
-  padding: 7px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-  background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer;
+  padding: 7px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  background: transparent; color: var(--color-text-secondary); font-size: 12px; cursor: pointer;
 }
-.btn-cancel:hover { background: var(--primary-light); }
+.btn-cancel:hover { background: var(--color-primary-light); }
 .btn-save {
   padding: 7px 18px; border: none; border-radius: var(--radius-sm);
-  background: var(--primary-color); color: white; font-size: 12px; font-weight: 500;
-  cursor: pointer; transition: all var(--transition-fast);
+  background: var(--color-primary); color: var(--color-text-inverse); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all var(--transition-hover);
 }
 .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-save:not(:disabled):hover { opacity: 0.9; }

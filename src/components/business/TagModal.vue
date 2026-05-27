@@ -71,62 +71,62 @@ function toggleTag(tagId: string) {
 
 <style scoped>
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  position: fixed; inset: 0; background: var(--color-bg-overlay);
   display: flex; align-items: center; justify-content: center;
-  z-index: 100; animation: fadeIn var(--transition-fast);
+  z-index: 100; animation: fadeIn var(--transition-hover);
 }
 .modal-content {
   width: 340px; max-height: 400px; overflow-y: auto;
-  background: var(--app-surface); border-radius: var(--radius-xl);
+  background: var(--color-bg-surface); border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg); padding: 20px;
-  animation: slideUp var(--transition-normal);
+  animation: slideUp var(--transition-modal);
 }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; color: var(--color-text-primary); }
 .close-btn {
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border: none; background: transparent;
-  border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted); font-size: 16px;
+  border-radius: var(--radius-sm); cursor: pointer; color: var(--color-text-muted); font-size: 16px;
 }
-.close-btn:hover { background: var(--primary-light); }
+.close-btn:hover { background: var(--color-primary-light); }
 
 .tag-list { margin-bottom: 16px; }
-.empty-hint { font-size: 13px; color: var(--text-muted); text-align: center; padding: 16px; }
+.empty-hint { font-size: 13px; color: var(--color-text-muted); text-align: center; padding: 16px; }
 
 .tag-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 0; border-bottom: 1px solid var(--border-color);
+  padding: 8px 0; border-bottom: 1px solid var(--color-border);
 }
 .tag-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.tag-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.tag-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
 .toggle-btn {
   padding: 3px 10px; font-size: 11px; font-weight: 500;
-  border: 1px solid var(--border-color); background: transparent;
-  border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted);
-  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border); background: transparent;
+  border-radius: var(--radius-sm); cursor: pointer; color: var(--color-text-muted);
+  transition: all var(--transition-hover);
 }
-.toggle-btn.active { background: var(--primary-light); color: var(--primary-color); border-color: var(--primary-color); }
+.toggle-btn.active { background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
 .remove-btn {
   display: flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; border: none; background: transparent;
-  border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted); font-size: 13px;
+  border-radius: var(--radius-sm); cursor: pointer; color: var(--color-text-muted); font-size: 13px;
 }
-.remove-btn:hover { color: #ef4444; }
+.remove-btn:hover { color: var(--color-danger); }
 
 .add-tag-form { display: flex; gap: 6px; align-items: center; }
 .tag-input {
-  flex: 1; padding: 6px 10px; border: 1px solid var(--border-color);
+  flex: 1; padding: 6px 10px; border: 1px solid var(--color-border);
   border-radius: var(--radius-sm); font-size: 12px; outline: none;
-  background: var(--app-surface); color: var(--text-primary);
+  background: var(--color-bg-surface); color: var(--color-text-primary);
 }
-.tag-input:focus { border-color: var(--primary-color); }
-.tag-input.error { border-color: #ef4444; }
-.color-input { width: 32px; height: 32px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); cursor: pointer; padding: 2px; background: var(--app-surface); }
+.tag-input:focus { border-color: var(--color-primary); }
+.tag-input.error { border-color: var(--color-danger); }
+.color-input { width: 32px; height: 32px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); cursor: pointer; padding: 2px; background: var(--color-bg-surface); }
 .btn-primary {
   padding: 6px 14px; border: none; border-radius: var(--radius-sm);
-  background: var(--primary-color); color: white; font-size: 12px; font-weight: 500;
-  cursor: pointer; transition: all var(--transition-fast);
+  background: var(--color-primary); color: var(--color-text-inverse); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all var(--transition-hover);
 }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-primary:not(:disabled):hover { opacity: 0.9; }

@@ -20,7 +20,7 @@ interface TimeSegment {
 }
 
 const SEGMENT_DEFS = computed(() => [
-  { key: 'night0', label: t('timeline.segments.night'), icon: 'i-lucide:moon', hourRange: [0, 6] as [number, number], color: '#6366f1' },
+  { key: 'night0', label: t('timeline.segments.night'), icon: 'i-lucide:moon', hourRange: [0, 6] as [number, number], color: 'var(--color-primary)' },
   { key: 'dawn', label: t('timeline.segments.dawn'), icon: 'i-lucide:sunrise', hourRange: [6, 9] as [number, number], color: '#fbbf24' },
   { key: 'morning', label: t('timeline.segments.morning'), icon: 'i-lucide:sun', hourRange: [9, 12] as [number, number], color: '#f59e0b' },
   { key: 'noon', label: t('timeline.segments.noon'), icon: 'i-lucide:cloud-sun', hourRange: [12, 14] as [number, number], color: '#fb923c' },
@@ -225,59 +225,59 @@ function toggleExpand(key: string) {
 }
 
 .story-card {
-  padding: 12px; background: var(--app-surface);
-  border: 1px solid var(--border-color); border-radius: 10px;
+  padding: 12px; background: var(--color-bg-surface);
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
 }
 .story-header {
   display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
 }
-.story-icon { font-size: 14px; color: var(--primary-color); }
-.story-title { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.story-icon { font-size: 14px; color: var(--color-primary); }
+.story-title { font-size: 12px; font-weight: 600; color: var(--color-text-primary); }
 .story-stats {
   display: flex; gap: 6px; margin-bottom: 8px;
 }
 .story-stat {
   flex: 1; text-align: center; padding: 6px 4px;
-  background: var(--app-bg); border-radius: 6px;
+  background: var(--color-bg-base); border-radius: var(--radius-md);
 }
 .story-stat-value {
   display: block; font-size: 12px; font-weight: 700;
-  color: var(--text-primary); white-space: nowrap;
+  color: var(--color-text-primary); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
 .story-stat-domain { font-size: 10px; }
 .story-stat-label {
-  display: block; font-size: 9px; color: var(--text-muted); margin-top: 2px;
+  display: block; font-size: 9px; color: var(--color-text-muted); margin-top: 2px;
 }
-.stat-up { color: #10b981; }
-.stat-down { color: #ef4444; }
+.stat-up { color: var(--color-success); }
+.stat-down { color: var(--color-danger); }
 .story-summary {
-  font-size: 11px; color: var(--text-secondary); line-height: 1.5;
-  padding: 6px 8px; background: var(--app-bg); border-radius: 6px;
+  font-size: 11px; color: var(--color-text-secondary); line-height: 1.5;
+  padding: 6px 8px; background: var(--color-bg-base); border-radius: var(--radius-md);
 }
 
 .timeline-section {
-  padding: 10px 12px; background: var(--app-surface);
-  border: 1px solid var(--border-color); border-radius: 10px;
+  padding: 10px 12px; background: var(--color-bg-surface);
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
 }
 .timeline-title {
   display: flex; align-items: center; gap: 4px;
-  font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;
+  font-size: 11px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 8px;
 }
-.timeline-icon { font-size: 12px; color: var(--primary-color); }
+.timeline-icon { font-size: 12px; color: var(--color-primary); }
 .timeline-body { display: flex; flex-direction: column; gap: 4px; }
 
 .segment {
-  border-radius: 6px; padding: 6px 8px;
-  background: var(--app-bg); transition: background 0.2s;
+  border-radius: var(--radius-md); padding: 6px 8px;
+  background: var(--color-bg-base); transition: background 0.2s;
   border: 1px solid transparent;
 }
 .segment-active {
-  border-color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-light) 8%, var(--app-bg));
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-light) 8%, var(--color-bg-base));
 }
 .segment-expanded {
-  background: color-mix(in srgb, var(--primary-light) 5%, var(--app-bg));
+  background: color-mix(in srgb, var(--color-primary-light) 5%, var(--color-bg-base));
 }
 
 .segment-header {
@@ -285,14 +285,14 @@ function toggleExpand(key: string) {
   user-select: none;
 }
 .segment-icon { font-size: 12px; flex-shrink: 0; }
-.segment-label { font-size: 11px; font-weight: 600; color: var(--text-primary); }
-.segment-range { font-size: 9px; color: var(--text-muted); }
+.segment-label { font-size: 11px; font-weight: 600; color: var(--color-text-primary); }
+.segment-range { font-size: 9px; color: var(--color-text-muted); }
 .segment-count {
-  font-size: 10px; font-weight: 700; color: var(--text-secondary);
+  font-size: 10px; font-weight: 700; color: var(--color-text-secondary);
   margin-left: auto; min-width: 16px; text-align: right;
 }
 .segment-expand-icon {
-  font-size: 12px; color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0;
+  font-size: 12px; color: var(--color-text-muted); transition: transform 0.2s; flex-shrink: 0;
 }
 .segment-expand-icon.rotated { transform: rotate(180deg); }
 
@@ -300,11 +300,11 @@ function toggleExpand(key: string) {
   display: flex; align-items: center; gap: 6px; margin-top: 4px;
 }
 .segment-bar-track {
-  flex: 1; height: 5px; background: var(--border-color);
-  border-radius: 3px; overflow: hidden;
+  flex: 1; height: 5px; background: var(--color-border);
+  border-radius: var(--radius-sm); overflow: hidden;
 }
 .segment-bar-fill {
-  height: 100%; border-radius: 3px; transition: width 0.4s ease;
+  height: 100%; border-radius: var(--radius-sm); transition: width 0.4s ease;
   min-width: 4px;
 }
 .segment-dots {
@@ -312,40 +312,40 @@ function toggleExpand(key: string) {
 }
 .segment-dot {
   width: 14px; height: 14px; border-radius: 50%;
-  border: 1px solid var(--border-color); object-fit: cover;
-  background: var(--app-surface);
+  border: 1px solid var(--color-border); object-fit: cover;
+  background: var(--color-bg-surface);
 }
 
 .segment-compare {
   display: flex; align-items: center; gap: 4px; margin-top: 3px;
 }
-.compare-label { font-size: 9px; color: var(--text-muted); }
-.compare-value { font-size: 9px; color: var(--text-secondary); font-weight: 600; }
+.compare-label { font-size: 9px; color: var(--color-text-muted); }
+.compare-value { font-size: 9px; color: var(--color-text-secondary); font-weight: 600; }
 .compare-diff { font-size: 9px; font-weight: 600; }
 
 .segment-detail {
   margin-top: 6px; padding-top: 6px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border);
 }
 .segment-detail-list {
   display: flex; flex-direction: column; gap: 2px;
 }
 .segment-detail-item {
   display: flex; align-items: center; gap: 6px;
-  padding: 4px 6px; border-radius: 4px; cursor: pointer;
+  padding: 4px 6px; border-radius: var(--radius-sm); cursor: pointer;
   transition: background 0.15s;
 }
-.segment-detail-item:hover { background: var(--border-color); }
+.segment-detail-item:hover { background: var(--color-border); }
 .detail-favicon {
-  width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0;
+  width: 14px; height: 14px; border-radius: var(--radius-sm); flex-shrink: 0;
   object-fit: contain;
 }
 .detail-title {
-  flex: 1; font-size: 10px; color: var(--text-primary);
+  flex: 1; font-size: 10px; color: var(--color-text-primary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.detail-time { font-size: 9px; color: var(--text-muted); flex-shrink: 0; }
+.detail-time { font-size: 9px; color: var(--color-text-muted); flex-shrink: 0; }
 .detail-more {
-  font-size: 9px; color: var(--text-muted); padding: 2px 6px; text-align: center;
+  font-size: 9px; color: var(--color-text-muted); padding: 2px 6px; text-align: center;
 }
 </style>

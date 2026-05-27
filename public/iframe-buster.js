@@ -1,209 +1,271 @@
+// @ts-nocheck
 (function() {
   'use strict'
-  
-  // Detect if we're in an iframe
-  const isInIframe = (function() {
-    try {
-      return window.self !== window.top
-    } catch(e) {
-      return true
-    }
-  })()
+
+  var isInIframe = false
+  try {
+    isInIframe = window.self !== window.top
+  } catch(e) {
+    isInIframe = true
+  }
 
   if (!isInIframe) return
-  
-  const selfProxy = window.self
 
-  // Override window.top, window.parent, and window.frameElement to prevent frame-busting
-  Object.defineProperty(window, 'top', {
-    get: function() { return selfProxy },
-    configurable: true
-  })
-  Object.defineProperty(window, 'parent', {
-    get: function() { return selfProxy },
-    configurable: true
-  })
-  Object.defineProperty(window, 'frameElement', {
-    get: function() { return null },
-    configurable: true
-  })
+  var realParent = null
+  try {
+    realParent = window.parent
+  } catch(e) {
+    return
+  }
+
+  var selfProxy = window.self
+
+  try { Object.defineProperty(window, 'top', { get: function() { return selfProxy }, configurable: true }) } catch(e) {}
+  try { Object.defineProperty(window, 'parent', { get: function() { return selfProxy }, configurable: true }) } catch(e) {}
+  try { Object.defineProperty(window, 'frameElement', { get: function() { return null }, configurable: true }) } catch(e) {}
+
+  function sendToParent(data) {
+    try {
+      if (realParent && realParent !== selfProxy) {
+        realParent.postMessage(data, '*')
+      }
+    } catch(e) {}
+  }
 
   // ====== URL Change Monitoring ======
-  let lastUrl = location.href
-  let notificationDebounce = null
-  
+  var lastUrl = ''
+  try { lastUrl = location.href } catch(e) { lastUrl = '' }
+  var notificationDebounce = null
+
   function notifyUrlChange(force) {
     force = !!force
     try {
-      var currentUrl = location.href
-      
+      var currentUrl = ''
+      try { currentUrl = location.href } catch(e) { return }
+
+      if (!currentUrl) return
+
       if (currentUrl !== lastUrl || force) {
+        lastUrl = currentUrl
+
         if (notificationDebounce) {
           clearTimeout(notificationDebounce)
         }
-        
+
         notificationDebounce = setTimeout(function() {
-          lastUrl = currentUrl
-          
-          var message = {
+          sendToParent({
             type: '__iframe_navigate__',
             url: lastUrl,
             isInternalNavigation: true
-          }
-          
-          try {
-            window.parent.postMessage(message, '*')
-          } catch(e) {}
+          })
         }, force ? 0 : 100)
       }
     } catch(e) {}
   }
-  
+
   setTimeout(function() { notifyUrlChange(true) }, 500)
   setInterval(function() { notifyUrlChange() }, 200)
-  
-  window.addEventListener('popstate', function() {
-    setTimeout(notifyUrlChange, 50)
-  })
-  
-  window.addEventListener('hashchange', function() {
-    setTimeout(notifyUrlChange, 50)
-  })
 
-  // ====== Navigation Interception ======
-  
-  var origLocation = window.location
   try {
-    Object.defineProperty(window, 'location', {
-      get: function() { return origLocation },
-      set: function(url) {
-        if (url && typeof url === 'string' && (url.startsWith('http') || url.startsWith('/'))) {
-          notifyUrlChange(true)
-        }
-      },
-      configurable: true
-    })
+    window.addEventListener('popstate', function() { setTimeout(notifyUrlChange, 50) })
+    window.addEventListener('hashchange', function() { setTimeout(notifyUrlChange, 50) })
   } catch(e) {}
 
+  // ====== Navigation Interception ======
+
+  // Override window.open - always navigate internally
   var origOpen = window.open
   window.open = function(url, target, features) {
     if (url && typeof url === 'string') {
-      if (!url.startsWith('javascript:') && !url.startsWith('data:') && !url.startsWith('blob:')) {
-        notifyUrlChange(true)
+      url = String(url)
+      if (url.length > 0 && !url.startsWith('javascript:') && !url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith('#')) {
+        sendToParent({
+          type: '__iframe_navigate__',
+          url: url,
+          isInternalNavigation: false,
+          source: 'window.open'
+        })
       }
     }
     return null
   }
 
+  // Override location methods to intercept programmatic navigation
+  try {
+    var origLocation = window.location
+
+    // Watch for href assignment
+    var currentHref = ''
+    try { currentHref = origLocation.href } catch(e) {}
+
+    Object.defineProperty(window, 'location', {
+      get: function() { return origLocation },
+      set: function(url) {
+        if (url && typeof url === 'string') {
+          url = String(url)
+          if (url.length > 0 && !url.startsWith('javascript:') && !url.startsWith('data:') && !url.startsWith('blob:')) {
+            sendToParent({
+              type: '__iframe_navigate__',
+              url: url,
+              isInternalNavigation: false,
+              source: 'location.set'
+            })
+          }
+        }
+      },
+      configurable: true
+    })
+
+    // Override location.assign and location.replace if they exist
+    if (origLocation.assign) {
+      origLocation.assign = function(url) {
+        if (url && typeof url === 'string') {
+          url = String(url)
+          if (url.length > 0 && !url.startsWith('javascript:') && !url.startsWith('data:')) {
+            sendToParent({
+              type: '__iframe_navigate__',
+              url: url,
+              isInternalNavigation: false,
+              source: 'location.assign'
+            })
+          }
+        }
+      }
+    }
+
+    if (origLocation.replace) {
+      origLocation.replace = function(url) {
+        if (url && typeof url === 'string') {
+          url = String(url)
+          if (url.length > 0 && !url.startsWith('javascript:') && !url.startsWith('data:')) {
+            sendToParent({
+              type: '__iframe_navigate__',
+              url: url,
+              isInternalNavigation: false,
+              source: 'location.replace'
+            })
+          }
+        }
+      }
+    }
+  } catch(e) {}
+
+  // Intercept ALL link clicks - force internal navigation
   function interceptLink(e) {
     var target = e.target
-    var a = target.closest ? target.closest('a') : null
-    
-    if (!a) {
-      while (target && target !== document) {
-        if (target.tagName === 'A' && target.href) {
-          a = target
-          break
-        }
-        target = target.parentNode
+    var a = null
+
+    try {
+      if (target && typeof target.closest === 'function') {
+        a = target.closest('a')
       }
+    } catch(err) {}
+
+    if (!a) {
+      try {
+        var t = target
+        while (t && t !== document) {
+          if (t.tagName === 'A' || t.tagName === 'AREA') {
+            a = t
+            break
+          }
+          t = t.parentNode
+        }
+      } catch(err) {}
     }
-    
+
     if (!a) return
 
-    var href = a.getAttribute('href')
-    if (!href || href === '#' || href.startsWith('javascript:')) return
+    var href = ''
+    try { href = a.getAttribute('href') || '' } catch(err) { return }
 
-    var linkTarget = a.getAttribute('target')
-    if (linkTarget === '_blank' || linkTarget === '_parent' || linkTarget === '_top') {
-      e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
-      
-      window.parent.postMessage({ 
-        type: '__iframe_navigate__', 
-        url: href,
-        isInternalNavigation: false
-      }, '*')
-      return false
+    if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('ftp:')) return
+
+    e.preventDefault()
+    try { e.stopPropagation() } catch(err) {}
+    try { e.stopImmediatePropagation() } catch(err) {}
+
+    var resolvedUrl = href
+    if (href.indexOf('//') === 0) {
+      resolvedUrl = 'https:' + href
+    } else if (href.charAt(0) === '/' && href.charAt(1) !== '/') {
+      var origin = ''
+      try { origin = location.origin } catch(err) {}
+      resolvedUrl = origin + href
     }
 
-    if (href.startsWith('http://') || href.startsWith('https://')) {
-      try {
-        var linkUrl = new URL(href, location.origin)
-        if (linkUrl.hostname !== location.hostname || 
-            linkUrl.protocol !== location.protocol ||
-            linkUrl.port !== location.port) {
-          e.preventDefault()
-          e.stopPropagation()
-          e.stopImmediatePropagation()
-          
-          window.parent.postMessage({ 
-            type: '__iframe_navigate__', 
-            url: href,
-            isInternalNavigation: false
-          }, '*')
-          return false
-        }
-      } catch(err) {
-        e.preventDefault()
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-        
-        window.parent.postMessage({ 
-          type: '__iframe_navigate__', 
-          url: href,
-          isInternalNavigation: false
-        }, '*')
-        return false
-      }
-    } else if (href.startsWith('//')) {
-      e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
-      
-      window.parent.postMessage({ 
-        type: '__iframe_navigate__', 
-        url: 'https:' + href,
-        isInternalNavigation: false
-      }, '*')
-      return false
-    } else if (href.startsWith('/') && !href.startsWith('//')) {
-      e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
-      
-      window.parent.postMessage({ 
-        type: '__iframe_navigate__', 
-        url: location.origin + href,
-        isInternalNavigation: false
-      }, '*')
-      return false
-    }
+    sendToParent({
+      type: '__iframe_navigate__',
+      url: resolvedUrl,
+      isInternalNavigation: false,
+      source: 'link.click'
+    })
+
+    return false
   }
 
-  document.addEventListener('click', interceptLink, true)
+  try {
+    document.addEventListener('click', interceptLink, true)
+  } catch(e) {}
 
+  // Also intercept middle-click / context menu on links
+  try {
+    document.addEventListener('auxclick', function(e) {
+      if (e.button === 1) {
+        interceptLink(e)
+      }
+    }, true)
+  } catch(e) {}
+
+  // Intercept form submissions
   function interceptForm(e) {
-    var form = e.target
+    var form = null
+    try { form = e.target } catch(err) { return }
     if (!form || form.tagName !== 'FORM') return
-    
-    var action = form.getAttribute('action') || location.href
-    var method = (form.method || 'get').toLowerCase()
-    
+
+    var action = ''
+    try { action = form.getAttribute('action') || '' } catch(err) {}
+    if (!action) {
+      try { action = location.href } catch(err) { action = '' }
+    }
+
+    var method = ''
+    try { method = (form.method || 'get').toLowerCase() } catch(err) { method = 'get' }
+
     if (method !== 'post') {
       e.preventDefault()
-      e.stopPropagation()
-      e.stopImmediatePropagation()
-      
-      window.parent.postMessage({ 
-        type: '__iframe_navigate__', 
+      try { e.stopPropagation() } catch(err) {}
+      try { e.stopImmediatePropagation() } catch(err) {}
+
+      sendToParent({
+        type: '__iframe_navigate__',
         url: action,
-        isInternalNavigation: false
-      }, '*')
+        isInternalNavigation: false,
+        source: 'form.submit'
+      })
     }
   }
 
-  document.addEventListener('submit', interceptForm, true)
+  try {
+    document.addEventListener('submit', interceptForm, true)
+  } catch(e) {}
+
+  // Intercept base tag changes
+  try {
+    var origBase = document.createElement.bind(document)
+    document.createElement = function(tagName) {
+      var el = origBase(tagName)
+      if (tagName && tagName.toLowerCase() === 'base') {
+        var origSetAttribute = el.setAttribute.bind(el)
+        el.setAttribute = function(name, value) {
+          if (name && name.toLowerCase() === 'href' && value && typeof value === 'string') {
+            // Allow base href changes but log them
+          }
+          return origSetAttribute(name, value)
+        }
+      }
+      return el
+    }
+  } catch(e) {}
 
 })()

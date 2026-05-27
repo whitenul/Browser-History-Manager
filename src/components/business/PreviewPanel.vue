@@ -65,40 +65,40 @@ function openUrl(url?: string) {
 
 <style scoped>
 .preview-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  position: fixed; inset: 0; background: var(--color-bg-overlay);
   display: flex; align-items: center; justify-content: center;
   z-index: 150; animation: fadeIn 120ms ease;
 }
 .preview-card {
-  width: 340px; background: var(--app-surface);
+  width: 340px; background: var(--color-bg-surface);
   border-radius: var(--radius-xl); box-shadow: var(--shadow-lg);
   padding: 16px; animation: slideUp 150ms ease;
 }
 .preview-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.preview-favicon { width: 28px; height: 28px; border-radius: 4px; object-fit: contain; flex-shrink: 0; }
+.preview-favicon { width: 28px; height: 28px; border-radius: var(--radius-sm); object-fit: contain; flex-shrink: 0; }
 .preview-title-wrap { flex: 1; min-width: 0; }
-.preview-title { font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.preview-domain { font-size: 11px; color: var(--text-muted); }
+.preview-title { font-size: 14px; font-weight: 600; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-domain { font-size: 11px; color: var(--color-text-muted); }
 .preview-close {
   width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-  border: none; background: transparent; color: var(--text-muted);
+  border: none; background: transparent; color: var(--color-text-muted);
   border-radius: var(--radius-sm); cursor: pointer; font-size: 14px;
 }
-.preview-close:hover { background: var(--primary-light); }
+.preview-close:hover { background: var(--color-primary-light); }
 .preview-body { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
 .preview-row { display: flex; gap: 8px; }
-.preview-label { font-size: 11px; color: var(--text-muted); width: 60px; flex-shrink: 0; }
-.preview-value { font-size: 12px; color: var(--text-primary); flex: 1; min-width: 0; word-break: break-all; }
-.preview-url { font-size: 11px; color: var(--primary-color); }
+.preview-label { font-size: 11px; color: var(--color-text-muted); width: 60px; flex-shrink: 0; }
+.preview-value { font-size: 12px; color: var(--color-text-primary); flex: 1; min-width: 0; word-break: break-all; }
+.preview-url { font-size: 11px; color: var(--color-primary); }
 .preview-actions { display: flex; gap: 8px; }
 .preview-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
-  padding: 8px; border: 1px solid var(--border-color); border-radius: var(--radius-md);
-  background: var(--app-surface); color: var(--text-secondary);
-  font-size: 12px; cursor: pointer; transition: all var(--transition-fast);
+  padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: var(--color-bg-surface); color: var(--color-text-secondary);
+  font-size: 12px; cursor: pointer; transition: all var(--transition-hover);
 }
-.preview-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
-.preview-btn.primary { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+.preview-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.preview-btn.primary { background: var(--color-primary); color: var(--color-text-inverse); border-color: var(--color-primary); }
 .preview-btn.primary:hover { opacity: 0.9; }
 @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }

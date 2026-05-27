@@ -534,6 +534,28 @@ export const useHistoryStore = defineStore('history', () => {
     return ''
   })
 
+  function resetState() {
+    allRecords.value = []
+    displayedRecords.value = []
+    filteredRecords.value = []
+    searchKeyword.value = ''
+    timeRange.value = 'all'
+    groupMode.value = 'none'
+    sortMode.value = 'timeDesc'
+    currentPage.value = 0
+    hasMore.value = true
+    totalCount.value = 0
+    groupedResult.value = null
+    collapsedGroups.value = []
+    activeTagId.value = null
+    recordTagsMap.value = {}
+    selectedRecords.value = new Set()
+    isSelectMode.value = false
+    timeFilter.value = null
+    tagFilter.value = null
+    domainFilter.value = null
+  }
+
   return {
     allRecords, displayedRecords, searchKeyword, timeRange, groupMode, sortMode,
     currentPage, isLoading, hasMore, totalCount, favorites, customRules,
@@ -551,5 +573,6 @@ export const useHistoryStore = defineStore('history', () => {
     loadBlacklist, saveBlacklist, addBlacklistDomain, removeBlacklistDomain,
     doExport, applyFilters, applySettings, toggleSelectMode, toggleSelectRecord, selectAll, clearSelection,
     setTimeFilter, setTagFilter, setDomainFilter, clearAllFilters,
+    resetState,
   }
 })

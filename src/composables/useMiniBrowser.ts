@@ -1,35 +1,24 @@
 import { useBrowserStore } from '@/stores/browser'
 import { useUIStore } from '@/stores/ui'
-import { useReadingQueueStore } from '@/stores/readingQueue'
-import { useI18n } from '@/i18n'
 
 export function useMiniBrowser() {
   const browser = useBrowserStore()
   const ui = useUIStore()
-  const readingQueue = useReadingQueueStore()
-  const { t } = useI18n()
 
   async function enterBrowsingMode() {
-    ui.isBrowsingMode = true
+    // Restore state BEFORE mounting the component so it's available on first render
     await browser.restoreState()
+    ui.isBrowsingMode = true
   }
 
   async function exitBrowsingMode() {
-    await browser.resetAndSave()
+    await browser.saveForRestore()
     ui.isBrowsingMode = false
   }
 
   function onUrlSubmit(url: string) {
     if (url.trim()) {
       browser.navigate(url.trim())
-    }
-  }
-
-  function addToQueue() {
-    if (browser.currentUrl) {
-      const domain = browser.getCurrentDomain()
-      readingQueue.toggleQueue(browser.currentUrl, '', domain, [])
-      ui.notify(t('browser.addedToQueue'), 'success')
     }
   }
 
@@ -67,16 +56,6 @@ export function useMiniBrowser() {
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'link'
   }
 
-  function onDragEnter(e: DragEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  function onDragLeave(e: DragEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
   function zoomIn() {
     browser.setZoom(browser.zoomLevel + 10)
   }
@@ -90,15 +69,12 @@ export function useMiniBrowser() {
   }
 
   return {
-    browser, ui,
+    browser,
     enterBrowsingMode,
     exitBrowsingMode,
     onUrlSubmit,
-    addToQueue,
     onDrop,
     onDragOver,
-    onDragEnter,
-    onDragLeave,
     zoomIn, zoomOut, resetZoom,
   }
 }

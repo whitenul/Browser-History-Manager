@@ -328,20 +328,20 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   justify-content: center;
   padding: 40px 0;
   gap: 10px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 .tm-spinner {
   width: 20px; height: 20px;
-  border: 2px solid var(--border-color);
-  border-top-color: var(--primary-color);
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 .tm-current-card {
-  background: var(--app-surface);
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 12px;
 }
@@ -357,7 +357,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   width: 28px; height: 28px;
   border-radius: 6px;
   flex-shrink: 0;
-  background: var(--app-bg);
+  background: var(--color-bg-base);
 }
 
 .tm-current-detail {
@@ -368,7 +368,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 .tm-current-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -376,7 +376,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 
 .tm-current-url {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -397,17 +397,17 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   padding: 7px 0;
   font-size: 12px;
   font-weight: 500;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-hover);
 }
 .tm-action-btn:hover {
-  background: var(--primary-light);
-  color: var(--primary-color);
-  border-color: var(--primary-color);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .tm-optimizer-toggle {
@@ -416,25 +416,25 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   gap: 6px;
   padding: 8px 10px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(168,85,247,0.06));
-  border: 1px solid rgba(99,102,241,0.15);
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary-light);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-hover);
 }
 .tm-optimizer-toggle:hover {
-  background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1));
+  background: var(--color-primary-light);
 }
 .tm-optimizer-badge {
   margin-left: auto;
   font-size: 10px;
   font-weight: 600;
   padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(16,185,129,0.15);
-  color: #10b981;
+  border-radius: var(--radius-sm);
+  background: var(--color-success-light);
+  color: var(--color-success);
 }
 .tm-toggle-arrow {
   font-size: 14px;
@@ -449,8 +449,8 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   flex-direction: column;
   gap: 10px;
   padding: 10px;
-  background: var(--app-surface);
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   animation: slideDown 0.2s ease;
 }
@@ -468,18 +468,18 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 .tm-mem-track {
   height: 6px;
-  background: var(--app-bg);
-  border-radius: 3px;
+  background: var(--color-bg-base);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 .tm-mem-fill {
   height: 100%;
-  background: linear-gradient(90deg, #10b981, #6366f1);
-  border-radius: 3px;
+  background: linear-gradient(90deg, var(--color-success), var(--color-primary));
+  border-radius: var(--radius-sm);
   transition: width 0.3s;
 }
 
@@ -494,7 +494,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   gap: 5px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .tm-opt-btn {
@@ -504,40 +504,40 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   padding: 7px 10px;
   font-size: 11px;
   font-weight: 500;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-hover);
   width: 100%;
   text-align: left;
 }
 .tm-opt-btn:hover {
-  background: var(--primary-light);
-  color: var(--primary-color);
-  border-color: var(--primary-color);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 .tm-opt-btn--primary {
-  background: rgba(99,102,241,0.08);
-  color: #6366f1;
-  border-color: rgba(99,102,241,0.2);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary-light);
 }
 .tm-opt-btn--primary:hover {
-  background: rgba(99,102,241,0.15);
+  background: var(--color-primary-light);
 }
 .tm-opt-btn--warn {
-  background: rgba(245,158,11,0.08);
-  color: #f59e0b;
-  border-color: rgba(245,158,11,0.2);
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+  border-color: var(--color-warning-light);
 }
 .tm-opt-btn--warn:hover {
-  background: rgba(245,158,11,0.15);
+  background: var(--color-warning-light);
 }
 
 .tm-opt-result {
   font-size: 11px;
-  color: #10b981;
+  color: var(--color-success);
   font-weight: 500;
   text-align: center;
   padding: 4px;
@@ -551,37 +551,37 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
-.tm-section-icon { font-size: 14px; color: var(--primary-color); }
+.tm-section-icon { font-size: 14px; color: var(--color-primary); }
 
 .tm-suspended-badge {
   margin-left: auto;
   font-size: 9px;
   font-weight: 500;
   padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(99,102,241,0.12);
-  color: #6366f1;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .tm-search {
   display: flex; align-items: center; gap: 6px;
-  padding: 6px 10px; background: var(--app-surface);
-  border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+  padding: 6px 10px; background: var(--color-bg-surface);
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
   margin-bottom: 4px;
 }
-.tm-search-icon { color: var(--text-muted); font-size: 14px; }
+.tm-search-icon { color: var(--color-text-muted); font-size: 14px; }
 .tm-search-input {
   flex: 1; border: none; background: none; outline: none;
-  font-size: 13px; color: var(--text-primary);
+  font-size: 13px; color: var(--color-text-primary);
 }
 .tm-search-clear {
   background: none; border: none; cursor: pointer;
-  color: var(--text-muted); font-size: 14px; padding: 0;
+  color: var(--color-text-muted); font-size: 14px; padding: 0;
 }
-.tm-search-clear:hover { color: var(--text-primary); }
+.tm-search-clear:hover { color: var(--color-text-primary); }
 
 .tm-tab-list {
   display: flex;
@@ -600,18 +600,18 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-hover);
   text-align: left;
   width: 100%;
   color: inherit;
   font-family: inherit;
 }
 .tm-tab-item:hover {
-  background: var(--primary-light);
+  background: var(--color-primary-light);
 }
 .tm-tab-item.active {
-  background: rgba(99,102,241,0.08);
-  border-left: 3px solid var(--primary-color);
+  background: var(--color-primary-light);
+  border-left: 3px solid var(--color-primary);
 }
 .tm-tab-item.discarded {
   opacity: 0.5;
@@ -622,9 +622,9 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 
 .tm-tab-favicon {
   width: 16px; height: 16px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
-  background: var(--app-bg);
+  background: var(--color-bg-base);
 }
 
 .tm-tab-info {
@@ -635,7 +635,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 .tm-tab-title {
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -643,7 +643,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 
 .tm-tab-domain {
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -653,22 +653,22 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   display: flex; gap: 3px; margin-top: 2px;
 }
 .tm-tab-tag {
-  font-size: 8px; padding: 0 4px; border-radius: 3px;
+  font-size: 8px; padding: 0 4px; border-radius: var(--radius-sm);
   font-weight: 500; white-space: nowrap; line-height: 13px;
 }
 
 .tm-discarded-tag {
   font-size: 9px;
   padding: 1px 5px;
-  border-radius: 3px;
-  background: rgba(99,102,241,0.1);
-  color: #6366f1;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   flex-shrink: 0;
 }
 
 .tm-pin-icon {
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
@@ -681,16 +681,16 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   background: transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 11px;
   flex-shrink: 0;
   opacity: 0;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-hover);
 }
 .tm-tab-item:hover .tm-tab-close { opacity: 1; }
 .tm-tab-close:hover {
-  background: rgba(239,68,68,0.15);
-  color: #ef4444;
+  background: var(--color-danger-light);
+  color: var(--color-danger);
 }
 
 .tm-perm-hint {
@@ -698,9 +698,9 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
   font-size: 9px;
   font-weight: 500;
   padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(245,158,11,0.15);
-  color: #f59e0b;
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-light);
+  color: var(--color-warning);
 }
 
 
@@ -721,7 +721,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 .tm-privacy-label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .tm-privacy-item {
@@ -732,7 +732,7 @@ const discardedCount = computed(() => tabs.value.filter(t => t.discarded).length
 .tm-privacy-index {
   font-size: 11px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   min-width: 16px;
   text-align: center;
 }

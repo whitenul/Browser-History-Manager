@@ -26,12 +26,12 @@ function renderNode(node: any, level: number): VNode {
 
   if (!isFolder) {
     return h('a', {
-      style: `height:28px;padding:0 12px;padding-left:${pad}px;display:flex;align-items:center;cursor:pointer;user-select:none;transition:background-color .15s ease;text-decoration:none;color:var(--text-primary);`,
+      style: `height:28px;padding:0 12px;padding-left:${pad}px;display:flex;align-items:center;cursor:pointer;user-select:none;transition:background-color .15s ease;text-decoration:none;color:var(--color-text-primary);`,
       href: node.url,
       target: '_blank',
       onClick: (e: MouseEvent) => { e.preventDefault(); if (!ui.doubleClickMode) safeOpenUrl(node.url) },
       onDblclick: (e: MouseEvent) => { e.preventDefault(); if (ui.doubleClickMode) safeOpenUrl(node.url) },
-      onMouseenter(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--primary-light)' },
+      onMouseenter(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-primary-light)' },
       onMouseleave(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' },
     }, [
       h('span', { style: 'width:16px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;visibility:hidden;' }, '\u25B8'),
@@ -41,7 +41,7 @@ function renderNode(node: any, level: number): VNode {
         loading: 'lazy',
         onError(e: Event) { (e.target as HTMLImageElement).style.display = 'none' },
       }),
-      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;color:var(--text-primary);', title: node.title.startsWith('bookmarks.') ? t(node.title) : node.title }, node.title.startsWith('bookmarks.') ? t(node.title) : node.title),
+      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;color:var(--color-text-primary);', title: node.title.startsWith('bookmarks.') ? t(node.title) : node.title }, node.title.startsWith('bookmarks.') ? t(node.title) : node.title),
     ])
   }
 
@@ -52,15 +52,15 @@ function renderNode(node: any, level: number): VNode {
     h('div', {
       style: `height:28px;padding:0 12px;padding-left:${pad}px;display:flex;align-items:center;cursor:pointer;user-select:none;transition:background-color .15s ease;`,
       onClick: () => store.toggleFolder(node.id),
-      onMouseenter(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--primary-light)' },
+      onMouseenter(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-primary-light)' },
       onMouseleave(e: Event) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' },
     }, [
       h('span', {
-        style: `width:16px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:12px;transition:transform .2s ease;flex-shrink:0;${isExpanded ? 'transform:rotate(90deg)' : ''}`,
+        style: `width:16px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);font-size:12px;transition:transform .2s ease;flex-shrink:0;${isExpanded ? 'transform:rotate(90deg)' : ''}`,
       }, '\u25B8'),
-      h('span', { class: 'i-lucide i-lucide-folder', style: 'width:14px;height:14px;margin-right:6px;color:#fbbf24;flex-shrink:0;display:inline-flex;align-items:center;' }),
-      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;font-weight:500;color:var(--text-primary);', title: node.title ? (node.title.startsWith('bookmarks.') ? t(node.title) : node.title) : t('bookmarks.unnamed') }, node.title ? (node.title.startsWith('bookmarks.') ? t(node.title) : node.title) : t('bookmarks.unnamed')),
-      childCount > 0 ? h('span', { style: 'font-size:11px;color:var(--text-muted);background:var(--primary-light);padding:1px 7px;border-radius:10px;margin-left:8px;flex-shrink:0;' }, String(childCount)) : null,
+      h('span', { class: 'i-lucide i-lucide-folder', style: 'width:14px;height:14px;margin-right:6px;color:var(--color-warning);flex-shrink:0;display:inline-flex;align-items:center;' }),
+      h('span', { style: 'font-size:13px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;font-weight:500;color:var(--color-text-primary);', title: node.title ? (node.title.startsWith('bookmarks.') ? t(node.title) : node.title) : t('bookmarks.unnamed') }, node.title ? (node.title.startsWith('bookmarks.') ? t(node.title) : node.title) : t('bookmarks.unnamed')),
+      childCount > 0 ? h('span', { style: 'font-size:11px;color:var(--color-text-muted);background:var(--color-primary-light);padding:1px 7px;border-radius:10px;margin-left:8px;flex-shrink:0;' }, String(childCount)) : null,
     ].filter(Boolean)),
     node.children && node.children.length > 0
       ? h('div', { style: `overflow:hidden;transition:max-height .25s ease-out;${!isExpanded ? 'max-height:0!important;' : ''}` }, node.children.map((child: any) => renderNode(child, level + 1)))
@@ -114,17 +114,17 @@ onMounted(async () => { await store.loadBookmarks(); await ui.loadDoubleClickMod
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--app-bg);
-  color: var(--text-primary);
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
 }
 
 .search-container {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--app-bg);
+  background: var(--color-bg-base);
   padding: 12px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
@@ -132,20 +132,20 @@ onMounted(async () => { await store.loadBookmarks(); await ui.loadDoubleClickMod
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--app-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 8px 12px;
-  transition: all 0.2s ease;
+  transition: all var(--transition-hover);
 }
 
 .search-bar:focus-within {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px var(--primary-light);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .search-icon {
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 16px;
   flex-shrink: 0;
 }
@@ -154,19 +154,19 @@ onMounted(async () => { await store.loadBookmarks(); await ui.loadDoubleClickMod
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   font-size: 13px;
   width: 100%;
 }
-.search-input::placeholder { color: var(--text-muted); }
+.search-input::placeholder { color: var(--color-text-muted); }
 
 .bm-loading, .bm-empty {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 48px 16px; color: var(--text-muted); font-size: 13px;
+  padding: 48px 16px; color: var(--color-text-muted); font-size: 13px;
 }
 .spin {
-  width: 18px; height: 18px; border: 2px solid var(--border-color);
-  border-top-color: var(--primary-color); border-radius: 50%;
+  width: 18px; height: 18px; border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary); border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
 
@@ -175,6 +175,6 @@ onMounted(async () => { await store.loadBookmarks(); await ui.loadDoubleClickMod
 }
 .tree-container::-webkit-scrollbar { width: 6px; }
 .tree-container::-webkit-scrollbar-track { background: transparent; }
-.tree-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
-.tree-container::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+.tree-container::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-sm); }
+.tree-container::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 </style>

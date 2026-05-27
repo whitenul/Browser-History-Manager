@@ -280,8 +280,8 @@ watch(() => stats.timeRange, () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--app-bg);
-  color: var(--text-primary);
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
 }
 
 .stats-header {
@@ -289,8 +289,8 @@ watch(() => stats.timeRange, () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--app-surface);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
   flex-shrink: 0;
   position: sticky;
   top: 0;
@@ -307,7 +307,7 @@ watch(() => stats.timeRange, () => {
 
 .stats-title-icon {
   font-size: 18px;
-  color: var(--primary-color);
+  color: var(--color-primary);
 }
 
 .time-range-selector {
@@ -319,22 +319,22 @@ watch(() => stats.timeRange, () => {
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 500;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--transition-hover);
 }
 
 .range-btn:hover {
-  background: var(--primary-light);
+  background: var(--color-primary-light);
 }
 
 .range-btn.active {
-  background: var(--primary-light);
-  color: var(--primary-color);
-  border-color: var(--primary-color);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .stats-content {
@@ -351,8 +351,8 @@ watch(() => stats.timeRange, () => {
   align-items: center;
   justify-content: space-around;
   padding: 10px 8px;
-  background: var(--app-surface);
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
 }
 
@@ -368,23 +368,23 @@ watch(() => stats.timeRange, () => {
   position: relative;
   padding: 4px 8px;
   border-radius: var(--radius-md);
-  transition: background 0.15s;
+  transition: background var(--transition-hover);
 }
 
 .overview-item--prod:hover {
-  background: var(--primary-light);
+  background: var(--color-primary-light);
 }
 
 .overview-value {
   font-size: 15px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   white-space: nowrap;
 }
 
 .overview-label {
   font-size: 9px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .prod-dot {
@@ -396,13 +396,13 @@ watch(() => stats.timeRange, () => {
   margin-right: 2px;
 }
 
-.prod-dot.excellent { background: #10b981; }
-.prod-dot.good { background: #6366f1; }
-.prod-dot.fair { background: #f59e0b; }
-.prod-dot.poor { background: #ef4444; }
-.prod-dot.productive { background: #10b981; }
-.prod-dot.unproductive { background: #ef4444; }
-.prod-dot.neutral { background: #64748b; }
+.prod-dot.excellent { background: var(--color-success); }
+.prod-dot.good { background: var(--color-primary); }
+.prod-dot.fair { background: var(--color-warning); }
+.prod-dot.poor { background: var(--color-danger); }
+.prod-dot.productive { background: var(--color-success); }
+.prod-dot.unproductive { background: var(--color-danger); }
+.prod-dot.neutral { background: var(--color-text-muted); }
 
 .prod-popup {
   position: absolute;
@@ -411,8 +411,8 @@ watch(() => stats.timeRange, () => {
   transform: translateX(-50%);
   margin-top: 8px;
   padding: 10px 12px;
-  background: var(--app-surface);
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 20;
@@ -423,7 +423,7 @@ watch(() => stats.timeRange, () => {
   font-size: 11px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .prod-popup-row {
@@ -437,12 +437,12 @@ watch(() => stats.timeRange, () => {
 .prod-popup-count {
   margin-left: auto;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .prod-popup-divider {
   height: 1px;
-  background: var(--border-color);
+  background: var(--color-border);
   margin: 6px 0;
 }
 
@@ -452,12 +452,12 @@ watch(() => stats.timeRange, () => {
   gap: 6px;
   font-size: 10px;
   padding: 2px 0;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .prod-popup-icon {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .popup-enter-active,
@@ -471,8 +471,8 @@ watch(() => stats.timeRange, () => {
 }
 
 .stats-section {
-  background: var(--app-surface);
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 12px;
 }
@@ -488,7 +488,7 @@ watch(() => stats.timeRange, () => {
 
 .section-icon {
   font-size: 14px;
-  color: var(--primary-color);
+  color: var(--color-primary);
 }
 
 .heatmap-wrapper {
@@ -517,7 +517,7 @@ watch(() => stats.timeRange, () => {
 
 .heatmap-day-label {
   font-size: 9px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   line-height: 12px;
   height: 12px;
   text-align: right;
@@ -539,7 +539,7 @@ watch(() => stats.timeRange, () => {
 
 .heatmap-hour-label {
   font-size: 8px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   text-align: center;
   line-height: 14px;
   overflow: visible;
@@ -547,7 +547,7 @@ watch(() => stats.timeRange, () => {
 }
 
 .heatmap-hour-label.is-visible {
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
@@ -560,7 +560,7 @@ watch(() => stats.timeRange, () => {
 }
 
 .heatmap-cell {
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
   position: relative;
 }
@@ -571,12 +571,12 @@ watch(() => stats.timeRange, () => {
 
 .heatmap-cell.is-clickable:hover {
   transform: scale(1.4);
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-md);
   z-index: 2;
 }
 
 html.dark .heatmap-cell.is-clickable:hover {
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
 }
 
 .heatmap-cell.is-current {
@@ -607,9 +607,9 @@ html.dark .heatmap-cell.is-clickable:hover {
   padding: 4px 8px;
   font-size: 10px;
   font-weight: 500;
-  color: #fff;
-  background: #1b1f23;
-  border-radius: 4px;
+  color: var(--tooltip-text);
+  background: var(--tooltip-bg);
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   pointer-events: none;
   z-index: 10;
@@ -617,7 +617,7 @@ html.dark .heatmap-cell.is-clickable:hover {
 }
 
 html.dark .heatmap-tooltip {
-  background: #2d333b;
+  background: var(--tooltip-bg);
 }
 
 .heatmap-tooltip::after {
@@ -628,11 +628,11 @@ html.dark .heatmap-tooltip {
   transform: translateX(-50%);
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
-  border-top: 4px solid #1b1f23;
+  border-top: 4px solid var(--tooltip-bg);
 }
 
 html.dark .heatmap-tooltip::after {
-  border-top-color: #2d333b;
+  border-top-color: var(--tooltip-bg);
 }
 
 .heatmap-rhythm {
@@ -641,7 +641,7 @@ html.dark .heatmap-tooltip::after {
   gap: 6px;
   margin-top: 8px;
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 
 .rhythm-icon {
@@ -651,7 +651,7 @@ html.dark .heatmap-tooltip::after {
 .rhythm-sep {
   width: 1px;
   height: 10px;
-  background: var(--border-color);
+  background: var(--color-border);
 }
 
 .top-sites-list {
@@ -665,26 +665,26 @@ html.dark .heatmap-tooltip::after {
   align-items: center;
   gap: 8px;
   padding: 5px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--transition-hover);
 }
 
 .top-site-item:hover {
-  background: var(--primary-light);
+  background: var(--color-primary-light);
 }
 
 .site-favicon {
   width: 16px;
   height: 16px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
 .site-rank {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   width: 14px;
   text-align: center;
   flex-shrink: 0;
@@ -709,7 +709,7 @@ html.dark .heatmap-tooltip::after {
 
 .site-count {
   font-size: 9px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 </style>

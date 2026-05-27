@@ -1,340 +1,527 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
+
+// ===== Type Definitions =====
 
 export type ThemeMode = 'auto' | 'light' | 'dark'
-export type RadiusStyle = 'none' | 'small' | 'medium' | 'large'
-export type FontSize = 'small' | 'medium' | 'large'
+export type BackgroundType = 'none' | 'gradient' | 'stars' | 'aurora' | 'image'
+export type CardStyle = 'flat' | 'bordered' | 'shadowed' | 'elevated' | 'glass'
 export type HeaderStyle = 'solid' | 'gradient' | 'glass' | 'minimal'
-export type CardStyle = 'flat' | 'bordered' | 'shadowed' | 'elevated'
-export type FontFamily = 'system' | 'serif' | 'mono' | 'rounded'
+export type RadiusPreset = 'none' | 'small' | 'medium' | 'large' | 'full'
 export type AnimationSpeed = 'off' | 'slow' | 'normal' | 'fast'
 export type ScrollbarStyle = 'thin' | 'default' | 'hidden'
-export type BackgroundPattern = 'none' | 'dots' | 'grid' | 'diagonal' | 'noise'
+export type FontSize = 'small' | 'medium' | 'large'
+export type FontFamily = 'system' | 'serif' | 'mono' | 'rounded'
 
-export interface PresetTheme {
+export interface BackgroundConfig {
+  type: BackgroundType
+  /** For 'image' type: base64 data URL or external URL */
+  imageUrl: string
+  /** Blur amount in px (0-30) */
+  blur: number
+  /** Opacity 0-1 */
+  opacity: number
+  /** Overlay color (usually dark) */
+  overlayColor: string
+  /** Overlay opacity 0-1 */
+  overlayOpacity: number
+  /** Background size */
+  size: 'cover' | 'contain' | 'auto'
+  /** Gradient CSS (for 'gradient' type) */
+  gradient: string
+}
+
+export interface ThemePreset {
   id: string
   name: string
   icon: string
+  /** Semantic color tokens for light mode */
   light: Record<string, string>
+  /** Semantic color tokens for dark mode */
   dark: Record<string, string>
 }
 
-export const PRESET_THEMES: PresetTheme[] = [
-  { id: 'indigo', name: 'theme.presets.indigo', icon: '💎', light: { '--primary-color': '#4f46e5', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--primary-light': 'rgba(79,70,229,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#818cf8', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(129,140,248,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
-  { id: 'emerald', name: 'theme.presets.emerald', icon: '🌿', light: { '--primary-color': '#059669', '--app-header-bg': '#059669', '--app-header-text': '#ffffff', '--primary-light': 'rgba(5,150,105,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#34d399', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(52,211,153,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
-  { id: 'rose', name: 'theme.presets.rose', icon: '🌹', light: { '--primary-color': '#e11d48', '--app-header-bg': '#e11d48', '--app-header-text': '#ffffff', '--primary-light': 'rgba(225,29,72,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#fb7185', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,113,133,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
-  { id: 'amber', name: 'theme.presets.amber', icon: '🔥', light: { '--primary-color': '#d97706', '--app-header-bg': '#d97706', '--app-header-text': '#ffffff', '--primary-light': 'rgba(217,119,6,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#fbbf24', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(251,191,36,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
-  { id: 'cyan', name: 'theme.presets.cyan', icon: '🌊', light: { '--primary-color': '#0891b2', '--app-header-bg': '#0891b2', '--app-header-text': '#ffffff', '--primary-light': 'rgba(8,145,178,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#22d3ee', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(34,211,238,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
-  { id: 'violet', name: 'theme.presets.violet', icon: '🔮', light: { '--primary-color': '#7c3aed', '--app-header-bg': '#7c3aed', '--app-header-text': '#ffffff', '--primary-light': 'rgba(124,58,237,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#a78bfa', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(167,139,250,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
-  { id: 'slate', name: 'theme.presets.slate', icon: '🪨', light: { '--primary-color': '#475569', '--app-header-bg': '#334155', '--app-header-text': '#ffffff', '--primary-light': 'rgba(71,85,105,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#94a3b8', '--app-header-bg': '#0f172a', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(148,163,184,0.12)', '--app-surface': '#0f172a', '--app-surface-rgb': '15,23,42' } },
-  { id: 'pink', name: 'theme.presets.pink', icon: '🌸', light: { '--primary-color': '#db2777', '--app-header-bg': '#db2777', '--app-header-text': '#ffffff', '--primary-light': 'rgba(219,39,119,0.08)', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255' }, dark: { '--primary-color': '#f472b6', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--primary-light': 'rgba(244,114,182,0.12)', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59' } },
+// ===== Preset Themes =====
+
+export const PRESET_THEMES: ThemePreset[] = [
+  {
+    id: 'indigo', name: 'theme.presets.indigo', icon: '💎',
+    light: { '--color-primary': '#4f46e5', '--color-primary-hover': '#4338ca', '--color-primary-light': 'rgba(79,70,229,0.08)', '--color-accent': '#7c3aed', '--color-accent-light': 'rgba(124,58,237,0.08)' },
+    dark: { '--color-primary': '#818cf8', '--color-primary-hover': '#6366f1', '--color-primary-light': 'rgba(129,140,248,0.12)', '--color-accent': '#a78bfa', '--color-accent-light': 'rgba(167,139,250,0.12)' },
+  },
+  {
+    id: 'emerald', name: 'theme.presets.emerald', icon: '🌿',
+    light: { '--color-primary': '#059669', '--color-primary-hover': '#047857', '--color-primary-light': 'rgba(5,150,105,0.08)', '--color-accent': '#0891b2', '--color-accent-light': 'rgba(8,145,178,0.08)' },
+    dark: { '--color-primary': '#34d399', '--color-primary-hover': '#10b981', '--color-primary-light': 'rgba(52,211,153,0.12)', '--color-accent': '#22d3ee', '--color-accent-light': 'rgba(34,211,238,0.12)' },
+  },
+  {
+    id: 'rose', name: 'theme.presets.rose', icon: '🌹',
+    light: { '--color-primary': '#e11d48', '--color-primary-hover': '#be123c', '--color-primary-light': 'rgba(225,29,72,0.08)', '--color-accent': '#f59e0b', '--color-accent-light': 'rgba(245,158,11,0.08)' },
+    dark: { '--color-primary': '#fb7185', '--color-primary-hover': '#f43f5e', '--color-primary-light': 'rgba(251,113,133,0.12)', '--color-accent': '#fbbf24', '--color-accent-light': 'rgba(251,191,36,0.12)' },
+  },
+  {
+    id: 'amber', name: 'theme.presets.amber', icon: '🔥',
+    light: { '--color-primary': '#d97706', '--color-primary-hover': '#b45309', '--color-primary-light': 'rgba(217,119,6,0.08)', '--color-accent': '#dc2626', '--color-accent-light': 'rgba(220,38,38,0.08)' },
+    dark: { '--color-primary': '#fbbf24', '--color-primary-hover': '#f59e0b', '--color-primary-light': 'rgba(251,191,36,0.12)', '--color-accent': '#f87171', '--color-accent-light': 'rgba(248,113,113,0.12)' },
+  },
+  {
+    id: 'cyan', name: 'theme.presets.cyan', icon: '🌊',
+    light: { '--color-primary': '#0891b2', '--color-primary-hover': '#0e7490', '--color-primary-light': 'rgba(8,145,178,0.08)', '--color-accent': '#6366f1', '--color-accent-light': 'rgba(99,102,241,0.08)' },
+    dark: { '--color-primary': '#22d3ee', '--color-primary-hover': '#06b6d4', '--color-primary-light': 'rgba(34,211,238,0.12)', '--color-accent': '#818cf8', '--color-accent-light': 'rgba(129,140,248,0.12)' },
+  },
+  {
+    id: 'violet', name: 'theme.presets.violet', icon: '🔮',
+    light: { '--color-primary': '#7c3aed', '--color-primary-hover': '#6d28d9', '--color-primary-light': 'rgba(124,58,237,0.08)', '--color-accent': '#ec4899', '--color-accent-light': 'rgba(236,72,153,0.08)' },
+    dark: { '--color-primary': '#a78bfa', '--color-primary-hover': '#8b5cf6', '--color-primary-light': 'rgba(167,139,250,0.12)', '--color-accent': '#f472b6', '--color-accent-light': 'rgba(244,114,182,0.12)' },
+  },
+  {
+    id: 'slate', name: 'theme.presets.slate', icon: '🪨',
+    light: { '--color-primary': '#475569', '--color-primary-hover': '#334155', '--color-primary-light': 'rgba(71,85,105,0.08)', '--color-accent': '#64748b', '--color-accent-light': 'rgba(100,116,139,0.08)' },
+    dark: { '--color-primary': '#94a3b8', '--color-primary-hover': '#cbd5e1', '--color-primary-light': 'rgba(148,163,184,0.12)', '--color-accent': '#64748b', '--color-accent-light': 'rgba(100,116,139,0.12)' },
+  },
+  {
+    id: 'pink', name: 'theme.presets.pink', icon: '🌸',
+    light: { '--color-primary': '#db2777', '--color-primary-hover': '#be185d', '--color-primary-light': 'rgba(219,39,119,0.08)', '--color-accent': '#f97316', '--color-accent-light': 'rgba(249,115,22,0.08)' },
+    dark: { '--color-primary': '#f472b6', '--color-primary-hover': '#ec4899', '--color-primary-light': 'rgba(244,114,182,0.12)', '--color-accent': '#fb923c', '--color-accent-light': 'rgba(251,146,60,0.12)' },
+  },
 ]
 
-export interface GradientTheme { name: string; gradient: string; primary: string; surface: string; surfaceRgb: string }
-
-export const GRADIENT_THEMES: GradientTheme[] = [
-  { name: 'theme.gradients.ocean', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', primary: '#667eea', surface: '#1e293b', surfaceRgb: '30,41,59' },
-  { name: 'theme.gradients.sunset', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', primary: '#f5576c', surface: '#1e293b', surfaceRgb: '30,41,59' },
-  { name: 'theme.gradients.forest', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', primary: '#11998e', surface: '#1e293b', surfaceRgb: '30,41,59' },
-  { name: 'theme.gradients.night', gradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)', primary: '#4ca1af', surface: '#0f172a', surfaceRgb: '15,23,42' },
-  { name: 'theme.gradients.flame', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)', primary: '#f12711', surface: '#1e293b', surfaceRgb: '30,41,59' },
-  { name: 'theme.gradients.aurora', gradient: 'linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)', primary: '#00c9ff', surface: '#1e293b', surfaceRgb: '30,41,59' },
-  { name: 'theme.gradients.lavender', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', primary: '#a18cd1', surface: '#1e293b', surfaceRgb: '30,41,59' },
-  { name: 'theme.gradients.glacier', gradient: 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)', primary: '#5b86e5', surface: '#ffffff', surfaceRgb: '255,255,255' },
-  { name: 'theme.gradients.desert', gradient: 'linear-gradient(135deg, #c2956a 0%, #e0c097 100%)', primary: '#c2956a', surface: '#f8fafc', surfaceRgb: '248,250,252' },
+export const GRADIENT_PRESETS = [
+  { id: 'ocean', name: 'Ocean', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { id: 'sunset', name: 'Sunset', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  { id: 'forest', name: 'Forest', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
+  { id: 'night', name: 'Night', gradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)' },
+  { id: 'flame', name: 'Flame', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)' },
+  { id: 'aurora-g', name: 'Aurora', gradient: 'linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%)' },
+  { id: 'lavender', name: 'Lavender', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)' },
+  { id: 'midnight', name: 'Midnight', gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' },
+  { id: 'cyber', name: 'Cyber', gradient: 'linear-gradient(135deg, #fc466b 0%, #3f5efb 100%)' },
 ]
 
-const LIGHT_VARS = { '--app-bg': '#f8fafc', '--app-surface': '#ffffff', '--app-surface-rgb': '255,255,255', '--app-header-bg': '#4f46e5', '--app-header-text': '#ffffff', '--text-primary': '#0f172a', '--text-secondary': '#334155', '--text-muted': '#64748b', '--border-color': '#e2e8f0', '--primary-color': '#4f46e5', '--primary-light': 'rgba(79,70,229,0.08)' }
-const DARK_VARS = { '--app-bg': '#0f172a', '--app-surface': '#1e293b', '--app-surface-rgb': '30,41,59', '--app-header-bg': '#1e293b', '--app-header-text': '#f1f5f9', '--text-primary': '#f1f5f9', '--text-secondary': '#94a3b8', '--text-muted': '#64748b', '--border-color': '#334155', '--primary-color': '#818cf8', '--primary-light': 'rgba(129,140,248,0.12)' }
+// ===== Base palettes for light/dark =====
 
-const RADIUS_MAP: Record<RadiusStyle, { sm: string; md: string; lg: string; xl: string }> = {
-  none: { sm: '0px', md: '0px', lg: '0px', xl: '0px' },
-  small: { sm: '2px', md: '4px', lg: '6px', xl: '8px' },
-  medium: { sm: '4px', md: '6px', lg: '10px', xl: '14px' },
-  large: { sm: '6px', md: '10px', lg: '16px', xl: '20px' },
+const LIGHT_PALETTE: Record<string, string> = {
+  '--color-bg-base': '#f8fafc',
+  '--color-bg-surface': '#ffffff',
+  '--color-bg-surface-rgb': '255,255,255',
+  '--color-bg-elevated': '#ffffff',
+  '--color-bg-overlay': 'rgba(0,0,0,0.5)',
+  '--color-text-primary': '#0f172a',
+  '--color-text-secondary': '#334155',
+  '--color-text-muted': '#64748b',
+  '--color-text-inverse': '#ffffff',
+  '--color-border': '#e2e8f0',
+  '--color-border-light': '#f1f5f9',
+  '--color-danger': '#ef4444',
+  '--color-danger-hover': '#dc2626',
+  '--color-danger-light': 'rgba(239,68,68,0.08)',
+  '--color-success': '#10b981',
+  '--color-success-light': 'rgba(16,185,129,0.08)',
+  '--color-warning': '#f59e0b',
+  '--color-warning-light': 'rgba(245,158,11,0.08)',
+  '--color-info': '#3b82f6',
+  '--color-info-light': 'rgba(59,130,246,0.08)',
 }
 
-const FONT_SIZE_MAP: Record<FontSize, string> = { small: '12px', medium: '13px', large: '14px' }
-const FONT_FAMILY_MAP: Record<FontFamily, string> = {
-  system: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-  serif: "Georgia, 'Times New Roman', 'Noto Serif SC', serif",
-  mono: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-  rounded: "'Nunito', 'Quicksand', 'M PLUS Rounded 1c', system-ui, sans-serif",
+const DARK_PALETTE: Record<string, string> = {
+  '--color-bg-base': '#0b0f14',
+  '--color-bg-surface': '#1a1f2e',
+  '--color-bg-surface-rgb': '26,31,46',
+  '--color-bg-elevated': '#242938',
+  '--color-bg-overlay': 'rgba(0,0,0,0.7)',
+  '--color-text-primary': '#e8edf2',
+  '--color-text-secondary': '#94a3b8',
+  '--color-text-muted': '#64748b',
+  '--color-text-inverse': '#0f172a',
+  '--color-border': '#2a3040',
+  '--color-border-light': '#1e2433',
+  '--color-danger': '#f87171',
+  '--color-danger-hover': '#ef4444',
+  '--color-danger-light': 'rgba(248,113,113,0.12)',
+  '--color-success': '#34d399',
+  '--color-success-light': 'rgba(52,211,153,0.12)',
+  '--color-warning': '#fbbf24',
+  '--color-warning-light': 'rgba(251,191,36,0.12)',
+  '--color-info': '#60a5fa',
+  '--color-info-light': 'rgba(96,165,250,0.12)',
 }
 
-const ANIM_SPEED_MAP: Record<AnimationSpeed, string> = {
+// ===== Radius map =====
+
+const RADIUS_MAP: Record<RadiusPreset, string> = {
+  none: '0px',
+  small: '4px',
+  medium: '8px',
+  large: '14px',
+  full: '9999px',
+}
+
+// ===== Animation speed map =====
+
+const SPEED_MAP: Record<AnimationSpeed, string> = {
   off: '0ms',
-  slow: '250ms',
-  normal: '120ms',
-  fast: '60ms',
+  slow: '300ms',
+  normal: '150ms',
+  fast: '80ms',
 }
 
-export interface ThemeConfig {
-  mode: ThemeMode
-  activePreset: string
-  activeGradient: string | null
-  customColors: { primary: string; bg: string; text: string; surfaceRgb: string } | null
-  accentColor: string | null
-  radiusStyle: RadiusStyle
-  fontSize: FontSize
-  fontFamily: FontFamily
-  headerStyle: HeaderStyle
-  cardStyle: CardStyle
-  animationSpeed: AnimationSpeed
-  scrollbarStyle: ScrollbarStyle
-  backgroundPattern: BackgroundPattern
-  compactMode: boolean
-}
+// ===== Store =====
 
 export const useThemeStore = defineStore('theme', () => {
+  // --- Core state ---
   const mode = ref<ThemeMode>('auto')
-  const activeGradient = ref<string | null>(null)
-  const customColors = ref<{ primary: string; bg: string; text: string; surfaceRgb: string } | null>(null)
-  const activePreset = ref<string>('indigo')
-  const showThemeModal = ref(false)
+  const activePresetId = ref('indigo')
   const isDark = ref(false)
-  const radiusStyle = ref<RadiusStyle>('medium')
-  const fontSize = ref<FontSize>('medium')
-  const fontFamily = ref<FontFamily>('system')
+
+  // --- Background ---
+  const background = ref<BackgroundConfig>({
+    type: 'none',
+    imageUrl: '',
+    blur: 0,
+    opacity: 1,
+    overlayColor: '#000000',
+    overlayOpacity: 0,
+    size: 'cover',
+    gradient: '',
+  })
+
+  // --- Layout ---
   const headerStyle = ref<HeaderStyle>('solid')
-  const cardStyle = ref<CardStyle>('bordered')
-  const animationSpeed = ref<AnimationSpeed>('normal')
-  const scrollbarStyle = ref<ScrollbarStyle>('thin')
-  const backgroundPattern = ref<BackgroundPattern>('none')
-  const accentColor = ref<string | null>(null)
+  const cardStyle = ref<CardStyle>('flat')
+  const radiusPreset = ref<RadiusPreset>('medium')
   const compactMode = ref(false)
 
-  function applyTheme() {
+  // --- Typography ---
+  const fontSize = ref<FontSize>('medium')
+  const fontFamily = ref<FontFamily>('system')
+
+  // --- Effects ---
+  const animationSpeed = ref<AnimationSpeed>('normal')
+  const scrollbarStyle = ref<ScrollbarStyle>('thin')
+
+  // --- Glass settings ---
+  const glassBlur = ref(12)
+  const glassOpacity = ref(0.6)
+
+  // --- Custom colors (override preset) ---
+  const customColors = ref<Record<string, string> | null>(null)
+
+  // --- UI state ---
+  const showThemeModal = ref(false)
+
+  // ===== Computed =====
+
+  const activePreset = computed(() => PRESET_THEMES.find(p => p.id === activePresetId.value) || PRESET_THEMES[0])
+
+  const effectiveMode = computed(() => {
+    if (mode.value === 'auto') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    }
+    return mode.value
+  })
+
+  // ===== Apply all tokens to DOM =====
+
+  function applyTokens() {
     const html = document.documentElement
-    let dark = false
-    if (mode.value === 'auto') { dark = window.matchMedia('(prefers-color-scheme: dark)').matches } else { dark = mode.value === 'dark' }
+    const dark = effectiveMode.value === 'dark'
     isDark.value = dark
+
+    // 1. Dark mode class
     html.classList.toggle('dark', dark)
-
-    const baseVars = dark ? { ...DARK_VARS } : { ...LIGHT_VARS }
-    Object.entries(baseVars).forEach(([key, val]) => { html.style.setProperty(key, val) })
-
-    if (activePreset.value && !activeGradient.value && !customColors.value) {
-      const preset = PRESET_THEMES.find(p => p.id === activePreset.value)
-      if (preset) { const v = dark ? preset.dark : preset.light; Object.entries(v).forEach(([k, val]) => { html.style.setProperty(k, val) }) }
-    }
-
-    if (activeGradient.value) {
-      html.style.setProperty('--gradient-bg', activeGradient.value)
-      html.style.setProperty('--app-header-bg', activeGradient.value)
-      const gt = GRADIENT_THEMES.find(g => g.gradient === activeGradient.value)
-      if (gt) {
-        html.style.setProperty('--primary-color', gt.primary)
-        html.style.setProperty('--app-surface', gt.surface)
-        html.style.setProperty('--app-surface-rgb', gt.surfaceRgb)
-        const r = parseInt(gt.primary.slice(1, 3), 16), g = parseInt(gt.primary.slice(3, 5), 16), b = parseInt(gt.primary.slice(5, 7), 16)
-        html.style.setProperty('--primary-light', `rgba(${r},${g},${b},0.08)`)
-      }
-    } else { html.style.removeProperty('--gradient-bg') }
-
-    if (customColors.value) {
-      html.style.setProperty('--primary-color', customColors.value.primary)
-      html.style.setProperty('--app-bg', customColors.value.bg)
-      html.style.setProperty('--app-surface', customColors.value.bg)
-      html.style.setProperty('--app-surface-rgb', customColors.value.surfaceRgb)
-      html.style.setProperty('--text-primary', customColors.value.text)
-      const r = parseInt(customColors.value.primary.slice(1, 3), 16), g = parseInt(customColors.value.primary.slice(3, 5), 16), b = parseInt(customColors.value.primary.slice(5, 7), 16)
-      html.style.setProperty('--primary-light', `rgba(${r},${g},${b},0.08)`)
-      html.style.setProperty('--app-header-bg', customColors.value.primary)
-      const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-      html.style.setProperty('--app-header-text', lum > 0.5 ? '#000000' : '#ffffff')
-    }
-
-    if (accentColor.value) {
-      html.style.setProperty('--accent-color', accentColor.value)
-      const r = parseInt(accentColor.value.slice(1, 3), 16), g = parseInt(accentColor.value.slice(3, 5), 16), b = parseInt(accentColor.value.slice(5, 7), 16)
-      html.style.setProperty('--accent-light', `rgba(${r},${g},${b},0.12)`)
-    } else {
-      html.style.removeProperty('--accent-color')
-      html.style.removeProperty('--accent-light')
-    }
-
-    const radii = RADIUS_MAP[radiusStyle.value]
-    html.style.setProperty('--radius-sm', radii.sm); html.style.setProperty('--radius-md', radii.md)
-    html.style.setProperty('--radius-lg', radii.lg); html.style.setProperty('--radius-xl', radii.xl)
-
-    html.style.fontSize = FONT_SIZE_MAP[fontSize.value]
-    html.style.fontFamily = FONT_FAMILY_MAP[fontFamily.value]
-
-    const speed = ANIM_SPEED_MAP[animationSpeed.value]
-    html.style.setProperty('--transition-fast', speed === '0ms' ? '0ms' : speed)
-    html.style.setProperty('--transition-normal', speed === '0ms' ? '0ms' : `${Math.round(parseInt(speed) * 1.6)}ms`)
-    html.style.setProperty('--transition-slow', speed === '0ms' ? '0ms' : `${parseInt(speed) * 2.5}ms`)
+    html.classList.toggle('compact', compactMode.value)
     html.classList.toggle('no-animations', animationSpeed.value === 'off')
 
-    html.classList.toggle('compact', compactMode.value)
-    if (compactMode.value) {
-      html.style.setProperty('--item-height', '40px'); html.style.setProperty('--group-header-height', '28px')
-      html.style.setProperty('--header-height', '40px'); html.style.setProperty('--tabs-height', '34px')
-    } else {
-      html.style.removeProperty('--item-height'); html.style.removeProperty('--group-header-height')
-      html.style.removeProperty('--header-height'); html.style.removeProperty('--tabs-height')
+    // 2. Semantic tokens: base palette
+    const palette = dark ? { ...DARK_PALETTE } : { ...LIGHT_PALETTE }
+
+    // 3. Merge preset colors
+    const presetColors = dark ? activePreset.value.dark : activePreset.value.light
+    Object.assign(palette, presetColors)
+
+    // 4. Merge custom colors (highest priority)
+    if (customColors.value) {
+      Object.assign(palette, customColors.value)
     }
 
+    // 5. Apply all semantic tokens
+    for (const [key, val] of Object.entries(palette)) {
+      html.style.setProperty(key, val)
+    }
+
+    // 6. Component tokens (derived from semantic)
+    applyComponentTokens(html, palette)
+
+    // 7. Effect tokens
+    applyEffectTokens(html)
+
+    // 8. Data attributes for CSS selectors
     html.dataset.headerStyle = headerStyle.value
     html.dataset.cardStyle = cardStyle.value
     html.dataset.scrollbarStyle = scrollbarStyle.value
-    html.dataset.bgPattern = backgroundPattern.value
+    html.dataset.bgType = background.value.type
+
+    // 9. Font
+    const fontSizes: Record<FontSize, string> = { small: '12px', medium: '13px', large: '15px' }
+    html.style.fontSize = fontSizes[fontSize.value]
+    html.dataset.fontFamily = fontFamily.value
+
+    // 10. Radius
+    html.style.setProperty('--radius-base', RADIUS_MAP[radiusPreset.value])
+
+    // 11. Animation speed
+    html.style.setProperty('--transition-base', SPEED_MAP[animationSpeed.value])
+  }
+
+  function applyComponentTokens(html: HTMLElement, palette: Record<string, string>) {
+    const dark = isDark.value
+    const primary = palette['--color-primary'] || '#4f46e5'
+    const primaryHover = palette['--color-primary-hover'] || primary
+    const primaryLight = palette['--color-primary-light'] || 'rgba(79,70,229,0.08)'
+    const danger = palette['--color-danger'] || '#ef4444'
+    const dangerLight = palette['--color-danger-light'] || 'rgba(239,68,68,0.08)'
+    const surface = palette['--color-bg-surface'] || '#ffffff'
+    const surfaceRgb = palette['--color-bg-surface-rgb'] || '255,255,255'
+    const border = palette['--color-border'] || '#e2e8f0'
+    const textPrimary = palette['--color-text-primary'] || '#0f172a'
+    const textMuted = palette['--color-text-muted'] || '#64748b'
+
+    // Button tokens
+    html.style.setProperty('--btn-primary-bg', primary)
+    html.style.setProperty('--btn-primary-text', '#ffffff')
+    html.style.setProperty('--btn-primary-hover-bg', primaryHover)
+    html.style.setProperty('--btn-secondary-bg', surface)
+    html.style.setProperty('--btn-secondary-text', textPrimary)
+    html.style.setProperty('--btn-secondary-border', border)
+    html.style.setProperty('--btn-ghost-text', textMuted)
+    html.style.setProperty('--btn-ghost-hover-bg', primaryLight)
+    html.style.setProperty('--btn-danger-bg', dangerLight)
+    html.style.setProperty('--btn-danger-text', danger)
+    html.style.setProperty('--btn-danger-border', danger)
+    html.style.setProperty('--btn-danger-hover-bg', danger)
+
+    // Card tokens
+    html.style.setProperty('--card-bg', surface)
+    html.style.setProperty('--card-border', border)
+    html.style.setProperty('--card-surface-rgb', surfaceRgb)
+
+    // Input tokens
+    html.style.setProperty('--input-bg', surface)
+    html.style.setProperty('--input-border', border)
+    html.style.setProperty('--input-focus-border', primary)
+    html.style.setProperty('--input-focus-ring', primaryLight)
+
+    // Header tokens
+    html.style.setProperty('--header-bg', primary)
+    html.style.setProperty('--header-text', '#ffffff')
+    html.style.setProperty('--header-hover-bg', 'rgba(255,255,255,0.15)')
+    // Glass header for MiniBrowser (semi-transparent to show theme background)
+    html.style.setProperty('--glass-header-bg', dark ? 'rgba(15,23,42,0.8)' : 'rgba(255,255,255,0.75)')
+
+    // Tag/badge tokens
+    html.style.setProperty('--tag-active-bg', primaryLight)
+    html.style.setProperty('--tag-active-text', primary)
+    html.style.setProperty('--tag-active-border', primary)
+
+    // Toast tokens
+    html.style.setProperty('--toast-bg', dark ? '#1e293b' : '#334155')
+    html.style.setProperty('--toast-text', dark ? '#e2e8f0' : '#ffffff')
+
+    // Tooltip tokens
+    html.style.setProperty('--tooltip-bg', dark ? '#1b1f23' : '#24292e')
+    html.style.setProperty('--tooltip-text', '#ffffff')
+
+    // Shadow tokens
+    html.style.setProperty('--shadow-modal', '0 8px 32px rgba(0,0,0,0.2)')
+    html.style.setProperty('--shadow-fab', '0 4px 12px rgba(0,0,0,0.15)')
+    html.style.setProperty('--shadow-fab-hover', '0 6px 16px rgba(0,0,0,0.2)')
+  }
+
+  function applyEffectTokens(html: HTMLElement) {
+    // Background tokens
+    html.style.setProperty('--bg-blur', `${background.value.blur}px`)
+    html.style.setProperty('--bg-opacity', `${background.value.opacity}`)
+    html.style.setProperty('--bg-overlay-color', background.value.overlayColor)
+    html.style.setProperty('--bg-overlay-opacity', `${background.value.overlayOpacity}`)
+
+    // Glass tokens
+    html.style.setProperty('--glass-blur', `${glassBlur.value}px`)
+    html.style.setProperty('--glass-opacity', `${glassOpacity.value}`)
+
+    // Transition
+    const speed = SPEED_MAP[animationSpeed.value]
+    html.style.setProperty('--transition-hover', speed)
+    html.style.setProperty('--transition-modal', speed === '0ms' ? '0ms' : '200ms')
+    html.style.setProperty('--transition-page', speed === '0ms' ? '0ms' : '300ms')
+  }
+
+  // ===== Actions =====
+
+  function setMode(m: ThemeMode) { mode.value = m; applyTokens(); saveTheme() }
+  function setPreset(id: string) { activePresetId.value = id; customColors.value = null; applyTokens(); saveTheme() }
+  function setHeaderStyle(s: HeaderStyle) { headerStyle.value = s; applyTokens(); saveTheme() }
+  function setCardStyle(s: CardStyle) { cardStyle.value = s; applyTokens(); saveTheme() }
+  function setRadiusPreset(r: RadiusPreset) { radiusPreset.value = r; applyTokens(); saveTheme() }
+  function setFontSize(s: FontSize) { fontSize.value = s; applyTokens(); saveTheme() }
+  function setFontFamily(f: FontFamily) { fontFamily.value = f; applyTokens(); saveTheme() }
+  function setAnimationSpeed(s: AnimationSpeed) { animationSpeed.value = s; applyTokens(); saveTheme() }
+  function setScrollbarStyle(s: ScrollbarStyle) { scrollbarStyle.value = s; applyTokens(); saveTheme() }
+  function toggleCompact() { compactMode.value = !compactMode.value; applyTokens(); saveTheme() }
+
+  function setBackground(bg: Partial<BackgroundConfig>) {
+    Object.assign(background.value, bg)
+    applyTokens()
+    saveTheme()
+  }
+
+  function setBackgroundImage(url: string) {
+    background.value.imageUrl = url
+    if (url && background.value.type !== 'image') {
+      background.value.type = 'image'
+    }
+    applyTokens()
+    saveTheme()
+  }
+
+  function setCustomColors(colors: Record<string, string> | null) {
+    customColors.value = colors
+    applyTokens()
+    saveTheme()
+  }
+
+  function setGlassBlur(v: number) { glassBlur.value = v; applyTokens(); saveTheme() }
+  function setGlassOpacity(v: number) { glassOpacity.value = v; applyTokens(); saveTheme() }
+
+  function toggleThemeModal() { showThemeModal.value = !showThemeModal.value }
+
+  // ===== Persistence =====
+
+  async function saveTheme() {
+    const data = {
+      mode: mode.value,
+      activePresetId: activePresetId.value,
+      background: background.value,
+      headerStyle: headerStyle.value,
+      cardStyle: cardStyle.value,
+      radiusPreset: radiusPreset.value,
+      compactMode: compactMode.value,
+      fontSize: fontSize.value,
+      fontFamily: fontFamily.value,
+      animationSpeed: animationSpeed.value,
+      scrollbarStyle: scrollbarStyle.value,
+      glassBlur: glassBlur.value,
+      glassOpacity: glassOpacity.value,
+      customColors: customColors.value,
+    }
+    await chrome.storage.local.set({ themeConfig: data })
   }
 
   async function loadTheme() {
-    try {
-      const result = await chrome.storage.local.get([
-        'themeMode', 'activeGradient', 'customColors', 'activePreset',
-        'radiusStyle', 'fontSize', 'fontFamily', 'headerStyle', 'cardStyle',
-        'animationSpeed', 'scrollbarStyle', 'backgroundPattern', 'accentColor',
-        'compactMode',
-      ])
-      if (result.themeMode) mode.value = result.themeMode as ThemeMode
-      if (result.activeGradient) activeGradient.value = result.activeGradient as string
-      if (result.customColors) {
-        const cc = result.customColors as { primary: string; bg: string; text: string }
-        const bgRgb = `${parseInt(cc.bg.slice(1, 3), 16)},${parseInt(cc.bg.slice(3, 5), 16)},${parseInt(cc.bg.slice(5, 7), 16)}`
-        customColors.value = { ...cc, surfaceRgb: bgRgb }
-      }
-      if (result.activePreset) activePreset.value = result.activePreset as string
-      if (result.radiusStyle) radiusStyle.value = result.radiusStyle as RadiusStyle
-      if (result.fontSize) fontSize.value = result.fontSize as FontSize
-      if (result.fontFamily) fontFamily.value = result.fontFamily as FontFamily
-      if (result.headerStyle) headerStyle.value = result.headerStyle as HeaderStyle
-      if (result.cardStyle) cardStyle.value = result.cardStyle as CardStyle
-      if (result.animationSpeed) animationSpeed.value = result.animationSpeed as AnimationSpeed
-      if (result.scrollbarStyle) scrollbarStyle.value = result.scrollbarStyle as ScrollbarStyle
-      if (result.backgroundPattern) backgroundPattern.value = result.backgroundPattern as BackgroundPattern
-      if (result.accentColor) accentColor.value = result.accentColor as string
-      if (result.compactMode !== undefined) compactMode.value = result.compactMode as boolean
-    } catch { /* ignore */ }
-    applyTheme()
-  }
+    const result = await chrome.storage.local.get('themeConfig')
+    const data = result.themeConfig as Record<string, any> | undefined
+    if (!data) { applyTokens(); return }
 
-  async function saveTheme() {
-    try {
-      await chrome.storage.local.set({
-        themeMode: mode.value, activeGradient: activeGradient.value, customColors: customColors.value,
-        activePreset: activePreset.value, radiusStyle: radiusStyle.value, fontSize: fontSize.value,
-        fontFamily: fontFamily.value, headerStyle: headerStyle.value, cardStyle: cardStyle.value,
-        animationSpeed: animationSpeed.value, scrollbarStyle: scrollbarStyle.value,
-        backgroundPattern: backgroundPattern.value, accentColor: accentColor.value,
-        compactMode: compactMode.value,
-      })
-    } catch { /* ignore */ }
-  }
+    mode.value = data.mode || 'auto'
+    activePresetId.value = data.activePresetId || 'indigo'
+    if (data.background) Object.assign(background.value, data.background)
+    headerStyle.value = data.headerStyle || 'solid'
+    cardStyle.value = data.cardStyle || 'flat'
+    radiusPreset.value = data.radiusPreset || 'medium'
+    compactMode.value = data.compactMode || false
+    fontSize.value = data.fontSize || 'medium'
+    fontFamily.value = data.fontFamily || 'system'
+    animationSpeed.value = data.animationSpeed || 'normal'
+    scrollbarStyle.value = data.scrollbarStyle || 'thin'
+    glassBlur.value = data.glassBlur ?? 12
+    glassOpacity.value = data.glassOpacity ?? 0.6
+    customColors.value = data.customColors || null
 
-  function setMode(m: ThemeMode) { mode.value = m; activeGradient.value = null; customColors.value = null; applyTheme(); saveTheme() }
-  function setGradient(g: string) { activeGradient.value = g; customColors.value = null; applyTheme(); saveTheme() }
-  function setCustomColors(c: { primary: string; bg: string; text: string }) {
-    activeGradient.value = null
-    const bgRgb = `${parseInt(c.bg.slice(1, 3), 16)},${parseInt(c.bg.slice(3, 5), 16)},${parseInt(c.bg.slice(5, 7), 16)}`
-    customColors.value = { ...c, surfaceRgb: bgRgb }
-    applyTheme(); saveTheme()
+    applyTokens()
   }
-  function setPreset(id: string) { activePreset.value = id; activeGradient.value = null; customColors.value = null; applyTheme(); saveTheme() }
-  function setRadiusStyle(s: RadiusStyle) { radiusStyle.value = s; applyTheme(); saveTheme() }
-  function setFontSize(s: FontSize) { fontSize.value = s; applyTheme(); saveTheme() }
-  function setFontFamily(f: FontFamily) { fontFamily.value = f; applyTheme(); saveTheme() }
-  function setHeaderStyle(s: HeaderStyle) { headerStyle.value = s; applyTheme(); saveTheme() }
-  function setCardStyle(s: CardStyle) { cardStyle.value = s; applyTheme(); saveTheme() }
-  function setAnimationSpeed(s: AnimationSpeed) { animationSpeed.value = s; applyTheme(); saveTheme() }
-  function setScrollbarStyle(s: ScrollbarStyle) { scrollbarStyle.value = s; applyTheme(); saveTheme() }
-  function setBackgroundPattern(p: BackgroundPattern) { backgroundPattern.value = p; applyTheme(); saveTheme() }
-  function setAccentColor(c: string | null) { accentColor.value = c; applyTheme(); saveTheme() }
-  function toggleCompact() { compactMode.value = !compactMode.value; applyTheme(); saveTheme() }
-  function toggleThemeModal() { showThemeModal.value = !showThemeModal.value }
 
   function exportConfig(): string {
-    const config: ThemeConfig = {
-      mode: mode.value, activePreset: activePreset.value, activeGradient: activeGradient.value,
-      customColors: customColors.value, accentColor: accentColor.value, radiusStyle: radiusStyle.value,
-      fontSize: fontSize.value, fontFamily: fontFamily.value, headerStyle: headerStyle.value,
-      cardStyle: cardStyle.value, animationSpeed: animationSpeed.value, scrollbarStyle: scrollbarStyle.value,
-      backgroundPattern: backgroundPattern.value, compactMode: compactMode.value,
-    }
-    return JSON.stringify(config, null, 2)
+    return JSON.stringify({
+      mode: mode.value,
+      activePresetId: activePresetId.value,
+      background: background.value,
+      headerStyle: headerStyle.value,
+      cardStyle: cardStyle.value,
+      radiusPreset: radiusPreset.value,
+      compactMode: compactMode.value,
+      fontSize: fontSize.value,
+      fontFamily: fontFamily.value,
+      animationSpeed: animationSpeed.value,
+      scrollbarStyle: scrollbarStyle.value,
+      glassBlur: glassBlur.value,
+      glassOpacity: glassOpacity.value,
+      customColors: customColors.value,
+    }, null, 2)
   }
 
   function importConfig(json: string): boolean {
     try {
-      const c = JSON.parse(json)
-      if (typeof c !== 'object' || c === null) return false
-      const validModes = ['auto', 'light', 'dark']
-      const validPresets = ['indigo', 'emerald', 'rose', 'amber', 'cyan', 'violet', 'slate', 'pink']
-      const validRadius = ['none', 'small', 'medium', 'large']
-      const validFontSize = ['small', 'medium', 'large']
-      const validFontFamily = ['system', 'serif', 'mono', 'rounded']
-      const validHeaderStyle = ['solid', 'gradient', 'glass', 'minimal']
-      const validCardStyle = ['flat', 'bordered', 'shadowed', 'elevated']
-      const validAnimSpeed = ['off', 'slow', 'normal', 'fast']
-      const validScrollbar = ['thin', 'default', 'hidden']
-      const validBgPattern = ['none', 'dots', 'grid', 'diagonal', 'noise']
-      const isValidHex = (v: unknown) => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)
-      if (c.mode && !validModes.includes(c.mode)) return false
-      if (c.activePreset && !validPresets.includes(c.activePreset)) return false
-      if (c.radiusStyle && !validRadius.includes(c.radiusStyle)) return false
-      if (c.fontSize && !validFontSize.includes(c.fontSize)) return false
-      if (c.fontFamily && !validFontFamily.includes(c.fontFamily)) return false
-      if (c.headerStyle && !validHeaderStyle.includes(c.headerStyle)) return false
-      if (c.cardStyle && !validCardStyle.includes(c.cardStyle)) return false
-      if (c.animationSpeed && !validAnimSpeed.includes(c.animationSpeed)) return false
-      if (c.scrollbarStyle && !validScrollbar.includes(c.scrollbarStyle)) return false
-      if (c.backgroundPattern && !validBgPattern.includes(c.backgroundPattern)) return false
-      if (c.customColors) {
-        if (typeof c.customColors !== 'object') return false
-        if (c.customColors.primary && !isValidHex(c.customColors.primary)) return false
-        if (c.customColors.bg && !isValidHex(c.customColors.bg)) return false
-        if (c.customColors.text && !isValidHex(c.customColors.text)) return false
-        if (c.customColors.surfaceRgb && !/^\d+,\d+,\d+$/.test(c.customColors.surfaceRgb)) return false
-      }
-      if (c.accentColor && !isValidHex(c.accentColor)) return false
-      if (c.activeGradient !== undefined && c.activeGradient !== null && typeof c.activeGradient !== 'string') return false
-      if (c.compactMode !== undefined && typeof c.compactMode !== 'boolean') return false
-      if (c.mode) mode.value = c.mode
-      if (c.activePreset) activePreset.value = c.activePreset
-      if (c.activeGradient !== undefined) activeGradient.value = c.activeGradient
-      if (c.customColors) {
-        const cc = c.customColors as { primary: string; bg: string; text: string; surfaceRgb?: string }
-        const bgRgb = cc.surfaceRgb || `${parseInt(cc.bg.slice(1, 3), 16)},${parseInt(cc.bg.slice(3, 5), 16)},${parseInt(cc.bg.slice(5, 7), 16)}`
-        customColors.value = { primary: cc.primary, bg: cc.bg, text: cc.text, surfaceRgb: bgRgb }
-      }
-      if (c.accentColor !== undefined) accentColor.value = c.accentColor
-      if (c.radiusStyle) radiusStyle.value = c.radiusStyle
-      if (c.fontSize) fontSize.value = c.fontSize
-      if (c.fontFamily) fontFamily.value = c.fontFamily
-      if (c.headerStyle) headerStyle.value = c.headerStyle
-      if (c.cardStyle) cardStyle.value = c.cardStyle
-      if (c.animationSpeed) animationSpeed.value = c.animationSpeed
-      if (c.scrollbarStyle) scrollbarStyle.value = c.scrollbarStyle
-      if (c.backgroundPattern) backgroundPattern.value = c.backgroundPattern
-      if (c.compactMode !== undefined) compactMode.value = c.compactMode
-      applyTheme(); saveTheme()
+      const data = JSON.parse(json)
+      if (data.mode) mode.value = data.mode
+      if (data.activePresetId) activePresetId.value = data.activePresetId
+      if (data.background) Object.assign(background.value, data.background)
+      if (data.headerStyle) headerStyle.value = data.headerStyle
+      if (data.cardStyle) cardStyle.value = data.cardStyle
+      if (data.radiusPreset) radiusPreset.value = data.radiusPreset
+      if (data.compactMode !== undefined) compactMode.value = data.compactMode
+      if (data.fontSize) fontSize.value = data.fontSize
+      if (data.fontFamily) fontFamily.value = data.fontFamily
+      if (data.animationSpeed) animationSpeed.value = data.animationSpeed
+      if (data.scrollbarStyle) scrollbarStyle.value = data.scrollbarStyle
+      if (data.glassBlur !== undefined) glassBlur.value = data.glassBlur
+      if (data.glassOpacity !== undefined) glassOpacity.value = data.glassOpacity
+      if (data.customColors) customColors.value = data.customColors
+      applyTokens()
+      saveTheme()
       return true
-    } catch { return false }
+    } catch {
+      return false
+    }
   }
 
   function resetAll() {
-    mode.value = 'auto'; activePreset.value = 'indigo'; activeGradient.value = null
-    customColors.value = null; accentColor.value = null; radiusStyle.value = 'medium'
-    fontSize.value = 'medium'; fontFamily.value = 'system'; headerStyle.value = 'solid'
-    cardStyle.value = 'bordered'; animationSpeed.value = 'normal'; scrollbarStyle.value = 'thin'
-    backgroundPattern.value = 'none'; compactMode.value = false
-    applyTheme(); saveTheme()
+    mode.value = 'auto'
+    activePresetId.value = 'indigo'
+    background.value = { type: 'none', imageUrl: '', blur: 0, opacity: 1, overlayColor: '#000000', overlayOpacity: 0, size: 'cover', gradient: '' }
+    headerStyle.value = 'solid'
+    cardStyle.value = 'flat'
+    radiusPreset.value = 'medium'
+    compactMode.value = false
+    fontSize.value = 'medium'
+    fontFamily.value = 'system'
+    animationSpeed.value = 'normal'
+    scrollbarStyle.value = 'thin'
+    glassBlur.value = 12
+    glassOpacity.value = 0.6
+    customColors.value = null
+    applyTokens()
+    saveTheme()
   }
 
+  // Watch system dark mode
   if (typeof window !== 'undefined') {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (mode.value === 'auto') applyTheme() })
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (mode.value === 'auto') applyTokens()
+    })
   }
 
   return {
-    mode, activeGradient, customColors, activePreset, showThemeModal, isDark,
-    radiusStyle, fontSize, fontFamily, headerStyle, cardStyle, animationSpeed,
-    scrollbarStyle, backgroundPattern, accentColor, compactMode,
-    loadTheme, saveTheme, setMode, setGradient, setCustomColors, setPreset,
-    setRadiusStyle, setFontSize, setFontFamily, setHeaderStyle, setCardStyle,
-    setAnimationSpeed, setScrollbarStyle, setBackgroundPattern, setAccentColor,
-    toggleCompact, toggleThemeModal, exportConfig, importConfig, resetAll, applyTheme,
+    // State
+    mode, activePresetId, isDark, background, headerStyle, cardStyle,
+    radiusPreset, compactMode, fontSize, fontFamily, animationSpeed,
+    scrollbarStyle, glassBlur, glassOpacity, customColors, showThemeModal,
+    // Computed
+    activePreset, effectiveMode,
+    // Actions
+    setMode, setPreset, setHeaderStyle, setCardStyle, setRadiusPreset,
+    setFontSize, setFontFamily, setAnimationSpeed, setScrollbarStyle,
+    toggleCompact, setBackground, setBackgroundImage, setCustomColors,
+    setGlassBlur, setGlassOpacity, toggleThemeModal,
+    // Persistence
+    saveTheme, loadTheme, exportConfig, importConfig, resetAll, applyTokens,
   }
 })

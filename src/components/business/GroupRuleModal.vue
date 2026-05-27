@@ -211,103 +211,103 @@ function getTypeLabel(type: string) {
 
 <style scoped>
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  position: fixed; inset: 0; background: var(--color-bg-overlay);
   display: flex; align-items: center; justify-content: center;
-  z-index: 100; animation: fadeIn var(--transition-fast);
+  z-index: 100; animation: fadeIn var(--transition-hover);
 }
 .modal-content {
   width: 360px; max-height: 480px; overflow-y: auto;
-  background: var(--app-surface); border-radius: var(--radius-xl);
+  background: var(--color-bg-surface); border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg); padding: 20px;
-  animation: slideUp var(--transition-normal);
+  animation: slideUp var(--transition-modal);
 }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; color: var(--color-text-primary); }
 .close-btn {
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border: none; background: transparent;
-  border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted); font-size: 16px;
+  border-radius: var(--radius-sm); cursor: pointer; color: var(--color-text-muted); font-size: 16px;
 }
-.close-btn:hover { background: var(--primary-light); }
+.close-btn:hover { background: var(--color-primary-light); }
 
 .rule-form { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
 .rule-input {
-  padding: 7px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-  font-size: 12px; outline: none; background: var(--app-surface); color: var(--text-primary);
+  padding: 7px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  font-size: 12px; outline: none; background: var(--color-bg-surface); color: var(--color-text-primary);
 }
-.rule-input:focus { border-color: var(--primary-color); }
-.rule-input.error { border-color: #ef4444; }
+.rule-input:focus { border-color: var(--color-primary); }
+.rule-input.error { border-color: var(--color-danger); }
 .rule-select {
-  padding: 7px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-  font-size: 12px; outline: none; background: var(--app-surface); color: var(--text-primary);
+  padding: 7px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  font-size: 12px; outline: none; background: var(--color-bg-surface); color: var(--color-text-primary);
 }
-.type-hint { font-size: 10px; color: var(--text-muted); margin-top: -2px; }
-.field-error { font-size: 10px; color: #ef4444; margin-top: -2px; }
+.type-hint { font-size: 10px; color: var(--color-text-muted); margin-top: -2px; }
+.field-error { font-size: 10px; color: var(--color-danger); margin-top: -2px; }
 
 .match-preview {
   display: flex; align-items: center; gap: 4px;
-  padding: 6px 10px; background: var(--primary-light);
-  border-radius: var(--radius-sm); font-size: 11px; color: var(--text-secondary);
+  padding: 6px 10px; background: var(--color-primary-light);
+  border-radius: var(--radius-sm); font-size: 11px; color: var(--color-text-secondary);
 }
-.preview-icon { font-size: 12px; color: var(--primary-color); flex-shrink: 0; }
-.preview-samples { color: var(--text-muted); }
+.preview-icon { font-size: 12px; color: var(--color-primary); flex-shrink: 0; }
+.preview-samples { color: var(--color-text-muted); }
 
 .form-actions { display: flex; gap: 6px; margin-top: 4px; }
 .btn-primary {
   flex: 1; padding: 7px 14px; border: none; border-radius: var(--radius-sm);
-  background: var(--primary-color); color: white; font-size: 12px; font-weight: 500;
-  cursor: pointer; transition: all var(--transition-fast);
+  background: var(--color-primary); color: var(--color-text-inverse); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all var(--transition-hover);
 }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-primary:not(:disabled):hover { opacity: 0.9; }
 .btn-secondary {
-  padding: 7px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-  background: var(--app-surface); color: var(--text-secondary); font-size: 12px;
-  cursor: pointer; transition: all var(--transition-fast);
+  padding: 7px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  background: var(--color-bg-surface); color: var(--color-text-secondary); font-size: 12px;
+  cursor: pointer; transition: all var(--transition-hover);
 }
-.btn-secondary:hover { border-color: var(--primary-color); color: var(--primary-color); }
+.btn-secondary:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 .rule-list-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px; padding-top: 8px; border-top: 1px solid var(--border-color);
+  margin-bottom: 8px; padding-top: 8px; border-top: 1px solid var(--color-border);
 }
-.list-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.list-title { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); }
 .clear-all-btn {
-  font-size: 11px; color: #ef4444; background: none; border: none;
+  font-size: 11px; color: var(--color-danger); background: none; border: none;
   cursor: pointer; padding: 2px 6px; border-radius: var(--radius-sm);
 }
-.clear-all-btn:hover { background: rgba(239,68,68,0.1); }
+.clear-all-btn:hover { background: var(--color-danger-light); }
 
 .rule-list {}
-.empty-hint { font-size: 13px; color: var(--text-muted); text-align: center; padding: 16px; }
+.empty-hint { font-size: 13px; color: var(--color-text-muted); text-align: center; padding: 16px; }
 .rule-row {
   display: flex; align-items: center; gap: 6px;
-  padding: 8px 4px; border-bottom: 1px solid var(--border-color);
-  transition: background var(--transition-fast);
+  padding: 8px 4px; border-bottom: 1px solid var(--color-border);
+  transition: background var(--transition-hover);
 }
-.rule-row.editing { background: var(--primary-light); }
+.rule-row.editing { background: var(--color-primary-light); }
 .rule-order { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
 .order-btn {
   width: 18px; height: 14px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; cursor: pointer;
-  color: var(--text-muted); font-size: 10px; border-radius: 2px;
+  color: var(--color-text-muted); font-size: 10px; border-radius: 2px;
 }
-.order-btn:hover { background: var(--primary-light); color: var(--primary-color); }
+.order-btn:hover { background: var(--color-primary-light); color: var(--color-primary); }
 .order-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 .rule-info { flex: 1; min-width: 0; }
-.rule-name { font-size: 13px; font-weight: 500; color: var(--text-primary); display: block; }
-.rule-pattern { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.rule-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); display: block; }
+.rule-pattern { font-size: 11px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .edit-btn {
   width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--text-muted); font-size: 12px;
+  cursor: pointer; color: var(--color-text-muted); font-size: 12px;
 }
-.edit-btn:hover { background: var(--primary-light); color: var(--primary-color); }
+.edit-btn:hover { background: var(--color-primary-light); color: var(--color-primary); }
 .remove-btn {
   width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--text-muted); font-size: 13px;
+  cursor: pointer; color: var(--color-text-muted); font-size: 13px;
 }
-.remove-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+.remove-btn:hover { color: var(--color-danger); background: var(--color-danger-light); }
 </style>

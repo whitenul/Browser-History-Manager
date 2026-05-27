@@ -4,7 +4,7 @@ import { getDomain } from '@/utils/helpers'
 
 const MAX_HISTORY = 50
 const REDIRECT_DEBOUNCE = 1000
-const LOAD_TIMEOUT = 15000
+const LOAD_TIMEOUT = 8000
 const STORAGE_KEY = 'browserState'
 
 export interface BrowserState {
@@ -12,6 +12,7 @@ export interface BrowserState {
   historyStack: string[]
   currentIndex: number
   isMosaicMode: boolean
+  zoomLevel: number
 }
 
 function normalizeUrl(raw: string): string {
@@ -62,7 +63,9 @@ export const useBrowserStore = defineStore('browser', () => {
   const isLoading = ref(false)
   const loadError = ref<string | null>(null)
   const zoomLevel = ref(100)
-  const isInternalNavigation = ref(false)
+
+  // Navigation tracking: increment this to signal iframe to reload
+  const navVersion = ref(0)
 
   let lastNavigateTime = 0
   let lastSetUrl = ''
@@ -88,8 +91,6 @@ export const useBrowserStore = defineStore('browser', () => {
   function onIframeLoad() {
     clearTimeout(loadTimer!)
     isLoading.value = false
-    isInternalNavigation.value = false
-    if (!currentUrl.value) return
     loadError.value = null
   }
 
@@ -125,37 +126,34 @@ export const useBrowserStore = defineStore('browser', () => {
     }
 
     lastNavigateTime = now
+    lastSetUrl = normalized
     currentUrl.value = normalized
     updateDisplayUrl(normalized)
     scheduleAutoSave()
   }
 
-  function navigate(url: string, internal: boolean = false) {
+  /** Navigate to a new URL — triggers full iframe reload */
+  function navigate(url: string) {
     const result = resolveUrl(url)
     if (result.type === 'invalid') {
       loadError.value = 'invalid'
       return
     }
-
-    if (internal) {
-      // Internal navigation: only update URL, don't reload iframe
-      isInternalNavigation.value = true
-      lastSetUrl = result.url
-      pushHistory(result.url)
-      isLoading.value = false
-      loadError.value = null
-    } else {
-      // External navigation: full reload
-      isLoading.value = true
-      loadError.value = null
-      startLoadTimer()
-      lastSetUrl = result.url
-      pushHistory(result.url)
-    }
+    isLoading.value = true
+    loadError.value = null
+    startLoadTimer()
+    pushHistory(result.url)
+    navVersion.value++ // Signal iframe to reload
   }
 
+  /** Update URL display only (for cross-origin iframe navigation we can't detect) */
   function updateUrlOnly(url: string) {
-    navigate(url, true)
+    const result = resolveUrl(url)
+    if (result.type === 'invalid') return
+    lastSetUrl = result.url
+    currentUrl.value = normalizeUrl(result.url)
+    updateDisplayUrl(currentUrl.value)
+    scheduleAutoSave()
   }
 
   function goBack() {
@@ -169,6 +167,7 @@ export const useBrowserStore = defineStore('browser', () => {
         lastSetUrl = url
         currentUrl.value = url
         updateDisplayUrl(url)
+        navVersion.value++ // Signal iframe to reload
         scheduleAutoSave()
       }
     }
@@ -185,6 +184,7 @@ export const useBrowserStore = defineStore('browser', () => {
         lastSetUrl = url
         currentUrl.value = url
         updateDisplayUrl(url)
+        navVersion.value++ // Signal iframe to reload
         scheduleAutoSave()
       }
     }
@@ -195,6 +195,7 @@ export const useBrowserStore = defineStore('browser', () => {
       isLoading.value = true
       loadError.value = null
       startLoadTimer()
+      navVersion.value++ // Signal iframe to reload
     }
   }
 
@@ -206,21 +207,20 @@ export const useBrowserStore = defineStore('browser', () => {
     isMosaicMode.value = false
     loadError.value = null
     isLoading.value = false
-    isInternalNavigation.value = false
     lastSetUrl = ''
-  }
-
-  function newTab() {
-    goHome()
+    navVersion.value++
+    scheduleAutoSave()
   }
 
   function toggleMosaic() {
     isMosaicMode.value = !isMosaicMode.value
     updateDisplayUrl(currentUrl.value)
+    scheduleAutoSave()
   }
 
   function setZoom(level: number) {
-    zoomLevel.value = Math.min(Math.max(50, level), 200)
+    zoomLevel.value = Math.min(Math.max(25, level), 300)
+    scheduleAutoSave()
   }
 
   async function saveState() {
@@ -231,6 +231,7 @@ export const useBrowserStore = defineStore('browser', () => {
           historyStack: historyStack.value,
           currentIndex: currentIndex.value,
           isMosaicMode: isMosaicMode.value,
+          zoomLevel: zoomLevel.value,
         },
       })
     } catch { /* ignore */ }
@@ -242,23 +243,20 @@ export const useBrowserStore = defineStore('browser', () => {
       const state = result[STORAGE_KEY] as BrowserState | undefined
       if (state?.currentUrl) {
         currentUrl.value = state.currentUrl
-        historyStack.value = state.historyStack || []
+        historyStack.value = Array.isArray(state.historyStack) ? state.historyStack : []
         currentIndex.value = state.currentIndex ?? -1
         isMosaicMode.value = state.isMosaicMode || false
+        zoomLevel.value = state.zoomLevel ?? 100
         updateDisplayUrl(state.currentUrl)
+        // Don't increment navVersion here — the component's onMounted handles initial load
       }
     } catch { /* ignore */ }
   }
 
-  async function resetAndSave() {
-    const stateToSave = {
-      currentUrl: currentUrl.value,
-      historyStack: historyStack.value,
-      currentIndex: currentIndex.value,
-      isMosaicMode: isMosaicMode.value,
-    }
-    await chrome.storage.local.set({ [STORAGE_KEY]: stateToSave })
-    goHome()
+  /** Save state for next restore — called when exiting browsing mode */
+  async function saveForRestore() {
+    await saveState()
+    // Don't call goHome() — keep the state for next restore
   }
 
   function canGoBack(): boolean { return currentIndex.value > 0 }
@@ -268,11 +266,11 @@ export const useBrowserStore = defineStore('browser', () => {
 
   return {
     currentUrl, displayUrl, historyStack, currentIndex,
-    isMosaicMode, isLoading, loadError, zoomLevel, isInternalNavigation,
+    isMosaicMode, isLoading, loadError, zoomLevel, navVersion,
     onIframeLoad,
     navigate, updateUrlOnly, goBack, goForward, refresh,
-    goHome, newTab, toggleMosaic, setZoom,
-    saveState, restoreState, resetAndSave,
+    goHome, toggleMosaic, setZoom,
+    saveState, restoreState, saveForRestore,
     canGoBack, canGoForward, getCurrentDomain,
     openInNewTab,
   }

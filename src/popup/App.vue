@@ -7,6 +7,7 @@ import { useI18n } from '@/i18n'
 import HistoryView from '@/views/HistoryView.vue'
 import StatsView from '@/views/StatsView.vue'
 import BookmarksView from '@/views/BookmarksView.vue'
+import PageTocView from '@/views/PageTocView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import ThemeModal from '@/components/business/ThemeModal.vue'
 import DeleteConfirmModal from '@/components/business/DeleteConfirmModal.vue'
@@ -24,6 +25,7 @@ const { t } = useI18n()
 
 const tabTitles: Record<string, string> = {
   history: t('nav.history'),
+  toc: t('nav.toc'),
   stats: t('nav.stats'),
   bookmarks: t('nav.bookmarks'),
   settings: t('nav.settings'),
@@ -33,6 +35,7 @@ const headerTitle = computed(() => tabTitles[ui.activeTab] || t('nav.history'))
 
 const tabs = [
   { id: 'history' as const, label: t('nav.history'), icon: 'i-lucide:clock' },
+  { id: 'toc' as const, label: t('nav.toc'), icon: 'i-lucide:list' },
   { id: 'stats' as const, label: t('nav.stats'), icon: 'i-lucide:bar-chart-3' },
   { id: 'bookmarks' as const, label: t('nav.bookmarks'), icon: 'i-lucide:bookmark' },
   { id: 'settings' as const, label: t('nav.settings'), icon: 'i-lucide:settings' },
@@ -61,7 +64,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="app-container" :class="{ 'has-gradient': theme.activeGradient }">
+  <div class="app-container" :class="{ 'has-gradient': theme.background.type === 'gradient' }">
     <header class="app-header">
       <div class="header-title">{{ headerTitle }}</div>
       <div class="header-actions">
@@ -76,6 +79,7 @@ onMounted(async () => {
 
     <main class="app-main">
       <HistoryView v-if="ui.activeTab === 'history'" />
+      <PageTocView v-else-if="ui.activeTab === 'toc'" />
       <StatsView v-else-if="ui.activeTab === 'stats'" />
       <BookmarksView v-else-if="ui.activeTab === 'bookmarks'" />
       <SettingsView v-else-if="ui.activeTab === 'settings'" />
@@ -110,14 +114,14 @@ onMounted(async () => {
   flex-direction: column;
   width: 380px;
   height: 600px;
-  background: var(--app-bg);
-  color: var(--text-primary);
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
   position: relative;
 }
 .app-container.has-gradient {
-  background: var(--gradient-bg, var(--app-bg));
+  background: var(--gradient-bg, var(--color-bg-base));
 }
 
 .app-header {
@@ -125,14 +129,14 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--app-surface);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
   flex-shrink: 0;
 }
 .header-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 .header-actions {
   display: flex;
@@ -148,13 +152,13 @@ onMounted(async () => {
   background: transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 16px;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-hover);
 }
 .icon-btn:hover {
   background: var(--hover-bg);
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .app-main {
@@ -165,8 +169,8 @@ onMounted(async () => {
 
 .app-nav {
   display: flex;
-  border-top: 1px solid var(--border-color);
-  background: var(--app-surface);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
   flex-shrink: 0;
   padding: 4px;
   gap: 2px;
@@ -182,17 +186,17 @@ onMounted(async () => {
   background: transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 11px;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-hover);
 }
 .nav-item:hover {
   background: var(--hover-bg);
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 .nav-item.active {
-  color: var(--primary-color);
-  background: var(--primary-light);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 .nav-item span:first-child {
   font-size: 18px;

@@ -79,22 +79,22 @@ function handleRecategorize(record: any) {
 }
 .ctx-menu {
   position: fixed; min-width: 160px;
-  background: var(--app-surface); border: 1px solid var(--border-color);
+  background: var(--color-bg-surface); border: 1px solid var(--color-border);
   border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
   padding: 4px; animation: fadeIn 100ms ease;
 }
 .ctx-item {
   display: flex; align-items: center; gap: 8px;
   width: 100%; padding: 7px 12px; border: none;
-  background: transparent; color: var(--text-primary);
+  background: transparent; color: var(--color-text-primary);
   font-size: 12px; cursor: pointer; border-radius: var(--radius-sm);
-  transition: background var(--transition-fast);
+  transition: background var(--transition-hover);
 }
-.ctx-item:hover { background: var(--primary-light); }
-.ctx-item.danger { color: #ef4444; }
-.ctx-item.danger:hover { background: rgba(239,68,68,0.1); }
-.ctx-icon { font-size: 13px; color: var(--text-muted); }
-.ctx-item.danger .ctx-icon { color: #ef4444; }
-.ctx-divider { height: 1px; background: var(--border-color); margin: 4px 0; }
+.ctx-item:hover { background: var(--color-primary-light); }
+.ctx-item.danger { color: var(--color-danger); }
+.ctx-item.danger:hover { background: var(--color-danger-light); }
+.ctx-icon { font-size: 13px; color: var(--color-text-muted); }
+.ctx-item.danger .ctx-icon { color: var(--color-danger); }
+.ctx-divider { height: 1px; background: var(--color-border); margin: 4px 0; }
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 </style>

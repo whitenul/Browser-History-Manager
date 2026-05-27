@@ -235,66 +235,66 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 <style scoped>
 .cmd-overlay {
   position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+  background: var(--color-bg-overlay); backdrop-filter: blur(var(--glass-blur));
   display: flex; align-items: flex-start; justify-content: center;
   padding-top: 60px;
 }
 .cmd-palette {
   width: 380px; max-height: 420px;
-  background: var(--app-surface); border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl); box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  background: var(--color-bg-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); box-shadow: var(--shadow-modal);
   display: flex; flex-direction: column; overflow: hidden;
 }
 .cmd-input-wrap {
   display: flex; align-items: center; gap: 8px;
-  padding: 12px 14px; border-bottom: 1px solid var(--border-color);
+  padding: 12px 14px; border-bottom: 1px solid var(--color-border);
 }
-.cmd-input-icon { font-size: 16px; color: var(--text-muted); flex-shrink: 0; }
+.cmd-input-icon { font-size: 16px; color: var(--color-text-muted); flex-shrink: 0; }
 .cmd-input {
   flex: 1; border: none; outline: none; background: transparent;
-  font-size: 14px; color: var(--text-primary);
+  font-size: 14px; color: var(--color-text-primary);
 }
-.cmd-input::placeholder { color: var(--text-muted); }
+.cmd-input::placeholder { color: var(--color-text-muted); }
 .cmd-esc {
-  font-size: 10px; padding: 2px 6px; border-radius: 4px;
-  background: var(--app-bg); color: var(--text-muted);
-  border: 1px solid var(--border-color); font-family: inherit;
+  font-size: 10px; padding: 2px 6px; border-radius: var(--radius-sm);
+  background: var(--color-bg-base); color: var(--color-text-muted);
+  border: 1px solid var(--color-border); font-family: inherit;
 }
 .cmd-list {
   flex: 1; overflow-y: auto; padding: 6px 4px;
   max-height: 300px;
 }
 .cmd-group-label {
-  font-size: 10px; font-weight: 600; color: var(--text-muted);
+  font-size: 10px; font-weight: 600; color: var(--color-text-muted);
   padding: 6px 12px 2px; text-transform: uppercase; letter-spacing: 0.05em;
 }
 .cmd-item {
   display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 8px 12px; border: none;
-  background: transparent; color: var(--text-primary);
+  background: transparent; color: var(--color-text-primary);
   font-size: 13px; cursor: pointer; border-radius: var(--radius-md);
-  transition: background var(--transition-fast); text-align: left;
+  transition: background var(--transition-hover); text-align: left;
 }
-.cmd-item:hover { background: var(--primary-light); }
-.cmd-item.selected { background: var(--primary-light); }
-.cmd-item-icon { font-size: 14px; color: var(--primary-color); flex-shrink: 0; width: 16px; text-align: center; }
+.cmd-item:hover { background: var(--color-primary-light); }
+.cmd-item.selected { background: var(--color-primary-light); }
+.cmd-item-icon { font-size: 14px; color: var(--color-primary); flex-shrink: 0; width: 16px; text-align: center; }
 .cmd-item-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cmd-shortcut {
-  font-size: 10px; padding: 2px 6px; border-radius: 4px;
-  background: var(--app-bg); color: var(--text-muted);
-  border: 1px solid var(--border-color); font-family: inherit; flex-shrink: 0;
+  font-size: 10px; padding: 2px 6px; border-radius: var(--radius-sm);
+  background: var(--color-bg-base); color: var(--color-text-muted);
+  border: 1px solid var(--color-border); font-family: inherit; flex-shrink: 0;
 }
 .cmd-empty {
-  padding: 24px; text-align: center; font-size: 13px; color: var(--text-muted);
+  padding: 24px; text-align: center; font-size: 13px; color: var(--color-text-muted);
 }
 .cmd-footer {
   display: flex; gap: 16px; justify-content: center;
-  padding: 8px 14px; border-top: 1px solid var(--border-color);
-  font-size: 11px; color: var(--text-muted);
+  padding: 8px 14px; border-top: 1px solid var(--color-border);
+  font-size: 11px; color: var(--color-text-muted);
 }
 .cmd-footer kbd {
-  font-size: 10px; padding: 1px 5px; border-radius: 3px;
-  background: var(--app-bg); border: 1px solid var(--border-color);
+  font-size: 10px; padding: 1px 5px; border-radius: var(--radius-sm);
+  background: var(--color-bg-base); border: 1px solid var(--color-border);
   font-family: inherit; margin-right: 2px;
 }
 .cmd-fade-enter-active { transition: all 150ms ease; }

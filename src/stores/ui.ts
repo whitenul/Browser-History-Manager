@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
 
-export type TabId = 'tabs' | 'history' | 'stats' | 'bookmarks' | 'settings'
+export type TabId = 'tabs' | 'history' | 'stats' | 'bookmarks' | 'toc' | 'settings'
 
 export interface UndoAction {
   label: string
@@ -53,7 +53,7 @@ export const useUIStore = defineStore('ui', () => {
   const navStack = ref<NavEntry[]>([])
   const canGoBack = computed(() => navStack.value.length > 0)
   const isNavigatingBack = ref(false)
-  const scrollMemory = ref<Record<TabId, number>>({ tabs: 0, history: 0, stats: 0, bookmarks: 0, settings: 0 })
+  const scrollMemory = ref<Record<TabId, number>>({ tabs: 0, history: 0, stats: 0, bookmarks: 0, toc: 0, settings: 0 })
 
   function switchTab(tab: TabId) {
     saveCurrentScroll()
@@ -66,6 +66,7 @@ export const useUIStore = defineStore('ui', () => {
       history: 'nav.history',
       stats: 'nav.stats',
       bookmarks: 'nav.bookmarks',
+      toc: 'nav.toc',
       settings: 'nav.settings',
     }
     saveCurrentScroll()
@@ -95,6 +96,7 @@ export const useUIStore = defineStore('ui', () => {
       history: '.record-list',
       stats: '.stats-content',
       bookmarks: '.bookmarks-content',
+      toc: '.toc-view',
       settings: '.settings-content',
     }
     const el = document.querySelector(selectors[activeTab.value]) as HTMLElement
