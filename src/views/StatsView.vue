@@ -301,12 +301,12 @@ watch(() => stats.timeRange, () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: var(--fs-2xl);
   font-weight: 600;
 }
 
 .stats-title-icon {
-  font-size: 18px;
+  font-size: var(--fs-3xl);
   color: var(--color-primary);
 }
 
@@ -317,7 +317,7 @@ watch(() => stats.timeRange, () => {
 
 .range-btn {
   padding: 4px 10px;
-  font-size: 11px;
+  font-size: var(--fs-base);
   font-weight: 500;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -376,14 +376,14 @@ watch(() => stats.timeRange, () => {
 }
 
 .overview-value {
-  font-size: 15px;
+  font-size: var(--fs-xl);
   font-weight: 700;
   color: var(--color-text-primary);
   white-space: nowrap;
 }
 
 .overview-label {
-  font-size: 9px;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
 
@@ -420,7 +420,7 @@ watch(() => stats.timeRange, () => {
 }
 
 .prod-popup-title {
-  font-size: 11px;
+  font-size: var(--fs-base);
   font-weight: 600;
   margin-bottom: 8px;
   color: var(--color-text-primary);
@@ -430,7 +430,7 @@ watch(() => stats.timeRange, () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--fs-sm);
   padding: 3px 0;
 }
 
@@ -450,13 +450,13 @@ watch(() => stats.timeRange, () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--fs-sm);
   padding: 2px 0;
   color: var(--color-text-secondary);
 }
 
 .prod-popup-icon {
-  font-size: 11px;
+  font-size: var(--fs-base);
   color: var(--color-text-muted);
 }
 
@@ -481,13 +481,13 @@ watch(() => stats.timeRange, () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-md);
   font-weight: 600;
   margin-bottom: 10px;
 }
 
 .section-icon {
-  font-size: 14px;
+  font-size: var(--fs-xl);
   color: var(--color-primary);
 }
 
@@ -516,7 +516,7 @@ watch(() => stats.timeRange, () => {
 }
 
 .heatmap-day-label {
-  font-size: 9px;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
   line-height: 12px;
   height: 12px;
@@ -538,7 +538,7 @@ watch(() => stats.timeRange, () => {
 }
 
 .heatmap-hour-label {
-  font-size: 8px;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
   text-align: center;
   line-height: 14px;
@@ -605,7 +605,7 @@ html.dark .heatmap-cell.is-clickable:hover {
   transform: translate(-50%, -100%);
   margin-top: -8px;
   padding: 4px 8px;
-  font-size: 10px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--tooltip-text);
   background: var(--tooltip-bg);
@@ -640,12 +640,12 @@ html.dark .heatmap-tooltip::after {
   align-items: center;
   gap: 6px;
   margin-top: 8px;
-  font-size: 10px;
+  font-size: var(--fs-sm);
   color: var(--color-text-muted);
 }
 
 .rhythm-icon {
-  font-size: 11px;
+  font-size: var(--fs-base);
 }
 
 .rhythm-sep {
@@ -682,7 +682,7 @@ html.dark .heatmap-tooltip::after {
 }
 
 .site-rank {
-  font-size: 10px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--color-text-muted);
   width: 14px;
@@ -700,7 +700,7 @@ html.dark .heatmap-tooltip::after {
 }
 
 .site-domain {
-  font-size: 11px;
+  font-size: var(--fs-base);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -708,7 +708,7 @@ html.dark .heatmap-tooltip::after {
 }
 
 .site-count {
-  font-size: 9px;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
   flex-shrink: 0;
 }

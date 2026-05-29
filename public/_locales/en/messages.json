@@ -1,14 +1,1 @@
-{
-  "name": {
-    "message": "Browser History Manager"
-  },
-  "description": {
-    "message": "Modern browser history management tool with search, filtering, statistics, and bookmark management"
-  },
-  "openSidePanel": {
-    "message": "Open in Side Panel"
-  },
-  "contextMenuOpenSidePanel": {
-    "message": "Open in Side Panel"
-  }
-}
+{"name": {"message": "HMM"}, "description": {"message": "Modern browser history management tool with search, filtering, statistics, and bookmark management"}, "openSidePanel": {"message": "Open in Side Panel"}, "contextMenuOpenSidePanel": {"message": "Open in Side Panel"}}

@@ -252,26 +252,26 @@ watch(sidebarMode, (val) => {
 .section { margin-bottom: 24px; }
 .section-title {
   display: flex; align-items: center; gap: 6px;
-  font-size: 14px; font-weight: 600; margin-bottom: 12px;
+  font-size: var(--fs-xl); font-weight: 600; margin-bottom: 12px;
   color: var(--color-text-primary);
 }
-.section-icon { font-size: 16px; color: var(--color-primary); }
+.section-icon { font-size: var(--fs-2xl); color: var(--color-primary); }
 .section-icon.danger { color: var(--color-danger); }
-.section-desc { font-size: 12px; color: var(--color-text-muted); margin-bottom: 10px; }
-.section-hint { font-size: 11px; color: var(--color-text-muted); margin: 8px 0 4px; opacity: 0.8; }
+.section-desc { font-size: var(--fs-md); color: var(--color-text-muted); margin-bottom: 10px; }
+.section-hint { font-size: var(--fs-base); color: var(--color-text-muted); margin: 8px 0 4px; opacity: 0.8; }
 
 .setting-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 0; border-bottom: 1px solid var(--color-border);
 }
-.setting-row label { font-size: 13px; color: var(--color-text-secondary); }
+.setting-row label { font-size: var(--fs-lg); color: var(--color-text-secondary); }
 .setting-select {
   padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-  font-size: 12px; background: var(--color-bg-surface); color: var(--color-text-primary); outline: none;
+  font-size: var(--fs-md); background: var(--color-bg-surface); color: var(--color-text-primary); outline: none;
 }
 .setting-input {
   padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-  font-size: 12px; background: var(--color-bg-surface); color: var(--color-text-primary); outline: none; width: 80px;
+  font-size: var(--fs-md); background: var(--color-bg-surface); color: var(--color-text-primary); outline: none; width: 80px;
 }
 .setting-input:focus, .setting-select:focus { border-color: var(--color-primary); }
 
@@ -279,41 +279,41 @@ watch(sidebarMode, (val) => {
 .blacklist-form .setting-input { flex: 1; width: auto; }
 .btn-add {
   padding: 5px 14px; border: 1px solid var(--color-primary); border-radius: var(--radius-sm);
-  background: var(--color-primary-light); color: var(--color-primary); font-size: 12px;
+  background: var(--color-primary-light); color: var(--color-primary); font-size: var(--fs-md);
   cursor: pointer; font-weight: 500;
 }
 .btn-add:hover { background: var(--color-primary); color: var(--color-text-inverse); }
 
 .blacklist-list {}
-.empty-hint { font-size: 12px; color: var(--color-text-muted); text-align: center; padding: 12px; }
+.empty-hint { font-size: var(--fs-md); color: var(--color-text-muted); text-align: center; padding: 12px; }
 .blacklist-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 0; border-bottom: 1px solid var(--color-border);
 }
-.item-icon { font-size: 14px; color: var(--color-text-muted); }
-.item-domain { flex: 1; font-size: 13px; color: var(--color-text-primary); }
+.item-icon { font-size: var(--fs-xl); color: var(--color-text-muted); }
+.item-domain { flex: 1; font-size: var(--fs-lg); color: var(--color-text-primary); }
 .item-remove {
   width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--color-text-muted); font-size: 13px;
+  cursor: pointer; color: var(--color-text-muted); font-size: var(--fs-lg);
 }
 .item-remove:hover { color: var(--color-danger); background: var(--color-danger-light); }
 
 .version-hint {
-  text-align: center; font-size: 11px; color: var(--color-text-muted);
+  text-align: center; font-size: var(--fs-base); color: var(--color-text-muted);
   margin: 8px 0 16px; opacity: 0.6;
 }
 
 .danger-zone {}
 .btn-danger {
   width: 100%; padding: 9px; border: 1px solid var(--color-danger); border-radius: var(--radius-md);
-  background: var(--color-danger-light); color: var(--color-danger); font-size: 13px; font-weight: 500;
+  background: var(--color-danger-light); color: var(--color-danger); font-size: var(--fs-lg); font-weight: 500;
   cursor: pointer; transition: all var(--transition-hover);
 }
 .btn-danger:hover { background: var(--color-danger); color: var(--color-text-inverse); }
 .btn-danger-sm {
   padding: 5px 12px; border: 1px solid var(--color-danger); border-radius: var(--radius-sm);
-  background: var(--color-danger-light); color: var(--color-danger); font-size: 11px; font-weight: 500;
+  background: var(--color-danger-light); color: var(--color-danger); font-size: var(--fs-base); font-weight: 500;
   cursor: pointer; transition: all var(--transition-hover); white-space: nowrap;
 }
 .btn-danger-sm:hover { background: var(--color-danger); color: var(--color-text-inverse); }
@@ -334,7 +334,7 @@ watch(sidebarMode, (val) => {
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
 
 .confirm-clear { padding: 12px; background: var(--color-danger-light); border: 1px solid var(--color-danger); border-radius: var(--radius-md); }
-.confirm-text { font-size: 13px; color: var(--color-text-secondary); margin: 0 0 10px; }
+.confirm-text { font-size: var(--fs-lg); color: var(--color-text-secondary); margin: 0 0 10px; }
 .confirm-actions { display: flex; gap: 8px; }
-.btn-cancel { padding: 6px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg-surface); color: var(--color-text-secondary); font-size: 12px; cursor: pointer; }
+.btn-cancel { padding: 6px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg-surface); color: var(--color-text-secondary); font-size: var(--fs-md); cursor: pointer; }
 </style>

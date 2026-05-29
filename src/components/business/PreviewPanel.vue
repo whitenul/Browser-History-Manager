@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { formatTime, getFaviconUrl, safeOpenUrl, sanitizeUrl, onFaviconError } from '@/utils/helpers'
@@ -77,25 +77,25 @@ function openUrl(url?: string) {
 .preview-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .preview-favicon { width: 28px; height: 28px; border-radius: var(--radius-sm); object-fit: contain; flex-shrink: 0; }
 .preview-title-wrap { flex: 1; min-width: 0; }
-.preview-title { font-size: 14px; font-weight: 600; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.preview-domain { font-size: 11px; color: var(--color-text-muted); }
+.preview-title { font-size: var(--fs-xl); font-weight: 600; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-domain { font-size: var(--fs-base); color: var(--color-text-muted); }
 .preview-close {
   width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; color: var(--color-text-muted);
-  border-radius: var(--radius-sm); cursor: pointer; font-size: 14px;
+  border-radius: var(--radius-sm); cursor: pointer; font-size: var(--fs-xl);
 }
 .preview-close:hover { background: var(--color-primary-light); }
 .preview-body { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
 .preview-row { display: flex; gap: 8px; }
-.preview-label { font-size: 11px; color: var(--color-text-muted); width: 60px; flex-shrink: 0; }
-.preview-value { font-size: 12px; color: var(--color-text-primary); flex: 1; min-width: 0; word-break: break-all; }
-.preview-url { font-size: 11px; color: var(--color-primary); }
+.preview-label { font-size: var(--fs-base); color: var(--color-text-muted); width: 60px; flex-shrink: 0; }
+.preview-value { font-size: var(--fs-md); color: var(--color-text-primary); flex: 1; min-width: 0; word-break: break-all; }
+.preview-url { font-size: var(--fs-base); color: var(--color-primary); }
 .preview-actions { display: flex; gap: 8px; }
 .preview-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
   padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
   background: var(--color-bg-surface); color: var(--color-text-secondary);
-  font-size: 12px; cursor: pointer; transition: all var(--transition-hover);
+  font-size: var(--fs-md); cursor: pointer; transition: all var(--transition-hover);
 }
 .preview-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .preview-btn.primary { background: var(--color-primary); color: var(--color-text-inverse); border-color: var(--color-primary); }

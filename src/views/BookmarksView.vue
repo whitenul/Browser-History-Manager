@@ -146,7 +146,7 @@ onMounted(async () => { await store.loadBookmarks(); await ui.loadDoubleClickMod
 
 .search-icon {
   color: var(--color-text-muted);
-  font-size: 16px;
+  font-size: var(--fs-2xl);
   flex-shrink: 0;
 }
 
@@ -155,14 +155,14 @@ onMounted(async () => { await store.loadBookmarks(); await ui.loadDoubleClickMod
   border: none;
   outline: none;
   color: var(--color-text-primary);
-  font-size: 13px;
+  font-size: var(--fs-lg);
   width: 100%;
 }
 .search-input::placeholder { color: var(--color-text-muted); }
 
 .bm-loading, .bm-empty {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 48px 16px; color: var(--color-text-muted); font-size: 13px;
+  padding: 48px 16px; color: var(--color-text-muted); font-size: var(--fs-lg);
 }
 .spin {
   width: 18px; height: 18px; border: 2px solid var(--color-border);

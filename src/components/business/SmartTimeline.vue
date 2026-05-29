@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'
@@ -231,8 +231,8 @@ function toggleExpand(key: string) {
 .story-header {
   display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
 }
-.story-icon { font-size: 14px; color: var(--color-primary); }
-.story-title { font-size: 12px; font-weight: 600; color: var(--color-text-primary); }
+.story-icon { font-size: var(--fs-xl); color: var(--color-primary); }
+.story-title { font-size: var(--fs-md); font-weight: 600; color: var(--color-text-primary); }
 .story-stats {
   display: flex; gap: 6px; margin-bottom: 8px;
 }
@@ -241,18 +241,18 @@ function toggleExpand(key: string) {
   background: var(--color-bg-base); border-radius: var(--radius-md);
 }
 .story-stat-value {
-  display: block; font-size: 12px; font-weight: 700;
+  display: block; font-size: var(--fs-md); font-weight: 700;
   color: var(--color-text-primary); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
-.story-stat-domain { font-size: 10px; }
+.story-stat-domain { font-size: var(--fs-sm); }
 .story-stat-label {
-  display: block; font-size: 9px; color: var(--color-text-muted); margin-top: 2px;
+  display: block; font-size: var(--fs-xs); color: var(--color-text-muted); margin-top: 2px;
 }
 .stat-up { color: var(--color-success); }
 .stat-down { color: var(--color-danger); }
 .story-summary {
-  font-size: 11px; color: var(--color-text-secondary); line-height: 1.5;
+  font-size: var(--fs-base); color: var(--color-text-secondary); line-height: 1.5;
   padding: 6px 8px; background: var(--color-bg-base); border-radius: var(--radius-md);
 }
 
@@ -262,9 +262,9 @@ function toggleExpand(key: string) {
 }
 .timeline-title {
   display: flex; align-items: center; gap: 4px;
-  font-size: 11px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 8px;
+  font-size: var(--fs-base); font-weight: 600; color: var(--color-text-muted); margin-bottom: 8px;
 }
-.timeline-icon { font-size: 12px; color: var(--color-primary); }
+.timeline-icon { font-size: var(--fs-md); color: var(--color-primary); }
 .timeline-body { display: flex; flex-direction: column; gap: 4px; }
 
 .segment {
@@ -284,15 +284,15 @@ function toggleExpand(key: string) {
   display: flex; align-items: center; gap: 5px; cursor: pointer;
   user-select: none;
 }
-.segment-icon { font-size: 12px; flex-shrink: 0; }
-.segment-label { font-size: 11px; font-weight: 600; color: var(--color-text-primary); }
-.segment-range { font-size: 9px; color: var(--color-text-muted); }
+.segment-icon { font-size: var(--fs-md); flex-shrink: 0; }
+.segment-label { font-size: var(--fs-base); font-weight: 600; color: var(--color-text-primary); }
+.segment-range { font-size: var(--fs-xs); color: var(--color-text-muted); }
 .segment-count {
-  font-size: 10px; font-weight: 700; color: var(--color-text-secondary);
+  font-size: var(--fs-sm); font-weight: 700; color: var(--color-text-secondary);
   margin-left: auto; min-width: 16px; text-align: right;
 }
 .segment-expand-icon {
-  font-size: 12px; color: var(--color-text-muted); transition: transform 0.2s; flex-shrink: 0;
+  font-size: var(--fs-md); color: var(--color-text-muted); transition: transform 0.2s; flex-shrink: 0;
 }
 .segment-expand-icon.rotated { transform: rotate(180deg); }
 
@@ -319,9 +319,9 @@ function toggleExpand(key: string) {
 .segment-compare {
   display: flex; align-items: center; gap: 4px; margin-top: 3px;
 }
-.compare-label { font-size: 9px; color: var(--color-text-muted); }
-.compare-value { font-size: 9px; color: var(--color-text-secondary); font-weight: 600; }
-.compare-diff { font-size: 9px; font-weight: 600; }
+.compare-label { font-size: var(--fs-xs); color: var(--color-text-muted); }
+.compare-value { font-size: var(--fs-xs); color: var(--color-text-secondary); font-weight: 600; }
+.compare-diff { font-size: var(--fs-xs); font-weight: 600; }
 
 .segment-detail {
   margin-top: 6px; padding-top: 6px;
@@ -341,11 +341,11 @@ function toggleExpand(key: string) {
   object-fit: contain;
 }
 .detail-title {
-  flex: 1; font-size: 10px; color: var(--color-text-primary);
+  flex: 1; font-size: var(--fs-sm); color: var(--color-text-primary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.detail-time { font-size: 9px; color: var(--color-text-muted); flex-shrink: 0; }
+.detail-time { font-size: var(--fs-xs); color: var(--color-text-muted); flex-shrink: 0; }
 .detail-more {
-  font-size: 9px; color: var(--color-text-muted); padding: 2px 6px; text-align: center;
+  font-size: var(--fs-xs); color: var(--color-text-muted); padding: 2px 6px; text-align: center;
 }
 </style>

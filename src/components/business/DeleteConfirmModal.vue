@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { escapeHtml } from '@/utils/helpers'
@@ -48,19 +48,19 @@ async function confirmDelete() {
   box-shadow: var(--shadow-modal); padding: 20px;
   animation: slideUp var(--transition-modal);
 }
-.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0 0 12px; color: var(--color-text-primary); }
-.modal-text { font-size: 13px; color: var(--color-text-secondary); margin: 0 0 12px; }
+.modal-header h3 { font-size: var(--fs-2xl); font-weight: 600; margin: 0 0 12px; color: var(--color-text-primary); }
+.modal-text { font-size: var(--fs-lg); color: var(--color-text-secondary); margin: 0 0 12px; }
 
 .record-preview {
   padding: 10px; background: var(--color-bg-base); border-radius: var(--radius-md);
   margin-bottom: 16px;
 }
-.preview-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; word-break: break-all; }
-.preview-url { font-size: 11px; color: var(--color-text-muted); word-break: break-all; }
+.preview-title { font-size: var(--fs-lg); font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; word-break: break-all; }
+.preview-url { font-size: var(--fs-base); color: var(--color-text-muted); word-break: break-all; }
 
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn-secondary {
-  padding: 7px 16px; font-size: 12px; font-weight: 500;
+  padding: 7px 16px; font-size: var(--fs-md); font-weight: 500;
   color: var(--color-text-secondary); background: var(--color-bg-surface);
   border: 1px solid var(--color-border); border-radius: var(--radius-md);
   cursor: pointer; transition: all var(--transition-hover);

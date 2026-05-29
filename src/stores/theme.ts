@@ -12,6 +12,9 @@ export type AnimationSpeed = 'off' | 'slow' | 'normal' | 'fast'
 export type ScrollbarStyle = 'thin' | 'default' | 'hidden'
 export type FontSize = 'small' | 'medium' | 'large'
 export type FontFamily = 'system' | 'serif' | 'mono' | 'rounded'
+export type FontWeight = 'light' | 'normal' | 'medium' | 'semibold'
+export type LineHeight = 'compact' | 'normal' | 'relaxed'
+export type CardDensity = 'compact' | 'normal' | 'comfortable'
 
 export interface BackgroundConfig {
   type: BackgroundType
@@ -165,6 +168,25 @@ const SPEED_MAP: Record<AnimationSpeed, string> = {
   fast: '80ms',
 }
 
+const FONT_WEIGHT_MAP: Record<FontWeight, string> = {
+  light: '300',
+  normal: '400',
+  medium: '500',
+  semibold: '600',
+}
+
+const LINE_HEIGHT_MAP: Record<LineHeight, string> = {
+  compact: '1.3',
+  normal: '1.5',
+  relaxed: '1.7',
+}
+
+const CARD_DENSITY_MAP: Record<CardDensity, string> = {
+  compact: 'compact',
+  normal: 'normal',
+  comfortable: 'comfortable',
+}
+
 // ===== Store =====
 
 export const useThemeStore = defineStore('theme', () => {
@@ -205,6 +227,12 @@ export const useThemeStore = defineStore('theme', () => {
 
   // --- Custom colors (override preset) ---
   const customColors = ref<Record<string, string> | null>(null)
+
+  // --- Custom CSS (user-written styles) ---
+  const customCSS = ref('')
+  const fontWeight = ref<FontWeight>('normal')
+  const lineHeight = ref<LineHeight>('normal')
+  const cardDensity = ref<CardDensity>('normal')
 
   // --- UI state ---
   const showThemeModal = ref(false)
@@ -265,6 +293,9 @@ export const useThemeStore = defineStore('theme', () => {
     const fontSizes: Record<FontSize, string> = { small: '12px', medium: '13px', large: '15px' }
     html.style.fontSize = fontSizes[fontSize.value]
     html.dataset.fontFamily = fontFamily.value
+    html.dataset.fontWeight = fontWeight.value
+    html.dataset.lineHeight = lineHeight.value
+    html.dataset.cardDensity = cardDensity.value
 
     // 10. Radius
     html.style.setProperty('--radius-base', RADIUS_MAP[radiusPreset.value])
@@ -389,8 +420,27 @@ export const useThemeStore = defineStore('theme', () => {
     saveTheme()
   }
 
+  function setCustomCSS(css: string) {
+    customCSS.value = css
+    applyCustomCSS()
+    saveTheme()
+  }
+
+  function applyCustomCSS() {
+    let el = document.getElementById('user-custom-style')
+    if (!el) {
+      el = document.createElement('style')
+      el.id = 'user-custom-style'
+      document.head.appendChild(el)
+    }
+    el.textContent = customCSS.value
+  }
+
   function setGlassBlur(v: number) { glassBlur.value = v; applyTokens(); saveTheme() }
   function setGlassOpacity(v: number) { glassOpacity.value = v; applyTokens(); saveTheme() }
+  function setFontWeight(w: FontWeight) { fontWeight.value = w; applyTokens(); saveTheme() }
+  function setLineHeight(h: LineHeight) { lineHeight.value = h; applyTokens(); saveTheme() }
+  function setCardDensity(d: CardDensity) { cardDensity.value = d; applyTokens(); saveTheme() }
 
   function toggleThemeModal() { showThemeModal.value = !showThemeModal.value }
 
@@ -412,6 +462,10 @@ export const useThemeStore = defineStore('theme', () => {
       glassBlur: glassBlur.value,
       glassOpacity: glassOpacity.value,
       customColors: customColors.value,
+      customCSS: customCSS.value,
+      fontWeight: fontWeight.value,
+      lineHeight: lineHeight.value,
+      cardDensity: cardDensity.value,
     }
     await chrome.storage.local.set({ themeConfig: data })
   }
@@ -435,8 +489,13 @@ export const useThemeStore = defineStore('theme', () => {
     glassBlur.value = data.glassBlur ?? 12
     glassOpacity.value = data.glassOpacity ?? 0.6
     customColors.value = data.customColors || null
+    customCSS.value = data.customCSS || ''
+    fontWeight.value = data.fontWeight || 'normal'
+    lineHeight.value = data.lineHeight || 'normal'
+    cardDensity.value = data.cardDensity || 'normal'
 
     applyTokens()
+    applyCustomCSS()
   }
 
   function exportConfig(): string {
@@ -455,6 +514,10 @@ export const useThemeStore = defineStore('theme', () => {
       glassBlur: glassBlur.value,
       glassOpacity: glassOpacity.value,
       customColors: customColors.value,
+      customCSS: customCSS.value,
+      fontWeight: fontWeight.value,
+      lineHeight: lineHeight.value,
+      cardDensity: cardDensity.value,
     }, null, 2)
   }
 
@@ -475,7 +538,12 @@ export const useThemeStore = defineStore('theme', () => {
       if (data.glassBlur !== undefined) glassBlur.value = data.glassBlur
       if (data.glassOpacity !== undefined) glassOpacity.value = data.glassOpacity
       if (data.customColors) customColors.value = data.customColors
+      if (data.customCSS !== undefined) customCSS.value = data.customCSS
+      if (data.fontWeight) fontWeight.value = data.fontWeight
+      if (data.lineHeight) lineHeight.value = data.lineHeight
+      if (data.cardDensity) cardDensity.value = data.cardDensity
       applyTokens()
+      applyCustomCSS()
       saveTheme()
       return true
     } catch {
@@ -498,7 +566,12 @@ export const useThemeStore = defineStore('theme', () => {
     glassBlur.value = 12
     glassOpacity.value = 0.6
     customColors.value = null
+    customCSS.value = ''
+    fontWeight.value = 'normal'
+    lineHeight.value = 'normal'
+    cardDensity.value = 'normal'
     applyTokens()
+    applyCustomCSS()
     saveTheme()
   }
 
@@ -513,14 +586,16 @@ export const useThemeStore = defineStore('theme', () => {
     // State
     mode, activePresetId, isDark, background, headerStyle, cardStyle,
     radiusPreset, compactMode, fontSize, fontFamily, animationSpeed,
-    scrollbarStyle, glassBlur, glassOpacity, customColors, showThemeModal,
+    scrollbarStyle, glassBlur, glassOpacity, customColors, customCSS, showThemeModal,
+    fontWeight, lineHeight, cardDensity,
     // Computed
     activePreset, effectiveMode,
     // Actions
     setMode, setPreset, setHeaderStyle, setCardStyle, setRadiusPreset,
     setFontSize, setFontFamily, setAnimationSpeed, setScrollbarStyle,
     toggleCompact, setBackground, setBackgroundImage, setCustomColors,
-    setGlassBlur, setGlassOpacity, toggleThemeModal,
+    setGlassBlur, setGlassOpacity, setCustomCSS, toggleThemeModal,
+    setFontWeight, setLineHeight, setCardDensity,
     // Persistence
     saveTheme, loadTheme, exportConfig, importConfig, resetAll, applyTokens,
   }

@@ -152,64 +152,89 @@ function onGlobalKeydown(e: KeyboardEvent) {
     <!-- Noise overlay (for dark mode enhancement) -->
     <div v-if="theme.isDark && ['stars','aurora','image'].includes(theme.background.type)" class="noise-overlay" />
     <header :class="isSidebar ? 'shell-header--sidebar' : 'shell-header--popup'">
-      <div class="shell-top">
-        <div class="shell-left">
-          <button v-if="ui.canGoBack" class="btn-back" @click="ui.goBack()" :title="t('common.back')">
-            <span class="i-lucide:arrow-left" />
-          </button>
-          <h1 class="shell-title">{{ headerTitle }}</h1>
-          <span v-if="ui.activeTab === 'history' && history.displayedRecords.length && !isSidebar" class="shell-count">
-            {{ history.displayedRecords.length }} {{ t('history.recordsCount', { count: '' }).replace('{count}', '').trim() }}
-          </span>
-        </div>
-        <div v-if="!isSidebar" class="shell-actions">
-          <button class="btn-icon btn-ghost" :title="t('commandPalette.placeholder')" @click="ui.showCommandPalette = true">
-            <span class="i-lucide:terminal" />
-          </button>
-          <button v-if="ui.activeTab === 'history'" class="btn-icon btn-ghost" :title="t('history.exportCsv')" @click="history.doExport()">
-            <span class="i-lucide:download" />
-          </button>
-          <button class="btn-icon btn-ghost theme-toggle-btn" :title="t('theme.title')" @click="theme.toggleThemeModal()">
-            <span class="i-lucide:palette" />
-            <span :class="theme.isDark ? 'i-lucide:moon' : 'i-lucide:sun'" class="mode-indicator" />
-          </button>
-        </div>
-        <div v-else class="shell-actions--compact">
-          <!-- Tab tools: only show when on "页面" tab -->
-          <template v-if="ui.activeTab === 'tabs'">
-            <button :class="['action-btn', { active: groupStore.enabled }]" :title="groupStore.enabled ? 'Group ON' : 'Group OFF'"
-              @click="groupStore.enabled ? groupStore.disableMode() : groupStore.enableMode()">
-              <span class="i-lucide:layout-grid" />
+      <!-- Sidebar mode: two-row compact layout -->
+      <template v-if="isSidebar">
+        <!-- Row 1: brand (left) + tools (right) -->
+        <div class="shell-top--sidebar">
+          <div class="shell-brand" :title="t('app.title')">
+            <span class="shell-brand-icon">H</span>
+            <span class="shell-brand-text">MM</span>
+          </div>
+          <div class="shell-actions--compact">
+            <template v-if="ui.activeTab === 'tabs'">
+              <button :class="['action-btn', { active: groupStore.enabled }]" :title="groupStore.enabled ? 'Group ON' : 'Group OFF'"
+                @click="groupStore.enabled ? groupStore.disableMode() : groupStore.enableMode()">
+                <span class="i-lucide:layout-grid" />
+              </button>
+              <button :class="['action-btn', { active: ui.privacyMode }]" :title="ui.privacyMode ? 'Privacy ON' : 'Privacy OFF'"
+                @click="ui.privacyMode = !ui.privacyMode; ui.savePrivacyMode()">
+                <span class="i-lucide:eye-off" />
+              </button>
+              <button :class="['action-btn', { active: ui.showOptimizer }]" :title="ui.showOptimizer ? 'Optimizer ON' : 'Optimizer OFF'"
+                @click="ui.showOptimizer = !ui.showOptimizer">
+                <span class="i-lucide:zap" />
+              </button>
+            </template>
+            <button class="action-btn" :title="t('commandPalette.placeholder')" @click="ui.showCommandPalette = true">
+              <span class="i-lucide:terminal" />
             </button>
-            <button :class="['action-btn', { active: ui.privacyMode }]" :title="ui.privacyMode ? 'Privacy ON' : 'Privacy OFF'"
-              @click="ui.privacyMode = !ui.privacyMode; ui.savePrivacyMode()">
-              <span class="i-lucide:eye-off" />
+            <button class="action-btn" :title="t('theme.title')" @click="theme.toggleThemeModal()">
+              <span :class="theme.isDark ? 'i-lucide:moon' : 'i-lucide:sun'" />
             </button>
-            <button :class="['action-btn', { active: ui.showOptimizer }]" :title="ui.showOptimizer ? 'Optimizer ON' : 'Optimizer OFF'"
-              @click="ui.showOptimizer = !ui.showOptimizer">
-              <span class="i-lucide:zap" />
-            </button>
-          </template>
-          <button class="action-btn" :title="t('commandPalette.placeholder')" @click="ui.showCommandPalette = true">
-            <span class="i-lucide:terminal" />
-          </button>
-          <button class="action-btn" :title="t('theme.title')" @click="theme.toggleThemeModal()">
-            <span :class="theme.isDark ? 'i-lucide:moon' : 'i-lucide:sun'" />
-          </button>
+          </div>
         </div>
-      </div>
+        <!-- Row 2: tabs (full width) -->
+        <nav class="shell-tabs">
+          <button
+            v-for="tab in visibleTabs"
+            :key="tab.id"
+            :class="['shell-tab', { active: ui.activeTab === tab.id }]"
+            @click="ui.switchTab(tab.id); ui.clearNavStack()"
+          >
+            <span :class="tab.icon" class="tab-icon" />
+            <span class="tab-label">{{ tab.label }}</span>
+          </button>
+        </nav>
+      </template>
 
-      <nav class="shell-tabs">
-        <button
-          v-for="tab in visibleTabs"
-          :key="tab.id"
-          :class="['shell-tab', { active: ui.activeTab === tab.id }]"
-          @click="ui.switchTab(tab.id); ui.clearNavStack()"
-        >
-          <span :class="tab.icon" class="tab-icon" />
-          <span class="tab-label">{{ tab.label }}</span>
-        </button>
-      </nav>
+      <!-- Popup mode: original two-row layout -->
+      <template v-else>
+        <div class="shell-top">
+          <div class="shell-left">
+            <button v-if="ui.canGoBack" class="btn-back" @click="ui.goBack()" :title="t('common.back')">
+              <span class="i-lucide:arrow-left" />
+            </button>
+            <h1 class="shell-title">{{ headerTitle }}</h1>
+            <span v-if="ui.activeTab === 'history' && history.displayedRecords.length" class="shell-count">
+              {{ history.displayedRecords.length }} {{ t('history.recordsCount', { count: '' }).replace('{count}', '').trim() }}
+            </span>
+          </div>
+          <div class="shell-actions">
+            <button class="btn-icon btn-ghost" :title="t('commandPalette.placeholder')" @click="ui.showCommandPalette = true">
+              <span class="i-lucide:terminal" />
+            </button>
+            <button v-if="ui.activeTab === 'history'" class="btn-icon btn-ghost" :title="t('history.exportCsv')" @click="history.doExport()">
+              <span class="i-lucide:download" />
+            </button>
+            <button class="btn-icon btn-ghost theme-toggle-btn" :title="t('theme.title')" @click="theme.toggleThemeModal()">
+              <span class="i-lucide:palette" />
+              <span :class="theme.isDark ? 'i-lucide:moon' : 'i-lucide:sun'" class="mode-indicator" />
+            </button>
+          </div>
+        </div>
+
+        <nav class="shell-tabs">
+          <button
+            v-for="tab in visibleTabs"
+            :key="tab.id"
+            :class="['shell-tab', { active: ui.activeTab === tab.id }]"
+            @click="ui.switchTab(tab.id); ui.clearNavStack()"
+          >
+            <span :class="tab.icon" class="tab-icon" />
+            <span class="tab-label">{{ tab.label }}</span>
+          </button>
+        </nav>
+      </template>
     </header>
 
     <main :class="['shell-content', `shell-content--${ui.activeTab}`]">
@@ -277,17 +302,17 @@ function onGlobalKeydown(e: KeyboardEvent) {
   color: var(--color-text-secondary);
 }
 .error-icon {
-  font-size: 32px;
+  font-size: var(--fs-4xl);
   color: var(--color-warning);
 }
 .error-text {
-  font-size: 13px;
+  font-size: var(--fs-lg);
   text-align: center;
   max-width: 280px;
 }
 .error-retry {
   padding: 6px 16px;
-  font-size: 12px;
+  font-size: var(--fs-md);
   font-weight: 500;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -319,8 +344,8 @@ html.dark .app-shell::before {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(800px 600px at 80% 10%, rgba(124, 58, 237, 0.15), transparent 60%),
-    radial-gradient(600px 500px at 10% 90%, rgba(6, 182, 212, 0.12), transparent 55%);
+    radial-gradient(800px 600px at 80% 10%, color-mix(in srgb, var(--color-accent) 15%, transparent), transparent 60%),
+    radial-gradient(600px 500px at 10% 90%, color-mix(in srgb, var(--color-info) 12%, transparent), transparent 55%);
 }
 
 /* Stars/Aurora/Image mode: semi-transparent background so effects show through */
@@ -401,20 +426,20 @@ html.dark .app-shell::before {
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border: none; background: transparent;
   border-radius: var(--radius-sm); cursor: pointer; color: inherit;
-  font-size: 16px; transition: all var(--transition-hover); flex-shrink: 0;
+  font-size: var(--fs-2xl); transition: all var(--transition-hover); flex-shrink: 0;
 }
 .btn-back:hover { background: var(--header-hover-bg); }
 .shell-title {
-  font-size: 16px; font-weight: 600; margin: 0;
+  font-size: var(--fs-2xl); font-weight: 600; margin: 0;
   letter-spacing: -0.01em;
   transition: all var(--transition-hover);
 }
-.shell-count { font-size: 12px; opacity: 0.75; }
+.shell-count { font-size: var(--fs-md); opacity: 0.75; }
 
 .shell-actions { display: flex; gap: 6px; }
 .shell-actions .btn-icon {
   color: inherit; opacity: 0.8;
-  width: 32px; height: 32px; font-size: 16px;
+  width: 32px; height: 32px; font-size: var(--fs-2xl);
 }
 .shell-actions .btn-icon:hover { opacity: 1; background: var(--header-hover-bg); }
 .shell-actions .btn-icon.active {
@@ -429,7 +454,7 @@ html.dark .app-shell::before {
 .mode-indicator {
   position: absolute;
   top: 2px; right: 2px;
-  font-size: 9px;
+  font-size: var(--fs-xs);
   opacity: 0.9;
   color: inherit;
   pointer-events: none;
@@ -445,7 +470,7 @@ html.dark .app-shell::before {
 
 .shell-tab {
   flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
-  gap: 5px; padding: 10px 8px; font-size: 12px; font-weight: 500;
+  gap: 5px; padding: 10px 8px; font-size: var(--fs-md); font-weight: 500;
   color: var(--color-text-muted);
   background: none; border: none; border-bottom: 2px solid transparent;
   cursor: pointer; transition: color var(--transition-hover), border-color var(--transition-hover), background-color var(--transition-hover);
@@ -460,7 +485,7 @@ html.dark .app-shell::before {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
 }
-.tab-icon { font-size: 13px; }
+.tab-icon { font-size: var(--fs-lg); }
 
 .shell-tab-tools {
   display: flex;
@@ -476,7 +501,7 @@ html.dark .app-shell::before {
   width: 20px; height: 20px;
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--fs-base);
   cursor: pointer;
   transition: all var(--transition-hover);
 }
@@ -485,6 +510,7 @@ html.dark .app-shell::before {
 
 .app-shell--popup .shell-content {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -500,7 +526,7 @@ html.dark .app-shell::before {
   background: var(--header-bg);
   color: var(--header-text);
   flex-shrink: 0;
-  padding: 8px 16px 0;
+  padding: 4px 8px;
   transition: background var(--transition-modal), color var(--transition-modal);
 }
 
@@ -509,19 +535,60 @@ html.dark .app-shell::before {
   color: var(--header-text);
 }
 
-.app-shell--sidebar .shell-top {
-  height: auto;
-  padding: 0;
-  min-height: 32px;
+/* Row 1: brand + tools */
+.shell-top--sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
 }
 
-.app-shell--sidebar .shell-title {
-  font-size: 15px;
+/* Brand: HMM */
+.shell-brand {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  cursor: default;
+  user-select: none;
+  padding: 2px 4px;
 }
 
+.shell-brand-icon {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shell-brand-text {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--header-text);
+  opacity: 0.85;
+}
+
+/* Tabs in sidebar */
+.app-shell--sidebar .shell-tabs {
+  margin-top: 2px;
+}
+
+.app-shell--sidebar .shell-tab {
+  padding: 6px 4px;
+  font-size: var(--fs-md);
+}
+
+/* Actions in sidebar */
 .app-shell--sidebar .shell-actions--compact {
   display: flex;
-  gap: 2px;
+  gap: 1px;
 }
 
 .app-shell--sidebar .action-btn {
@@ -531,7 +598,7 @@ html.dark .app-shell::before {
   width: 28px;
   height: 28px;
   padding: 0;
-  font-size: 14px;
+  font-size: var(--fs-xl);
   border: none;
   background: transparent;
   border-radius: var(--radius-sm);
@@ -552,19 +619,15 @@ html.dark .app-shell::before {
   opacity: 1;
 }
 
-.app-shell--sidebar .shell-tabs {
-  margin-top: 6px;
-}
-
 .app-shell--sidebar .shell-tab {
-  padding: 8px 2px;
-  font-size: 12px;
+  padding: 6px 4px;
+  font-size: var(--fs-md);
 }
 
 .app-shell--sidebar .shell-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
   padding: 12px 16px;
 }
 
@@ -594,7 +657,7 @@ html.dark .app-shell::before {
 .toast {
   position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
   padding: 8px 16px; border-radius: var(--radius-md);
-  font-size: 13px; font-weight: 500; z-index: 9999;
+  font-size: var(--fs-lg); font-weight: 500; z-index: 9999;
   box-shadow: var(--shadow-lg); animation: slideUp var(--transition-modal);
 }
 .toast.success { background: var(--color-success); color: var(--color-text-inverse); }
@@ -609,7 +672,7 @@ html.dark .app-shell::before {
 .undo-btn {
   padding: 3px 10px; border: 1px solid var(--color-primary-light);
   border-radius: var(--radius-sm); background: var(--color-primary-light);
-  color: var(--color-primary); font-size: 12px; font-weight: 600;
+  color: var(--color-primary); font-size: var(--fs-md); font-weight: 600;
   cursor: pointer; transition: all var(--transition-hover);
 }
 .undo-btn:hover { background: var(--color-primary); color: var(--color-text-inverse); }
@@ -651,7 +714,7 @@ html.dark .app-shell::before {
   border: none;
   background: var(--color-primary);
   color: var(--color-text-inverse);
-  font-size: 22px;
+  font-size: var(--fs-3xl);
   cursor: pointer;
   z-index: 100;
   box-shadow: var(--shadow-fab);

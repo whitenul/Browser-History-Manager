@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
@@ -223,47 +223,47 @@ function getTypeLabel(type: string) {
 }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; color: var(--color-text-primary); }
+.modal-header h3 { font-size: var(--fs-2xl); font-weight: 600; margin: 0; color: var(--color-text-primary); }
 .close-btn {
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border: none; background: transparent;
-  border-radius: var(--radius-sm); cursor: pointer; color: var(--color-text-muted); font-size: 16px;
+  border-radius: var(--radius-sm); cursor: pointer; color: var(--color-text-muted); font-size: var(--fs-2xl);
 }
 .close-btn:hover { background: var(--color-primary-light); }
 
 .rule-form { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
 .rule-input {
   padding: 7px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-  font-size: 12px; outline: none; background: var(--color-bg-surface); color: var(--color-text-primary);
+  font-size: var(--fs-md); outline: none; background: var(--color-bg-surface); color: var(--color-text-primary);
 }
 .rule-input:focus { border-color: var(--color-primary); }
 .rule-input.error { border-color: var(--color-danger); }
 .rule-select {
   padding: 7px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-  font-size: 12px; outline: none; background: var(--color-bg-surface); color: var(--color-text-primary);
+  font-size: var(--fs-md); outline: none; background: var(--color-bg-surface); color: var(--color-text-primary);
 }
-.type-hint { font-size: 10px; color: var(--color-text-muted); margin-top: -2px; }
-.field-error { font-size: 10px; color: var(--color-danger); margin-top: -2px; }
+.type-hint { font-size: var(--fs-sm); color: var(--color-text-muted); margin-top: -2px; }
+.field-error { font-size: var(--fs-sm); color: var(--color-danger); margin-top: -2px; }
 
 .match-preview {
   display: flex; align-items: center; gap: 4px;
   padding: 6px 10px; background: var(--color-primary-light);
-  border-radius: var(--radius-sm); font-size: 11px; color: var(--color-text-secondary);
+  border-radius: var(--radius-sm); font-size: var(--fs-base); color: var(--color-text-secondary);
 }
-.preview-icon { font-size: 12px; color: var(--color-primary); flex-shrink: 0; }
+.preview-icon { font-size: var(--fs-md); color: var(--color-primary); flex-shrink: 0; }
 .preview-samples { color: var(--color-text-muted); }
 
 .form-actions { display: flex; gap: 6px; margin-top: 4px; }
 .btn-primary {
   flex: 1; padding: 7px 14px; border: none; border-radius: var(--radius-sm);
-  background: var(--color-primary); color: var(--color-text-inverse); font-size: 12px; font-weight: 500;
+  background: var(--color-primary); color: var(--color-text-inverse); font-size: var(--fs-md); font-weight: 500;
   cursor: pointer; transition: all var(--transition-hover);
 }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-primary:not(:disabled):hover { opacity: 0.9; }
 .btn-secondary {
   padding: 7px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-  background: var(--color-bg-surface); color: var(--color-text-secondary); font-size: 12px;
+  background: var(--color-bg-surface); color: var(--color-text-secondary); font-size: var(--fs-md);
   cursor: pointer; transition: all var(--transition-hover);
 }
 .btn-secondary:hover { border-color: var(--color-primary); color: var(--color-primary); }
@@ -272,15 +272,15 @@ function getTypeLabel(type: string) {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 8px; padding-top: 8px; border-top: 1px solid var(--color-border);
 }
-.list-title { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); }
+.list-title { font-size: var(--fs-md); font-weight: 600; color: var(--color-text-secondary); }
 .clear-all-btn {
-  font-size: 11px; color: var(--color-danger); background: none; border: none;
+  font-size: var(--fs-base); color: var(--color-danger); background: none; border: none;
   cursor: pointer; padding: 2px 6px; border-radius: var(--radius-sm);
 }
 .clear-all-btn:hover { background: var(--color-danger-light); }
 
 .rule-list {}
-.empty-hint { font-size: 13px; color: var(--color-text-muted); text-align: center; padding: 16px; }
+.empty-hint { font-size: var(--fs-lg); color: var(--color-text-muted); text-align: center; padding: 16px; }
 .rule-row {
   display: flex; align-items: center; gap: 6px;
   padding: 8px 4px; border-bottom: 1px solid var(--color-border);
@@ -291,23 +291,23 @@ function getTypeLabel(type: string) {
 .order-btn {
   width: 18px; height: 14px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; cursor: pointer;
-  color: var(--color-text-muted); font-size: 10px; border-radius: 2px;
+  color: var(--color-text-muted); font-size: var(--fs-sm); border-radius: 2px;
 }
 .order-btn:hover { background: var(--color-primary-light); color: var(--color-primary); }
 .order-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 .rule-info { flex: 1; min-width: 0; }
-.rule-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); display: block; }
-.rule-pattern { font-size: 11px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.rule-name { font-size: var(--fs-lg); font-weight: 500; color: var(--color-text-primary); display: block; }
+.rule-pattern { font-size: var(--fs-base); color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .edit-btn {
   width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--color-text-muted); font-size: 12px;
+  cursor: pointer; color: var(--color-text-muted); font-size: var(--fs-md);
 }
 .edit-btn:hover { background: var(--color-primary-light); color: var(--color-primary); }
 .remove-btn {
   width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--color-text-muted); font-size: 13px;
+  cursor: pointer; color: var(--color-text-muted); font-size: var(--fs-lg);
 }
 .remove-btn:hover { color: var(--color-danger); background: var(--color-danger-light); }
 </style>

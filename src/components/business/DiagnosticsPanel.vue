@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { useDiagnostics } from '@/stores/diagnostics'
 import { useI18n } from '@/i18n'
@@ -181,7 +181,7 @@ onMounted(async () => {
 .diagnostics-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-md);
   padding: 10px 12px;
   background: var(--color-bg-base);
   cursor: pointer;
@@ -196,15 +196,15 @@ onMounted(async () => {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: var(--space-sm);
+  font-size: var(--fs-md);
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .diagnostics-summary {
   display: flex;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .summary-badge {
@@ -213,8 +213,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  font-size: 10px;
+  border-radius: var(--radius-lg);
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--color-text-inverse);
 }
@@ -232,11 +232,11 @@ onMounted(async () => {
 }
 
 .diagnostics-content {
-  padding: 12px;
+  padding: var(--space-lg);
 }
 
 .system-status {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-xl);
 }
 
 .status-section {
@@ -246,22 +246,22 @@ onMounted(async () => {
 }
 
 .status-title {
-  font-size: 11px;
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--color-text-muted);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-md);
 }
 
 .status-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: var(--space-md);
 }
 
 .status-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-sm);
   padding: 6px 8px;
   border-radius: var(--radius-sm);
   background: var(--color-danger-light);
@@ -272,20 +272,20 @@ onMounted(async () => {
 }
 
 .status-item span:first-child {
-  font-size: 12px;
+  font-size: var(--fs-md);
   color: var(--color-text-muted);
 }
 
 .status-item span:nth-child(2) {
   flex: 1;
-  font-size: 11px;
+  font-size: var(--fs-base);
   color: var(--color-text-secondary);
 }
 
 .status-badge {
-  font-size: 9px;
+  font-size: var(--fs-xs);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   font-weight: 600;
 }
 
@@ -310,7 +310,7 @@ onMounted(async () => {
 }
 
 .issues-section {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-xl);
 }
 
 .issues-header {
@@ -321,19 +321,19 @@ onMounted(async () => {
 }
 
 .issues-title {
-  font-size: 12px;
+  font-size: var(--fs-md);
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .issues-actions {
   display: flex;
-  gap: 6px;
+  gap: var(--space-sm);
 }
 
 .category-filter {
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--fs-base);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-bg-base);
@@ -344,9 +344,9 @@ onMounted(async () => {
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--fs-base);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-sm);
   background: var(--color-primary);
@@ -374,13 +374,13 @@ onMounted(async () => {
 .issues-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-sm);
 }
 
 .issue-item {
   display: flex;
-  gap: 8px;
-  padding: 8px;
+  gap: var(--space-md);
+  padding: var(--space-md);
   border-radius: var(--radius-sm);
   background: var(--color-bg-base);
 }
@@ -398,7 +398,7 @@ onMounted(async () => {
 }
 
 .issue-icon {
-  font-size: 14px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
 }
 
@@ -414,36 +414,36 @@ onMounted(async () => {
 .issue-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xs);
 }
 
 .issue-category {
-  font-size: 9px;
+  font-size: var(--fs-xs);
   padding: 1px 4px;
   background: var(--color-primary-light);
   color: var(--color-primary);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   font-weight: 600;
 }
 
 .issue-time {
-  font-size: 9px;
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
 }
 
 .issue-message {
-  font-size: 11px;
+  font-size: var(--fs-base);
   color: var(--color-text-primary);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-xs);
 }
 
 .issue-details {
-  font-size: 10px;
+  font-size: var(--fs-sm);
   color: var(--color-text-muted);
   background: var(--color-primary-light);
   border-radius: var(--radius-xs);
-  padding: 6px;
+  padding: var(--space-sm);
   max-height: 80px;
   overflow-y: auto;
 }
@@ -478,16 +478,16 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-md);
   padding: 20px;
   background: var(--color-success-light);
   border-radius: var(--radius-sm);
   color: var(--color-success);
-  font-size: 12px;
+  font-size: var(--fs-md);
 }
 
 .empty-state span:first-child {
-  font-size: 16px;
+  font-size: var(--fs-2xl);
 }
 
 .diagnostics-footer {

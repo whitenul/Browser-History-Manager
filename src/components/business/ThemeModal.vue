@@ -1,15 +1,43 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from '@/i18n'
 import { useThemeStore, PRESET_THEMES, GRADIENT_PRESETS } from '@/stores/theme'
-import type { BackgroundType, CardStyle, HeaderStyle, RadiusPreset, AnimationSpeed, ScrollbarStyle, FontSize, FontFamily } from '@/stores/theme'
+import type { BackgroundType, CardStyle, HeaderStyle, RadiusPreset, AnimationSpeed, ScrollbarStyle, FontSize, FontFamily, FontWeight, LineHeight, CardDensity } from '@/stores/theme'
 
 const { t } = useI18n()
 const theme = useThemeStore()
 const activeSection = ref<'color' | 'background' | 'layout' | 'typo' | 'effects' | 'advanced'>('color')
 const importText = ref('')
 const showImportArea = ref(false)
+const customCSSText = ref(theme.customCSS || '')
+
+function applyCustomCSS() {
+  theme.setCustomCSS(customCSSText.value)
+}
+
+function resetCustomCSS() {
+  customCSSText.value = ''
+  theme.setCustomCSS('')
+}
 const imageUrlInput = ref('')
+
+const colorDefaults = computed<Record<string, string>>(() => theme.isDark ? {
+  '--color-text-primary': '#e8edf2', '--color-text-secondary': '#94a3b8', '--color-text-muted': '#64748b',
+  '--color-bg-base': '#0b0f14', '--color-bg-surface': '#1a1f2e', '--color-border': '#2a3040',
+  '--color-danger': '#f87171', '--color-success': '#34d399', '--color-warning': '#fbbf24', '--color-info': '#60a5fa',
+} : {
+  '--color-text-primary': '#0f172a', '--color-text-secondary': '#334155', '--color-text-muted': '#64748b',
+  '--color-bg-base': '#f8fafc', '--color-bg-surface': '#ffffff', '--color-border': '#e2e8f0',
+  '--color-danger': '#ef4444', '--color-success': '#10b981', '--color-warning': '#f59e0b', '--color-info': '#3b82f6',
+})
+
+function getColor(varName: string): string {
+  return theme.customColors?.[varName] || colorDefaults.value[varName] || '#000000'
+}
+
+function setColor(varName: string, value: string) {
+  theme.setCustomColors({ ...theme.customColors, [varName]: value })
+}
 
 const sections = [
   { id: 'color' as const, label: t('theme.color'), icon: 'i-lucide:palette' },
@@ -89,12 +117,34 @@ function doImport() {
                 <span class="preset-name">{{ t(p.name) }}</span>
               </button>
             </div>
-            <div class="sub-label">Custom Colors</div>
+            <div class="sub-label">Brand Colors</div>
             <div class="color-row">
-              <label class="color-field"><span>Primary</span><input type="color" :value="theme.customColors?.['--color-primary'] || '#4f46e5'" @input="theme.setCustomColors({ ...theme.customColors, '--color-primary': ($event.target as HTMLInputElement).value })" class="color-input" /></label>
-              <label class="color-field"><span>Accent</span><input type="color" :value="theme.customColors?.['--color-accent'] || '#7c3aed'" @input="theme.setCustomColors({ ...theme.customColors, '--color-accent': ($event.target as HTMLInputElement).value })" class="color-input" /></label>
+              <label class="color-field"><span>Primary</span><input type="color" :value="getColor('--color-primary')" @input="setColor('--color-primary', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>Accent</span><input type="color" :value="getColor('--color-accent')" @input="setColor('--color-accent', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
             </div>
-            <button v-if="theme.customColors" class="reset-btn" @click="theme.setCustomColors(null)"><span class="i-lucide:x" />Clear Custom</button>
+            <div class="sub-label">{{ t('theme.textColors') }}</div>
+            <div class="color-row">
+              <label class="color-field"><span>{{ t('theme.textPrimary') }}</span><input type="color" :value="getColor('--color-text-primary')" @input="setColor('--color-text-primary', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>{{ t('theme.textSecondary') }}</span><input type="color" :value="getColor('--color-text-secondary')" @input="setColor('--color-text-secondary', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>{{ t('theme.textMuted') }}</span><input type="color" :value="getColor('--color-text-muted')" @input="setColor('--color-text-muted', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+            </div>
+            <div class="sub-label">{{ t('theme.bgColors') }}</div>
+            <div class="color-row">
+              <label class="color-field"><span>{{ t('theme.bgBase') }}</span><input type="color" :value="getColor('--color-bg-base')" @input="setColor('--color-bg-base', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>{{ t('theme.bgSurface') }}</span><input type="color" :value="getColor('--color-bg-surface')" @input="setColor('--color-bg-surface', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+            </div>
+            <div class="sub-label">{{ t('theme.borderColor') }}</div>
+            <div class="color-row">
+              <label class="color-field"><span>{{ t('theme.border') }}</span><input type="color" :value="getColor('--color-border')" @input="setColor('--color-border', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+            </div>
+            <div class="sub-label">{{ t('theme.semanticColors') }}</div>
+            <div class="color-row">
+              <label class="color-field"><span>{{ t('theme.danger') }}</span><input type="color" :value="getColor('--color-danger')" @input="setColor('--color-danger', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>{{ t('theme.success') }}</span><input type="color" :value="getColor('--color-success')" @input="setColor('--color-success', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>{{ t('theme.warning') }}</span><input type="color" :value="getColor('--color-warning')" @input="setColor('--color-warning', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>{{ t('theme.info') }}</span><input type="color" :value="getColor('--color-info')" @input="setColor('--color-info', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+            </div>
+            <button v-if="theme.customColors" class="reset-btn" @click="theme.setCustomColors(null)"><span class="i-lucide:x" />Clear All Custom Colors</button>
           </div>
 
           <!-- 背景 -->
@@ -185,6 +235,15 @@ function doImport() {
             <button class="toggle-btn" :class="{ active: theme.compactMode }" @click="theme.toggleCompact()">
               <span class="i-lucide:minimize-2" />Compact<span class="toggle-status">{{ theme.compactMode ? 'ON' : 'OFF' }}</span>
             </button>
+            <div class="sub-label" style="margin-top:10px">Card Density</div>
+            <div class="option-grid-3">
+              <button v-for="cd in (['compact','normal','comfortable'] as CardDensity[])" :key="cd" class="option-card" :class="{ active: theme.cardDensity === cd }" @click="theme.setCardDensity(cd)">
+                <div class="density-demo" :class="cd">
+                  <div class="density-line" /><div class="density-line" /><div class="density-line" />
+                </div>
+                <span class="option-label">{{ cd }}</span>
+              </button>
+            </div>
           </div>
 
           <!-- 排版 -->
@@ -201,6 +260,20 @@ function doImport() {
               <button v-for="ff in (['system','serif','mono','rounded'] as FontFamily[])" :key="ff" class="option-card" :class="{ active: theme.fontFamily === ff }" @click="theme.setFontFamily(ff)">
                 <span class="font-preview">{{ ff === 'system' ? 'Aa' : ff === 'serif' ? 'Aa' : ff === 'mono' ? 'Aa' : 'Aa' }}</span>
                 <span class="option-label">{{ ff }}</span>
+              </button>
+            </div>
+            <div class="sub-label">{{ t('theme.fontWeight') }}</div>
+            <div class="option-grid-4">
+              <button v-for="fw in (['light','normal','medium','semibold'] as FontWeight[])" :key="fw" class="option-card" :class="{ active: theme.fontWeight === fw }" @click="theme.setFontWeight(fw)">
+                <span class="font-preview" :style="{ fontWeight: fw === 'light' ? '300' : fw === 'normal' ? '400' : fw === 'medium' ? '500' : '600' }">Aa</span>
+                <span class="option-label">{{ fw }}</span>
+              </button>
+            </div>
+            <div class="sub-label">{{ t('theme.lineHeight') }}</div>
+            <div class="option-grid-3">
+              <button v-for="lh in (['compact','normal','relaxed'] as LineHeight[])" :key="lh" class="option-card" :class="{ active: theme.lineHeight === lh }" @click="theme.setLineHeight(lh)">
+                <span class="lh-preview" :class="lh">Aa<br>Aa</span>
+                <span class="option-label">{{ lh }}</span>
               </button>
             </div>
           </div>
@@ -235,7 +308,21 @@ function doImport() {
 
           <!-- 高级 -->
           <div v-if="activeSection === 'advanced'">
-            <div class="sub-label">{{ t('theme.importExport') }}</div>
+            <div class="sub-label">Custom CSS</div>
+            <p class="hint-text">Write custom CSS to override any style. Use CSS variables like <code>--color-primary</code>, <code>--fs-lg</code>, <code>--space-md</code> etc.</p>
+            <textarea
+              class="custom-css-textarea"
+              v-model="customCSSText"
+              placeholder=":root { --color-primary: #ff0000; }"
+              rows="8"
+              spellcheck="false"
+            />
+            <div class="action-row" style="margin-top:6px">
+              <button class="action-btn" @click="applyCustomCSS"><span class="i-lucide:check" />Apply</button>
+              <button class="action-btn" @click="resetCustomCSS"><span class="i-lucide:rotate-ccw" />Clear</button>
+            </div>
+
+            <div class="sub-label" style="margin-top:12px">{{ t('theme.importExport') }}</div>
             <div class="action-row">
               <button class="action-btn" @click="doExport"><span class="i-lucide:download" />Export</button>
               <button class="action-btn" @click="showImportArea = !showImportArea"><span class="i-lucide:upload" />Import</button>
@@ -256,76 +343,76 @@ function doImport() {
 <style scoped>
 .theme-overlay { position: fixed; inset: 0; z-index: 400; background: var(--color-bg-overlay); backdrop-filter: blur(var(--glass-blur)); display: flex; align-items: center; justify-content: center; animation: fadeIn 0.15s ease; }
 .theme-modal { width: 380px; max-height: 520px; border-radius: var(--radius-xl); box-shadow: var(--shadow-modal); display: flex; flex-direction: column; overflow: hidden; }
-.modal-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--color-border); background: rgba(var(--card-surface-rgb), 0.8); }
-.header-icon { font-size: 16px; color: var(--color-primary); }
-.header-title { font-size: 14px; font-weight: 600; flex: 1; }
-.close-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--color-text-muted); cursor: pointer; font-size: 14px; border-radius: var(--radius-sm); transition: all var(--transition-hover); }
+.modal-header { display: flex; align-items: center; gap: var(--space-md); padding: 12px 16px; border-bottom: 1px solid var(--color-border); background: rgba(var(--card-surface-rgb), 0.8); }
+.header-icon { font-size: var(--fs-2xl); color: var(--color-primary); }
+.header-title { font-size: var(--fs-xl); font-weight: 600; flex: 1; }
+.close-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--color-text-muted); cursor: pointer; font-size: var(--fs-xl); border-radius: var(--radius-sm); transition: all var(--transition-hover); }
 .close-btn:hover { background: var(--color-primary-light); color: var(--color-text-primary); }
 
 .section-tabs { display: flex; border-bottom: 1px solid var(--color-border); background: rgba(var(--card-surface-rgb), 0.5); overflow-x: auto; }
-.section-tab { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 3px; padding: 8px 6px; font-size: 10px; font-weight: 500; color: var(--color-text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--transition-hover); }
+.section-tab { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 3px; padding: 8px 6px; font-size: var(--fs-sm); font-weight: 500; color: var(--color-text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--transition-hover); }
 .section-tab:hover { color: var(--color-text-secondary); background: var(--color-primary-light); }
 .section-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 
 .modal-body { flex: 1; overflow-y: auto; padding: 12px 14px; background: rgba(var(--card-surface-rgb), 0.7); backdrop-filter: blur(var(--glass-blur)); }
-.sub-label { font-size: 10px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 6px; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+.sub-label { font-size: var(--fs-sm); font-weight: 600; color: var(--color-text-muted); margin-bottom: var(--space-sm); margin-top: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
 .sub-label:first-child { margin-top: 0; }
-.sub-section { margin-top: 8px; }
+.sub-section { margin-top: var(--space-md); }
 
-.mode-row { display: flex; gap: 6px; margin-bottom: 4px; }
-.mode-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 0; font-size: 11px; font-weight: 500; color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.mode-row { display: flex; gap: var(--space-sm); margin-bottom: var(--space-xs); }
+.mode-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-xs); padding: 6px 0; font-size: var(--fs-base); font-weight: 500; color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
 .mode-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .mode-btn.active { background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
 
-.preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-sm); }
 .preset-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--color-bg-base); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
 .preset-card:hover { border-color: var(--color-primary); }
 .preset-card.active { border-color: var(--color-primary); background: var(--color-primary-light); }
 .preset-preview { width: 28px; height: 28px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
-.preset-icon { font-size: 12px; }
-.preset-name { font-size: 9px; color: var(--color-text-secondary); font-weight: 500; }
+.preset-icon { font-size: var(--fs-md); }
+.preset-name { font-size: var(--fs-xs); color: var(--color-text-secondary); font-weight: 500; }
 
-.color-row { display: flex; gap: 12px; margin-bottom: 8px; }
-.color-field { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--color-text-secondary); cursor: pointer; }
+.color-row { display: flex; gap: var(--space-lg); margin-bottom: var(--space-md); }
+.color-field { display: flex; align-items: center; gap: var(--space-sm); font-size: var(--fs-base); color: var(--color-text-secondary); cursor: pointer; }
 .color-input { width: 28px; height: 28px; border: 2px solid var(--color-border); border-radius: var(--radius-sm); cursor: pointer; padding: 0; background: none; }
-.color-input::-webkit-color-swatch-wrapper { padding: 2px; }
-.color-input::-webkit-color-swatch { border: none; border-radius: 2px; }
+.color-input::-webkit-color-swatch-wrapper { padding: var(--space-2xs); }
+.color-input::-webkit-color-swatch { border: none; border-radius: var(--radius-xs); }
 
-.bg-type-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
-.bg-type-btn { display: flex; align-items: center; gap: 3px; padding: 5px 8px; font-size: 10px; font-weight: 500; color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.bg-type-row { display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-bottom: var(--space-xs); }
+.bg-type-btn { display: flex; align-items: center; gap: 3px; padding: 5px 8px; font-size: var(--fs-sm); font-weight: 500; color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
 .bg-type-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .bg-type-btn.active { background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
 
-.gradient-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.gradient-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); }
 .gradient-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--color-bg-base); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
 .gradient-card:hover { border-color: var(--color-primary); }
 .gradient-card.active { border-color: var(--color-primary); background: var(--color-primary-light); }
 .gradient-preview { width: 100%; height: 24px; border-radius: var(--radius-sm); }
-.gradient-name { font-size: 9px; color: var(--color-text-secondary); font-weight: 500; }
+.gradient-name { font-size: var(--fs-xs); color: var(--color-text-secondary); font-weight: 500; }
 
-.upload-area { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; border: 2px dashed var(--color-border); border-radius: var(--radius-md); cursor: pointer; color: var(--color-text-muted); font-size: 12px; transition: all var(--transition-hover); }
+.upload-area { display: flex; align-items: center; justify-content: center; gap: var(--space-sm); padding: var(--space-lg); border: 2px dashed var(--color-border); border-radius: var(--radius-md); cursor: pointer; color: var(--color-text-muted); font-size: var(--fs-md); transition: all var(--transition-hover); }
 .upload-area:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .hidden-input { display: none; }
 
-.url-row { display: flex; gap: 6px; }
-.url-input { flex: 1; padding: 6px 8px; font-size: 11px; background: var(--color-bg-base); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: var(--radius-sm); outline: none; }
+.url-row { display: flex; gap: var(--space-sm); }
+.url-input { flex: 1; padding: 6px 8px; font-size: var(--fs-base); background: var(--color-bg-base); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: var(--radius-sm); outline: none; }
 .url-input:focus { border-color: var(--color-primary); }
 
-.image-preview-wrap { margin-top: 8px; }
+.image-preview-wrap { margin-top: var(--space-md); }
 .image-preview { width: 100%; height: 80px; border-radius: var(--radius-md); background-size: cover; background-position: center; }
 
-.slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.slider-label { font-size: 11px; color: var(--color-text-secondary); min-width: 60px; }
+.slider-row { display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm); }
+.slider-label { font-size: var(--fs-base); color: var(--color-text-secondary); min-width: 60px; }
 .slider { flex: 1; accent-color: var(--color-primary); }
-.slider-value { font-size: 10px; color: var(--color-text-muted); min-width: 36px; text-align: right; font-family: monospace; }
+.slider-value { font-size: var(--fs-sm); color: var(--color-text-muted); min-width: 36px; text-align: right; font-family: monospace; }
 
-.option-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 4px; }
-.option-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 4px; }
-.option-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 4px; }
+.option-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); margin-bottom: var(--space-xs); }
+.option-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-sm); margin-bottom: var(--space-xs); }
+.option-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-sm); margin-bottom: var(--space-xs); }
 .option-card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: var(--color-bg-base); border: 2px solid transparent; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
 .option-card:hover { border-color: var(--color-primary); }
 .option-card.active { border-color: var(--color-primary); background: var(--color-primary-light); }
-.option-label { font-size: 9px; color: var(--color-text-secondary); font-weight: 500; }
+.option-label { font-size: var(--fs-xs); color: var(--color-text-secondary); font-weight: 500; }
 
 .option-preview { width: 100%; height: 24px; background: var(--color-bg-base); border: 1px solid var(--color-border); }
 .header-preview.solid { background: var(--color-primary); border: none; }
@@ -347,30 +434,46 @@ function doImport() {
 .radius-demo.large { border-radius: var(--radius-lg); }
 .radius-demo.full { border-radius: var(--radius-full); }
 
-.font-preview { font-size: 16px; font-weight: 600; color: var(--color-text-primary); line-height: 1.2; }
+.font-preview { font-size: var(--fs-2xl); font-weight: 600; color: var(--color-text-primary); line-height: 1.2; }
 
-.anim-icon { font-size: 18px; color: var(--color-text-muted); display: inline-block; }
+.lh-preview { font-size: var(--fs-sm); color: var(--color-text-primary); text-align: center; }
+.lh-preview.compact { line-height: 1.3; }
+.lh-preview.normal { line-height: 1.5; }
+.lh-preview.relaxed { line-height: 1.7; }
+
+.anim-icon { font-size: var(--fs-3xl); color: var(--color-text-muted); display: inline-block; }
 .anim-icon.off { opacity: 0.3; }
 .anim-icon.slow { animation: spin 2s linear infinite; }
 .anim-icon.fast { animation: spin 0.5s linear infinite; }
 
-.toggle-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; font-size: 12px; color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); margin-top: 8px; }
+.toggle-btn { display: flex; align-items: center; gap: var(--space-md); width: 100%; padding: 8px 12px; font-size: var(--fs-md); color: var(--color-text-muted); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); margin-top: var(--space-md); }
 .toggle-btn:hover { border-color: var(--color-primary); }
 .toggle-btn.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-light); }
-.toggle-status { margin-left: auto; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--radius-sm); }
+.toggle-status { margin-left: auto; font-size: var(--fs-sm); font-weight: 600; padding: 1px 6px; border-radius: var(--radius-sm); }
 
-.action-row { display: flex; gap: 6px; margin-bottom: 8px; }
-.action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px; font-size: 11px; font-weight: 500; color: var(--color-text-secondary); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.density-demo { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; }
+.density-line { width: 24px; height: 3px; background: var(--color-primary); border-radius: 2px; opacity: 0.4; }
+.density-demo.compact .density-line { height: 2px; margin: 0; }
+.density-demo.normal .density-line { height: 3px; margin: 1px 0; }
+.density-demo.comfortable .density-line { height: 4px; margin: 2px 0; }
+.option-card.active .density-line { opacity: 1; }
+
+.action-row { display: flex; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px; font-size: var(--fs-base); font-weight: 500; color: var(--color-text-secondary); background: var(--color-bg-base); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
 .action-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
-.apply-btn { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 7px; font-size: 12px; font-weight: 600; color: var(--color-text-inverse); background: var(--color-primary); border: none; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.apply-btn { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 7px; font-size: var(--fs-md); font-weight: 600; color: var(--color-text-inverse); background: var(--color-primary); border: none; border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
 .apply-btn:hover { filter: brightness(1.1); }
 .apply-btn.sm { width: auto; padding: 6px 12px; }
 
-.reset-btn { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; padding: 5px; margin-top: 4px; font-size: 10px; color: var(--color-text-muted); background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
+.reset-btn { display: flex; align-items: center; justify-content: center; gap: var(--space-xs); width: 100%; padding: 5px; margin-top: var(--space-xs); font-size: var(--fs-sm); color: var(--color-text-muted); background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-hover); }
 .reset-btn:hover { color: var(--color-primary); border-color: var(--color-primary); }
 
-.import-area { margin-bottom: 8px; }
-.import-textarea { width: 100%; padding: 8px; font-size: 10px; font-family: monospace; background: var(--color-bg-base); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: var(--radius-md); resize: vertical; outline: none; }
+.import-area { margin-bottom: var(--space-md); }
+.import-textarea { width: 100%; padding: var(--space-md); font-size: var(--fs-sm); font-family: monospace; background: var(--color-bg-base); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: var(--radius-md); resize: vertical; outline: none; }
 .import-textarea:focus { border-color: var(--color-primary); }
+.custom-css-textarea { width: 100%; padding: var(--space-md); font-size: var(--fs-sm); font-family: var(--font-mono, ui-monospace, monospace); background: var(--color-bg-base); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: var(--radius-md); resize: vertical; outline: none; tab-size: 2; line-height: 1.5; }
+.custom-css-textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-light); }
+.hint-text { font-size: var(--fs-sm); color: var(--color-text-muted); margin: 0 0 6px; line-height: 1.4; }
+.hint-text code { background: var(--color-primary-light); color: var(--color-primary); padding: 1px 4px; border-radius: var(--radius-xs); font-size: var(--fs-xs); }
 </style>

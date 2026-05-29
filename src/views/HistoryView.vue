@@ -517,14 +517,14 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--color-border);
 }
 
-.search-icon { color: var(--color-text-muted); font-size: 14px; flex-shrink: 0; }
+.search-icon { color: var(--color-text-muted); font-size: var(--fs-xl); flex-shrink: 0; }
 
 .search-input {
   flex: 1;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 13px;
+  font-size: var(--fs-lg);
   color: var(--color-text-primary);
 }
 .search-input::placeholder { color: var(--color-text-muted); }
@@ -533,7 +533,7 @@ onUnmounted(() => {
   display: flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; border: 1px solid var(--color-border);
   background: var(--color-bg-surface); border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--color-text-muted); font-size: 12px;
+  cursor: pointer; color: var(--color-text-muted); font-size: var(--fs-md);
   transition: all var(--transition-hover); flex-shrink: 0;
 }
 .cmd-trigger:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-light); }
@@ -547,13 +547,13 @@ onUnmounted(() => {
   display: flex; align-items: center; gap: 12px; flex: 1;
   overflow-x: auto; white-space: nowrap;
 }
-.summary-item { font-size: 11px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 3px; }
+.summary-item { font-size: var(--fs-base); color: var(--color-text-secondary); display: flex; align-items: center; gap: 3px; }
 .summary-item strong { color: var(--color-text-primary); }
-.summary-icon { font-size: 12px; color: var(--color-primary); }
+.summary-icon { font-size: var(--fs-md); color: var(--color-primary); }
 .summary-close {
   width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; color: var(--color-text-muted);
-  cursor: pointer; font-size: 12px; border-radius: var(--radius-sm); flex-shrink: 0;
+  cursor: pointer; font-size: var(--fs-md); border-radius: var(--radius-sm); flex-shrink: 0;
 }
 .summary-close:hover { background: var(--color-primary-light); color: var(--color-text-secondary); }
 
@@ -561,7 +561,7 @@ onUnmounted(() => {
   display: flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border: none;
   background: var(--color-border); border-radius: 50%;
-  cursor: pointer; color: var(--color-text-muted); font-size: 12px;
+  cursor: pointer; color: var(--color-text-muted); font-size: var(--fs-md);
 }
 .clear-btn:hover { opacity: 0.8; }
 
@@ -569,19 +569,19 @@ onUnmounted(() => {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 10px; margin: 0 0 6px;
   background: var(--color-primary-light); border: 1px solid var(--color-primary);
-  border-radius: var(--radius-md); font-size: 11px;
+  border-radius: var(--radius-md); font-size: var(--fs-base);
 }
 .filter-indicator {
   display: flex; align-items: center; gap: 4px;
   color: var(--color-primary); font-weight: 600;
 }
-.filter-indicator-icon { font-size: 12px; }
-.filter-count { color: var(--color-text-muted); font-size: 10px; }
+.filter-indicator-icon { font-size: var(--fs-md); }
+.filter-count { color: var(--color-text-muted); font-size: var(--fs-sm); }
 .filter-clear-btn {
   margin-left: auto; display: flex; align-items: center; gap: 3px;
   padding: 2px 8px; border: 1px solid var(--color-primary);
   border-radius: var(--radius-sm); background: transparent;
-  color: var(--color-primary); font-size: 10px; font-weight: 500;
+  color: var(--color-primary); font-size: var(--fs-sm); font-weight: 500;
   cursor: pointer; transition: all var(--transition-hover);
 }
 .filter-clear-btn:hover { background: var(--color-primary-light); }
@@ -605,7 +605,7 @@ onUnmounted(() => {
 .filter-group { display: flex; gap: 2px; white-space: nowrap; }
 
 .filter-btn {
-  padding: 3px 8px; font-size: 11px; font-weight: 500;
+  padding: 3px 8px; font-size: var(--fs-base); font-weight: 500;
   color: var(--color-text-muted); background: transparent;
   border: 1px solid transparent; border-radius: var(--radius-sm);
   cursor: pointer; transition: all var(--transition-hover);
@@ -618,7 +618,7 @@ onUnmounted(() => {
   border-opacity: 0.3;
 }
 
-.filter-btn.xs { padding: 2px 6px; font-size: 10px; display: flex; align-items: center; }
+.filter-btn.xs { padding: 2px 6px; font-size: var(--fs-sm); display: flex; align-items: center; }
 .filter-btn.icon-only { padding: 2px 4px; }
 
 .batch-bar {
@@ -627,9 +627,9 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
-.batch-info { font-size: 12px; color: var(--color-primary); font-weight: 500; flex: 1; }
+.batch-info { font-size: var(--fs-md); color: var(--color-primary); font-weight: 500; flex: 1; }
 .batch-btn {
-  padding: 3px 10px; font-size: 11px; border: 1px solid var(--color-border);
+  padding: 3px 10px; font-size: var(--fs-base); border: 1px solid var(--color-border);
   border-radius: var(--radius-sm); background: var(--color-bg-surface);
   color: var(--color-text-secondary); cursor: pointer;
 }
@@ -645,7 +645,7 @@ onUnmounted(() => {
 }
 
 .tag-chip {
-  padding: 2px 10px; font-size: 11px; font-weight: 500;
+  padding: 2px 10px; font-size: var(--fs-base); font-weight: 500;
   color: var(--color-text-muted); background: var(--color-bg-surface);
   border: 1px solid var(--color-border); border-radius: var(--radius-lg);
   cursor: pointer; transition: all var(--transition-hover);
@@ -661,13 +661,13 @@ onUnmounted(() => {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 14px; margin: 8px 12px;
   background: var(--color-primary-light); border: 1px solid var(--color-primary);
-  border-radius: var(--radius-md); font-size: 12px; color: var(--color-text-secondary);
+  border-radius: var(--radius-md); font-size: var(--fs-md); color: var(--color-text-secondary);
 }
-.guide-icon { font-size: 16px; color: var(--color-warning); flex-shrink: 0; }
+.guide-icon { font-size: var(--fs-2xl); color: var(--color-warning); flex-shrink: 0; }
 .guide-btn {
   display: flex; align-items: center; gap: 4px;
   padding: 4px 12px; border: 1px solid var(--color-primary); border-radius: var(--radius-sm);
-  background: var(--color-primary-light); color: var(--color-primary); font-size: 11px;
+  background: var(--color-primary-light); color: var(--color-primary); font-size: var(--fs-base);
   cursor: pointer; font-weight: 500; transition: all var(--transition-hover);
   margin-left: auto; flex-shrink: 0;
 }
@@ -678,7 +678,7 @@ onUnmounted(() => {
 .loading-state, .empty-state {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 12px; padding: 48px 16px;
-  color: var(--color-text-muted); font-size: 13px;
+  color: var(--color-text-muted); font-size: var(--fs-lg);
 }
 
 .spinner {
@@ -693,7 +693,7 @@ onUnmounted(() => {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; background: var(--color-bg-base);
   border-bottom: 1px solid var(--color-border);
-  cursor: pointer; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-size: var(--fs-md); font-weight: 600;
   color: var(--color-text-secondary); user-select: none;
   transition: background var(--transition-hover);
 }
@@ -701,7 +701,7 @@ onUnmounted(() => {
 .group-chevron-wrap { display: flex; align-items: center; }
 .group-name { flex: 1; }
 .entity-badge {
-  font-size: 10px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--color-primary);
   background: var(--color-primary-light);
@@ -710,12 +710,12 @@ onUnmounted(() => {
   white-space: nowrap;
   margin-right: 4px;
 }
-.group-count { font-size: 11px; font-weight: 400; color: var(--color-text-muted); }
-.group-chevron { font-size: 14px; transition: transform var(--transition-hover); }
+.group-count { font-size: var(--fs-base); font-weight: 400; color: var(--color-text-muted); }
+.group-chevron { font-size: var(--fs-xl); transition: transform var(--transition-hover); }
 .group-header.collapsed .group-chevron { transform: rotate(-90deg); }
 .restore-btn {
   display: flex; align-items: center; gap: 3px;
-  padding: 2px 8px; font-size: 11px; font-weight: 500;
+  padding: 2px 8px; font-size: var(--fs-base); font-weight: 500;
   color: var(--color-primary); background: var(--color-primary-light);
   border: 1px solid var(--color-primary); border-radius: var(--radius-sm);
   cursor: pointer; transition: all var(--transition-hover);
@@ -729,19 +729,19 @@ onUnmounted(() => {
 .blacklist-form { display: flex; gap: 6px; margin-bottom: 6px; }
 .blacklist-input {
   flex: 1; padding: 5px 8px; border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm); font-size: 12px; outline: none;
+  border-radius: var(--radius-sm); font-size: var(--fs-md); outline: none;
   background: var(--color-bg-base); color: var(--color-text-primary);
 }
 .blacklist-input:focus { border-color: var(--color-primary); }
 .blacklist-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .blacklist-tag {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 8px; font-size: 11px; color: var(--color-text-secondary);
+  padding: 2px 8px; font-size: var(--fs-base); color: var(--color-text-secondary);
   background: var(--color-primary-light); border-radius: var(--radius-lg);
 }
 .tag-remove {
   border: none; background: none; cursor: pointer;
-  color: var(--color-text-muted); font-size: 13px; line-height: 1; padding: 0;
+  color: var(--color-text-muted); font-size: var(--fs-lg); line-height: 1; padding: 0;
 }
 .tag-remove:hover { color: var(--color-danger); }
 
@@ -780,19 +780,19 @@ onUnmounted(() => {
 .favicon-fallback {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  color: var(--color-text-inverse); font-size: 12px; font-weight: 600;
+  color: var(--color-text-inverse); font-size: var(--fs-md); font-weight: 600;
   border-radius: var(--radius-sm);
 }
 .favicon-fallback.hidden { display: none; }
 
 .record-info { flex: 1; min-width: 0; cursor: pointer; }
 .record-title {
-  font-size: 13px; font-weight: 500; color: var(--color-text-primary);
+  font-size: var(--fs-lg); font-weight: 500; color: var(--color-text-primary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .record-meta {
-  font-size: 11px; color: var(--color-text-muted);
+  font-size: var(--fs-base); color: var(--color-text-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin-top: 2px;
   display: flex; align-items: center; gap: 0;
@@ -808,7 +808,7 @@ onUnmounted(() => {
   display: flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; border: none; background: transparent;
   border-radius: var(--radius-sm); cursor: pointer;
-  color: var(--color-text-muted); font-size: 14px;
+  color: var(--color-text-muted); font-size: var(--fs-xl);
   transition: color var(--transition-hover), background-color var(--transition-hover);
   will-change: color, background-color;
 }
@@ -820,14 +820,14 @@ onUnmounted(() => {
 
 .auto-tags { display: flex; gap: 3px; margin-top: 2px; flex-wrap: wrap; }
 .auto-tag {
-  font-size: 9px; padding: 0 4px; border-radius: var(--radius-sm);
+  font-size: var(--fs-xs); padding: 0 4px; border-radius: var(--radius-sm);
   font-weight: 500; white-space: nowrap; line-height: 14px;
 }
 .bookmark-btn { color: var(--color-primary); }
 .bookmark-btn:hover { background: var(--color-primary-light); color: var(--color-primary); }
 
 .load-more {
-  padding: 12px; text-align: center; font-size: 12px;
+  padding: 12px; text-align: center; font-size: var(--fs-md);
   color: var(--color-text-muted); cursor: pointer;
   transition: color var(--transition-hover);
 }
@@ -842,7 +842,7 @@ onUnmounted(() => {
   width: 280px; background: var(--color-bg-surface); border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg); padding: 20px;
 }
-.confirm-title { font-size: 14px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 8px; }
-.confirm-text { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 16px; line-height: 1.5; }
+.confirm-title { font-size: var(--fs-xl); font-weight: 600; color: var(--color-text-primary); margin-bottom: 8px; }
+.confirm-text { font-size: var(--fs-md); color: var(--color-text-secondary); margin-bottom: 16px; line-height: 1.5; }
 .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 </style>

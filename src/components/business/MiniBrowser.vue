@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useMiniBrowser } from '@/composables/useMiniBrowser'
 import { useSuggestions, type SuggestionItem } from '@/composables/useSuggestions'
@@ -386,7 +386,7 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
   width: 28px; height: 28px; border: none; border-radius: var(--radius-sm);
   background: transparent; color: var(--color-text-secondary); cursor: pointer;
   transition: background var(--transition-hover), color var(--transition-hover);
-  flex-shrink: 0; font-size: 14px;
+  flex-shrink: 0; font-size: var(--fs-xl);
 }
 .mb-btn:hover:not(:disabled) { background: var(--color-primary-light); color: var(--color-primary); }
 .mb-btn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -399,13 +399,13 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
 .mb-url {
   width: 100%; padding: 6px 40px 6px 10px; border: 1px solid var(--color-border);
   border-radius: var(--radius-md); background: var(--color-bg-surface);
-  color: var(--color-text-primary); font-size: 12px; outline: none;
+  color: var(--color-text-primary); font-size: var(--fs-md); outline: none;
   transition: border-color var(--transition-hover), box-shadow var(--transition-hover);
 }
 .mb-url:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-light); }
 .mb-zoom-badge {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-  font-size: 10px; color: var(--color-text-muted); background: var(--color-bg-base);
+  font-size: var(--fs-sm); color: var(--color-text-muted); background: var(--color-bg-base);
   padding: 1px 5px; border-radius: var(--radius-full); pointer-events: none;
 }
 
@@ -418,11 +418,11 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
 }
 .mb-suggestion { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; transition: background 0.1s; }
 .mb-suggestion:hover, .mb-suggestion--active { background: var(--color-primary-light); }
-.mb-suggestion-icon { font-size: 14px; color: var(--color-text-muted); flex-shrink: 0; }
+.mb-suggestion-icon { font-size: var(--fs-xl); color: var(--color-text-muted); flex-shrink: 0; }
 .mb-suggestion-info { flex: 1; min-width: 0; }
-.mb-suggestion-title { font-size: 12px; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mb-suggestion-url { font-size: 10px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mb-suggestion-count { font-size: 10px; color: var(--color-text-muted); background: var(--color-bg-base); padding: 1px 5px; border-radius: var(--radius-full); }
+.mb-suggestion-title { font-size: var(--fs-md); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mb-suggestion-url { font-size: var(--fs-sm); color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mb-suggestion-count { font-size: var(--fs-sm); color: var(--color-text-muted); background: var(--color-bg-base); padding: 1px 5px; border-radius: var(--radius-full); }
 
 /* More menu */
 .mb-more-wrapper { position: relative; flex-shrink: 0; }
@@ -434,15 +434,15 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
 .mb-more-item {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px;
   border: none; background: transparent; color: var(--color-text-primary);
-  font-size: 12px; border-radius: var(--radius-sm); cursor: pointer;
+  font-size: var(--fs-md); border-radius: var(--radius-sm); cursor: pointer;
   transition: background var(--transition-hover), color var(--transition-hover); text-align: left;
 }
 .mb-more-item:hover { background: var(--color-primary-light); color: var(--color-primary); }
-.mb-more-item span:first-child { font-size: 14px; width: 16px; text-align: center; }
+.mb-more-item span:first-child { font-size: var(--fs-xl); width: 16px; text-align: center; }
 .mb-more-divider { height: 1px; background: var(--color-border); margin: 4px 0; }
 .mb-zoom-row { display: flex; align-items: center; justify-content: center; gap: 2px; padding: 4px 0; }
 .mb-zoom-row .mb-more-item { width: auto; padding: 6px 8px; }
-.mb-zoom-value { font-size: 12px; font-weight: 600; color: var(--color-text-primary); min-width: 40px; text-align: center; }
+.mb-zoom-value { font-size: var(--fs-md); font-weight: 600; color: var(--color-text-primary); min-width: 40px; text-align: center; }
 .mb-menu-fade-enter-active, .mb-menu-fade-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
 .mb-menu-fade-enter-from, .mb-menu-fade-leave-to { opacity: 0; transform: translateY(-4px); }
 
@@ -482,7 +482,7 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
   border-radius: var(--radius-full);
   background: rgba(0,0,0,0.7);
   color: #fff;
-  font-size: 13px;
+  font-size: var(--fs-lg);
   font-weight: 600;
   backdrop-filter: blur(8px);
   pointer-events: none;
@@ -498,14 +498,14 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
   position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 12px;
   background: var(--glass-header-bg, rgba(255,255,255,0.85));
-  color: var(--color-text-secondary); font-size: 14px; z-index: 5;
+  color: var(--color-text-secondary); font-size: var(--fs-xl); z-index: 5;
 }
-.mb-spinner { animation: spin 1s linear infinite; font-size: 24px; }
+.mb-spinner { animation: spin 1s linear infinite; font-size: var(--fs-4xl); }
 @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
 .mb-retry {
   padding: 6px 16px; border: 1px solid var(--color-primary);
   border-radius: var(--radius-md); background: var(--color-primary);
-  color: var(--color-text-inverse); font-size: 12px; cursor: pointer;
+  color: var(--color-text-inverse); font-size: var(--fs-md); cursor: pointer;
   transition: filter var(--transition-hover);
 }
 .mb-retry:hover { filter: brightness(1.1); }
@@ -515,9 +515,9 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
   position: absolute; inset: 0; background: var(--color-primary-light);
   border: 2px dashed var(--color-primary); z-index: 1000;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 8px; color: var(--color-primary); font-size: 16px; font-weight: 600;
+  gap: 8px; color: var(--color-primary); font-size: var(--fs-2xl); font-weight: 600;
 }
-.mb-drag-overlay span:first-child { font-size: 48px; }
+.mb-drag-overlay span:first-child { font-size: 3.69rem; }
 
 /* Quick entry */
 .mb-quick-entry {
@@ -533,7 +533,7 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
 .mb-quick-item:hover { background: var(--color-primary-light); transform: translateY(-2px); }
 .mb-quick-favicon { width: 32px; height: 32px; border-radius: var(--radius-sm); }
 .mb-quick-domain {
-  font-size: 11px; color: var(--color-text-secondary); text-align: center;
+  font-size: var(--fs-base); color: var(--color-text-secondary); text-align: center;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 </style>

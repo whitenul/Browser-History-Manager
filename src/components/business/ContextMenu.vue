@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
@@ -87,13 +87,13 @@ function handleRecategorize(record: any) {
   display: flex; align-items: center; gap: 8px;
   width: 100%; padding: 7px 12px; border: none;
   background: transparent; color: var(--color-text-primary);
-  font-size: 12px; cursor: pointer; border-radius: var(--radius-sm);
+  font-size: var(--fs-md); cursor: pointer; border-radius: var(--radius-sm);
   transition: background var(--transition-hover);
 }
 .ctx-item:hover { background: var(--color-primary-light); }
 .ctx-item.danger { color: var(--color-danger); }
 .ctx-item.danger:hover { background: var(--color-danger-light); }
-.ctx-icon { font-size: 13px; color: var(--color-text-muted); }
+.ctx-icon { font-size: var(--fs-lg); color: var(--color-text-muted); }
 .ctx-item.danger .ctx-icon { color: var(--color-danger); }
 .ctx-divider { height: 1px; background: var(--color-border); margin: 4px 0; }
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }

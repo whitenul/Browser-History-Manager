@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { getFaviconUrl, onFaviconError } from '@/utils/helpers'
@@ -152,11 +152,11 @@ export default { components: { BmFolderItem } }
 }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; color: var(--color-text-primary); }
+.modal-header h3 { font-size: var(--fs-2xl); font-weight: 600; margin: 0; color: var(--color-text-primary); }
 .close-btn {
   width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
   border: none; background: transparent; border-radius: var(--radius-sm);
-  cursor: pointer; color: var(--color-text-muted); font-size: 16px;
+  cursor: pointer; color: var(--color-text-muted); font-size: var(--fs-2xl);
 }
 .close-btn:hover { background: var(--color-primary-light); }
 
@@ -167,10 +167,10 @@ export default { components: { BmFolderItem } }
 }
 .target-favicon { width: 22px; height: 22px; border-radius: var(--radius-sm); object-fit: contain; flex-shrink: 0; }
 .target-text { flex: 1; min-width: 0; }
-.target-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.target-url { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+.target-title { font-size: var(--fs-lg); font-weight: 500; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.target-url { font-size: var(--fs-base); color: var(--color-text-muted); margin-top: 2px; }
 
-.folder-label { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 6px; }
+.folder-label { font-size: var(--fs-md); font-weight: 600; color: var(--color-text-secondary); margin-bottom: 6px; }
 
 .folder-tree {
   max-height: 200px; overflow-y: auto;
@@ -183,12 +183,12 @@ export default { components: { BmFolderItem } }
 .footer-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn-cancel {
   padding: 7px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-  background: transparent; color: var(--color-text-secondary); font-size: 12px; cursor: pointer;
+  background: transparent; color: var(--color-text-secondary); font-size: var(--fs-md); cursor: pointer;
 }
 .btn-cancel:hover { background: var(--color-primary-light); }
 .btn-save {
   padding: 7px 18px; border: none; border-radius: var(--radius-sm);
-  background: var(--color-primary); color: var(--color-text-inverse); font-size: 12px; font-weight: 500;
+  background: var(--color-primary); color: var(--color-text-inverse); font-size: var(--fs-md); font-weight: 500;
   cursor: pointer; transition: all var(--transition-hover);
 }
 .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
