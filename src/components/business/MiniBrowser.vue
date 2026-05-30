@@ -1,11 +1,14 @@
 ﻿<script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { useMiniBrowser } from '@/composables/useMiniBrowser'
 import { useSuggestions, type SuggestionItem } from '@/composables/useSuggestions'
 import { useStatsStore } from '@/stores/stats'
 import { useThemeStore } from '@/stores/theme'
+import { useUserScriptsStore } from '@/stores/userScripts'
 import { getFaviconUrl, onFaviconError } from '@/utils/helpers'
 import { useI18n } from '@/i18n'
+
+const UserScriptsPanel = defineAsyncComponent(() => import('@/components/business/UserScriptsPanel.vue'))
 
 const {
   browser,
@@ -18,6 +21,7 @@ const {
 const suggestions = useSuggestions()
 const stats = useStatsStore()
 const theme = useThemeStore()
+const userScripts = useUserScriptsStore()
 const { t } = useI18n()
 
 const urlInput = ref<HTMLInputElement | null>(null)
@@ -303,6 +307,12 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
               {{ browser.isMosaicMode ? t('browser.disableMosaic') : t('browser.enableMosaic') }}
             </button>
             <div class="mb-more-divider" />
+            <button class="mb-more-item" @click="userScripts.togglePanel(); showMoreMenu = false">
+              <span class="i-lucide:code" />
+              {{ t('userscripts.title') }}
+              <span v-if="userScripts.scripts.filter(s => s.enabled).length" class="mb-more-badge">{{ userScripts.scripts.filter(s => s.enabled).length }}</span>
+            </button>
+            <div class="mb-more-divider" />
             <div class="mb-zoom-row">
               <button class="mb-more-item" @click="handleMoreAction('zoomOut')"><span class="i-lucide:zoom-out" /></button>
               <span class="mb-zoom-value">{{ browser.zoomLevel }}%</span>
@@ -363,6 +373,13 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
         <button class="mb-retry" @click="browser.refresh">{{ t('browser.retry') }}</button>
       </div>
     </div>
+
+    <!-- User Scripts Panel (slide-in from right) -->
+    <Transition name="usp-slide">
+      <div v-if="userScripts.showPanel" class="mb-usp-container">
+        <UserScriptsPanel />
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -535,5 +552,37 @@ function handleFaviconError(event: Event, url: string) { onFaviconError(event, u
 .mb-quick-domain {
   font-size: var(--fs-base); color: var(--color-text-secondary); text-align: center;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+
+/* User Scripts Panel */
+.mb-usp-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 260px;
+  z-index: 50;
+  box-shadow: -4px 0 16px rgba(0,0,0,0.15);
+}
+
+.usp-slide-enter-active,
+.usp-slide-leave-active {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.usp-slide-enter-from,
+.usp-slide-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.mb-more-badge {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  line-height: 16px;
 }
 </style>
