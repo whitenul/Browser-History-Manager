@@ -111,13 +111,14 @@ export const useHistoryStore = defineStore('history', () => {
       result.push(r)
     }
 
-    switch (sortMode.value) {
-      case 'timeDesc': result.sort((a, b) => b.lastVisitTime - a.lastVisitTime); break
-      case 'timeAsc': result.sort((a, b) => a.lastVisitTime - b.lastVisitTime); break
-      case 'visitDesc': result.sort((a, b) => b.visitCount - a.visitCount); break
-      case 'visitAsc': result.sort((a, b) => a.visitCount - b.visitCount); break
-      case 'domainAsc': result.sort((a, b) => a.domain.localeCompare(b.domain)); break
-      case 'domainDesc': result.sort((a, b) => b.domain.localeCompare(a.domain)); break
+    if (sortMode.value !== 'timeDesc') {
+      switch (sortMode.value) {
+        case 'timeAsc': result.sort((a, b) => a.lastVisitTime - b.lastVisitTime); break
+        case 'visitDesc': result.sort((a, b) => b.visitCount - a.visitCount); break
+        case 'visitAsc': result.sort((a, b) => a.visitCount - b.visitCount); break
+        case 'domainAsc': result.sort((a, b) => a.domain.localeCompare(b.domain)); break
+        case 'domainDesc': result.sort((a, b) => b.domain.localeCompare(a.domain)); break
+      }
     }
 
     filteredRecords.value = result
@@ -138,51 +139,103 @@ export const useHistoryStore = defineStore('history', () => {
 
   const isFavorite = computed(() => (url: string) => favoriteSet.value.has(url))
 
+  function mapHistoryItem(item: chrome.history.HistoryItem): HistoryRecord {
+    const url = item.url || ''
+    const title = item.title || url
+    return {
+      id: item.id || '',
+      url,
+      title,
+      lastVisitTime: item.lastVisitTime || 0,
+      visitCount: item.visitCount || 0,
+      typedCount: item.typedCount || 0,
+      domain: getDomain(url),
+      domainColor: stringToColor(getDomain(url)),
+      tags: autoTag(url, title),
+    }
+  }
+
+  function onHistoryVisited(result: chrome.history.HistoryItem) {
+    if (!result.url) return
+    const newRecord = mapHistoryItem(result)
+    const existingIdx = allRecords.value.findIndex(r => r.url === result.url)
+    if (existingIdx >= 0) {
+      const updated = [...allRecords.value]
+      updated[existingIdx] = newRecord
+      allRecords.value = updated
+    } else {
+      allRecords.value = [newRecord, ...allRecords.value]
+      totalCount.value = allRecords.value.length
+    }
+    debouncedCompute()
+  }
+
+  function onHistoryVisitRemoved(removed: { allHistory?: boolean; urls?: string[] }) {
+    if (removed.allHistory) {
+      allRecords.value = []
+      totalCount.value = 0
+      applyFilters()
+      return
+    }
+    if (removed.urls?.length) {
+      const urlSet = new Set(removed.urls)
+      allRecords.value = allRecords.value.filter(r => !urlSet.has(r.url))
+      totalCount.value = allRecords.value.length
+      applyFilters()
+    }
+  }
+
+  let historyListenersActive = false
+
+  function startHistoryListeners() {
+    if (historyListenersActive) return
+    historyListenersActive = true
+    chrome.history.onVisited.addListener(onHistoryVisited)
+    chrome.history.onVisitRemoved.addListener(onHistoryVisitRemoved)
+  }
+
+  function stopHistoryListeners() {
+    if (!historyListenersActive) return
+    historyListenersActive = false
+    chrome.history.onVisited.removeListener(onHistoryVisited)
+    chrome.history.onVisitRemoved.removeListener(onHistoryVisitRemoved)
+  }
+
   async function loadRecords() {
     const loadStart = perfMark('history:load')
     isLoading.value = true
     try {
-      await ensureTagRulesLoaded()
-      const { startTime, endTime } = getTimeRange(timeRange.value)
+      const [, { startTime, endTime }] = await Promise.all([
+        ensureTagRulesLoaded(),
+        Promise.resolve(getTimeRange(timeRange.value)),
+      ])
       const cacheKey = `history:${startTime}:${endTime}`
       let items = await appCache.get<chrome.history.HistoryItem[]>(cacheKey, true)
 
       if (!items || !Array.isArray(items)) {
         items = await chrome.history.search({ text: '', startTime, endTime, maxResults: 5000 })
         if (!Array.isArray(items)) items = []
-        await appCache.set(cacheKey, items, true)
+        appCache.set(cacheKey, items, true).catch(() => {})
 
         if (timeRange.value === 'all' && items.length >= 5000) {
           loadMoreInBackground(startTime, endTime)
         }
       }
 
-      allRecords.value = items.map((item: chrome.history.HistoryItem) => {
-        const url = item.url || ''
-        const title = item.title || url
-        return {
-          id: item.id || '',
-          url,
-          title,
-          lastVisitTime: item.lastVisitTime || 0,
-          visitCount: item.visitCount || 0,
-          typedCount: item.typedCount || 0,
-          domain: getDomain(url),
-          domainColor: stringToColor(getDomain(url)),
-          tags: autoTag(url, title),
-        }
-      })
-
+      allRecords.value = items.map(mapHistoryItem)
       totalCount.value = allRecords.value.length
       hasMore.value = allRecords.value.length > PAGE_SIZE.value
       currentPage.value = 0
+
+      applyFilters()
+      startHistoryListeners()
+      isLoading.value = false
 
       await Promise.all([loadFavorites(), loadCustomRules(), loadTags(), loadBlacklist()])
       applyFilters()
       perfMeasure('history:load', loadStart, { recordCount: allRecords.value.length })
     } catch (e) {
       console.error('Failed to load records:', e)
-    } finally {
       isLoading.value = false
     }
   }
@@ -195,21 +248,7 @@ export const useHistoryStore = defineStore('history', () => {
       if (Array.isArray(extra) && extra.length > 0) {
         const cacheKey = `history:${startTime}:${endTime}`
         await appCache.set(cacheKey, extra, true)
-        const mapped = extra.map((item: chrome.history.HistoryItem) => {
-          const url = item.url || ''
-          const title = item.title || url
-          return {
-            id: item.id || '',
-            url,
-            title,
-            lastVisitTime: item.lastVisitTime || 0,
-            visitCount: item.visitCount || 0,
-            typedCount: item.typedCount || 0,
-            domain: getDomain(url),
-            domainColor: stringToColor(getDomain(url)),
-            tags: autoTag(url, title),
-          }
-        })
+        const mapped = extra.map(mapHistoryItem)
         allRecords.value = mapped
         totalCount.value = mapped.length
         hasMore.value = mapped.length > PAGE_SIZE.value
@@ -573,6 +612,6 @@ export const useHistoryStore = defineStore('history', () => {
     loadBlacklist, saveBlacklist, addBlacklistDomain, removeBlacklistDomain,
     doExport, applyFilters, applySettings, toggleSelectMode, toggleSelectRecord, selectAll, clearSelection,
     setTimeFilter, setTagFilter, setDomainFilter, clearAllFilters,
-    resetState,
+    resetState, startHistoryListeners, stopHistoryListeners,
   }
 })

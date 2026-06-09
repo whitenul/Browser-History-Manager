@@ -3,6 +3,7 @@ import { onMounted, computed } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useThemeStore } from '@/stores/theme'
 import { useHistoryStore } from '@/stores/history'
+import { useUserScriptsStore } from '@/stores/userScripts'
 import { useI18n } from '@/i18n'
 import HistoryView from '@/views/HistoryView.vue'
 import StatsView from '@/views/StatsView.vue'
@@ -21,6 +22,7 @@ import CommandPalette from '@/components/business/CommandPalette.vue'
 const ui = useUIStore()
 const theme = useThemeStore()
 const history = useHistoryStore()
+const userScripts = useUserScriptsStore()
 const { t } = useI18n()
 
 const tabTitles: Record<string, string> = {
@@ -59,7 +61,7 @@ onMounted(async () => {
   } catch (err: any) {
     console.error('[POPUP] Error in sidebar redirect:', err?.message || err)
   }
-  await Promise.all([theme.loadTheme(), history.loadRecords()])
+  await Promise.all([theme.loadTheme(), history.loadRecords(), userScripts.loadScripts()])
 })
 </script>
 

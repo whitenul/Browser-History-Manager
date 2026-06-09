@@ -48,6 +48,9 @@ export function useI18n() {
     if (value === undefined) {
       value = getNestedValue(zhCN, key)
     }
+    if (value === undefined) {
+      value = getNestedValue(en, key)
+    }
     if (value === undefined) return key
     if (typeof value === 'string' && params) {
       return value.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? `{${k}}`))

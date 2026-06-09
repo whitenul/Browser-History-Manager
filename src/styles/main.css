@@ -232,6 +232,37 @@ body {
   position: relative;
 }
 
+/* ===== Editor Page (full tab) Override ===== */
+html.editor-page,
+html.editor-page body {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100vh !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+html.editor-page #app {
+  width: 100% !important;
+  height: 100vh !important;
+  max-height: none !important;
+}
+html.editor-page ::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+html.editor-page ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2) !important;
+  border-radius: 4px !important;
+}
+html.editor-page ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.35) !important;
+}
+html.editor-page .cm-scroller {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  overscroll-behavior: auto !important;
+}
+
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -262,6 +293,14 @@ mark { background: var(--color-primary-light); color: inherit; padding: 0 1px; b
 html.no-animations *, html.no-animations *::before, html.no-animations *::after {
   animation-duration: 0ms !important;
   transition-duration: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.no-animations) *, html:not(.no-animations) *::before, html:not(.no-animations) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 html.compact .record-item { padding: 4px 10px !important; }

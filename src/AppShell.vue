@@ -23,11 +23,13 @@ const CommandPalette = defineAsyncComponent(() => import('@/components/business/
 const MiniBrowser = defineAsyncComponent(() => import('@/components/business/MiniBrowser.vue'))
 
 import { useMiniBrowser } from '@/composables/useMiniBrowser'
+import { useUserScriptsStore } from '@/stores/userScripts'
 
 const ui = useUIStore()
 const groupStore = useTabGroupStore()
 const optimizer = useTabOptimizerStore()
 const theme = useThemeStore()
+const userScripts = useUserScriptsStore()
 const history = useHistoryStore()
 const { t } = useI18n()
 const { enterBrowsingMode, exitBrowsingMode } = useMiniBrowser()
@@ -73,8 +75,8 @@ const headerTitle = computed(() => tabTitles[ui.activeTab] || (isSidebar ? t('na
 const allTabs = [
   { id: 'tabs' as const, label: t('nav.tabs'), icon: 'i-lucide:globe', sidebarOnly: true },
   { id: 'history' as const, label: t('nav.history'), icon: 'i-lucide:clock' },
-  { id: 'toc' as const, label: t('nav.toc'), icon: 'i-lucide:list' },
-  { id: 'stats' as const, label: t('nav.stats'), icon: 'i-lucide:bar-chart-3' },
+  { id: 'toc' as const, label: t('nav.toc'), icon: 'i-lucide:list', sidebarOnly: true },
+  { id: 'stats' as const, label: t('nav.stats'), icon: 'i-lucide:bar-chart-3', sidebarOnly: true },
   { id: 'bookmarks' as const, label: t('nav.bookmarks'), icon: 'i-lucide:bookmark' },
   { id: 'settings' as const, label: t('nav.settings'), icon: 'i-lucide:settings' },
 ]
@@ -86,6 +88,8 @@ onMounted(async () => {
     ui.switchTab('tabs')
   }
   await Promise.all([theme.loadTheme(), history.loadRecords()])
+
+  userScripts.loadScripts().catch(() => {})
 
   try {
     const result = await chrome.storage.local.get('appSettings')
@@ -175,6 +179,9 @@ function onGlobalKeydown(e: KeyboardEvent) {
                 <span class="i-lucide:zap" />
               </button>
             </template>
+            <button class="action-btn" :title="t('browser.open')" @click="enterBrowsingMode">
+              <span class="i-lucide:globe" />
+            </button>
             <button class="action-btn" :title="t('commandPalette.placeholder')" @click="ui.showCommandPalette = true">
               <span class="i-lucide:terminal" />
             </button>
@@ -265,16 +272,6 @@ function onGlobalKeydown(e: KeyboardEvent) {
         </div>
       </Transition>
     </Teleport>
-
-    <!-- FAB Button (Sidebar only) -->
-    <button
-      v-if="isSidebar && !ui.isBrowsingMode"
-      class="fab-browser"
-      :title="t('browser.open')"
-      @click="enterBrowsingMode"
-    >
-      <span class="i-lucide:globe" />
-    </button>
 
     <Teleport to="body">
       <Transition name="toast">
@@ -436,10 +433,13 @@ html.dark .app-shell::before {
 }
 .shell-count { font-size: var(--fs-md); opacity: 0.75; }
 
-.shell-actions { display: flex; gap: 6px; }
+.shell-actions { display: flex; gap: 4px; align-items: center; }
 .shell-actions .btn-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0;
   color: inherit; opacity: 0.8;
-  width: 32px; height: 32px; font-size: var(--fs-2xl);
+  font-size: var(--fs-xl);
+  border-radius: var(--radius-sm);
 }
 .shell-actions .btn-icon:hover { opacity: 1; background: var(--header-hover-bg); }
 .shell-actions .btn-icon.active {
@@ -450,11 +450,12 @@ html.dark .app-shell::before {
 /* Theme toggle with mode indicator */
 .theme-toggle-btn {
   position: relative;
+  overflow: visible;
 }
 .mode-indicator {
   position: absolute;
-  top: 2px; right: 2px;
-  font-size: var(--fs-xs);
+  top: 1px; right: 1px;
+  font-size: 10px;
   opacity: 0.9;
   color: inherit;
   pointer-events: none;
@@ -578,11 +579,21 @@ html.dark .app-shell::before {
 /* Tabs in sidebar */
 .app-shell--sidebar .shell-tabs {
   margin-top: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.app-shell--sidebar .shell-tabs::-webkit-scrollbar { display: none; }
 
 .app-shell--sidebar .shell-tab {
   padding: 6px 4px;
   font-size: var(--fs-md);
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.app-shell--sidebar .shell-tab .tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Actions in sidebar */
@@ -619,11 +630,6 @@ html.dark .app-shell::before {
   opacity: 1;
 }
 
-.app-shell--sidebar .shell-tab {
-  padding: 6px 4px;
-  font-size: var(--fs-md);
-}
-
 .app-shell--sidebar .shell-content {
   flex: 1;
   min-height: 0;
@@ -647,10 +653,11 @@ html.dark .app-shell::before {
 }
 
 /* ========== 共享动画 ========== */
-.fade-enter-active, .fade-leave-active { transition: opacity 60ms ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active, .fade-leave-active { transition: opacity 150ms ease, transform 150ms ease; }
+.fade-enter-from { opacity: 0; transform: translateY(4px); }
+.fade-leave-to { opacity: 0; transform: translateY(-4px); }
 
-.fade-fast-enter-active, .fade-fast-leave-active { transition: opacity 30ms ease-out; }
+.fade-fast-enter-active, .fade-fast-leave-active { transition: opacity 80ms ease-out; }
 .fade-fast-enter-from, .fade-fast-leave-to { opacity: 0; }
 
 /* ========== Toast ========== */
@@ -701,33 +708,5 @@ html.dark .app-shell::before {
 .browser-overlay-leave-to {
   opacity: 0;
   transform: translateY(10px);
-}
-
-/* FAB Button */
-.fab-browser {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  font-size: var(--fs-3xl);
-  cursor: pointer;
-  z-index: 100;
-  box-shadow: var(--shadow-fab);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-hover);
-}
-.fab-browser:hover {
-  transform: scale(1.08);
-  box-shadow: var(--shadow-fab-hover);
-}
-.fab-browser:active {
-  transform: scale(0.95);
 }
 </style>

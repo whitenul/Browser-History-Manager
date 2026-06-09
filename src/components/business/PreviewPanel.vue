@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿﻿﻿﻿﻿﻿<script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { formatTime, getFaviconUrl, safeOpenUrl, sanitizeUrl, onFaviconError } from '@/utils/helpers'

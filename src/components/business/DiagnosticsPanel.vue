@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿﻿﻿﻿﻿﻿<script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { useDiagnostics } from '@/stores/diagnostics'
 import { useI18n } from '@/i18n'

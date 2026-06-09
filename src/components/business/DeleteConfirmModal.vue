@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿﻿﻿﻿﻿﻿<script setup lang="ts">
 import { useUIStore } from '@/stores/ui'
 import { useHistoryStore } from '@/stores/history'
 import { escapeHtml } from '@/utils/helpers'

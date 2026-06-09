@@ -31,4 +31,29 @@ interface Chrome {
   runtime: {
     lastError?: chrome.runtime.LastError
   }
+  userScripts: {
+    register(scripts: chrome.userScripts.RegisteredUserScript[]): Promise<void>
+    unregister(scriptIds: string[]): Promise<void>
+    getScripts(filter?: { ids?: string[] }): Promise<chrome.userScripts.RegisteredUserScript[]>
+    ExecutionWorld: 'MAIN' | 'USER_SCRIPT'
+  }
+}
+
+declare namespace chrome.userScripts {
+  interface RegisteredUserScript {
+    id: string
+    matches: string[]
+    excludeMatches?: string[]
+    includeGlobs?: string[]
+    excludeGlobs?: string[]
+    js: ScriptSource[]
+    world?: 'MAIN' | 'USER_SCRIPT'
+    runAt?: 'document_start' | 'document_end' | 'document_idle'
+    allFrames?: boolean
+  }
+
+  interface ScriptSource {
+    file?: string
+    code?: string
+  }
 }

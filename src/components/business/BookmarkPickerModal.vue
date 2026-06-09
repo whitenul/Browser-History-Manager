@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿﻿﻿﻿﻿﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { getFaviconUrl, onFaviconError } from '@/utils/helpers'

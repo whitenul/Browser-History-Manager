@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿﻿﻿﻿﻿﻿<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'

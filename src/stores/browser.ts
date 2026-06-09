@@ -88,10 +88,10 @@ export const useBrowserStore = defineStore('browser', () => {
     }, LOAD_TIMEOUT)
   }
 
-  function onIframeLoad() {
+  function onIframeLoad(error?: string | null) {
     clearTimeout(loadTimer!)
     isLoading.value = false
-    loadError.value = null
+    loadError.value = error || null
   }
 
   function updateDisplayUrl(url: string) {
@@ -143,7 +143,11 @@ export const useBrowserStore = defineStore('browser', () => {
     loadError.value = null
     startLoadTimer()
     pushHistory(result.url)
-    navVersion.value++ // Signal iframe to reload
+    try {
+      const origin = new URL(result.url).origin
+      chrome.runtime.sendMessage({ type: 'clearCacheForOrigin', origin })
+    } catch { /* ignore */ }
+    navVersion.value++
   }
 
   /** Update URL display only (for cross-origin iframe navigation we can't detect) */

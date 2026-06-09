@@ -1,8 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { HistoryRecord } from '@/utils/helpers'
+import type { BookmarkNode } from '@/stores/bookmarks'
 
 export type TabId = 'tabs' | 'history' | 'stats' | 'bookmarks' | 'toc' | 'settings'
+export type ContextMenuTargetType = 'history' | 'bookmark' | 'tab'
+
+export interface ContextMenuState {
+  type: ContextMenuTargetType
+  data: any
+}
 
 export interface UndoAction {
   label: string
@@ -30,7 +37,7 @@ export const useUIStore = defineStore('ui', () => {
   const showOptimizer = ref(false)
   const showContextMenu = ref(false)
   const contextMenuPos = ref({ x: 0, y: 0 })
-  const contextMenuTarget = ref<HistoryRecord | null>(null)
+  const contextMenuTarget = ref<ContextMenuState | null>(null)
   const showDeleteConfirm = ref(false)
   const deleteTarget = ref<HistoryRecord | null>(null)
   const showTagModal = ref(false)
@@ -43,6 +50,12 @@ export const useUIStore = defineStore('ui', () => {
   const previewRecord = ref<HistoryRecord | null>(null)
   const showBookmarkPicker = ref(false)
   const bookmarkTarget = ref<HistoryRecord | null>(null)
+  const showBookmarkEditModal = ref(false)
+  const bookmarkEditTarget = ref<BookmarkNode | null>(null)
+  const showBookmarkMoveModal = ref(false)
+  const bookmarkMoveTarget = ref<BookmarkNode | null>(null)
+  const showNewFolderModal = ref(false)
+  const newFolderParentId = ref<string>('0')
   const showCommandPalette = ref(false)
   const isBrowsingMode = ref(false)
   const undoStack = ref<UndoAction[]>([])
@@ -111,9 +124,9 @@ export const useUIStore = defineStore('ui', () => {
     navStack.value = []
   }
 
-  function openContextMenu(x: number, y: number, target: HistoryRecord) {
+  function openContextMenu(x: number, y: number, type: ContextMenuTargetType, data: any) {
     contextMenuPos.value = { x, y }
-    contextMenuTarget.value = target
+    contextMenuTarget.value = { type, data }
     showContextMenu.value = true
   }
 
@@ -202,6 +215,36 @@ export const useUIStore = defineStore('ui', () => {
     bookmarkTarget.value = null
   }
 
+  function openBookmarkEdit(node: BookmarkNode) {
+    bookmarkEditTarget.value = node
+    showBookmarkEditModal.value = true
+  }
+
+  function closeBookmarkEdit() {
+    showBookmarkEditModal.value = false
+    bookmarkEditTarget.value = null
+  }
+
+  function openBookmarkMove(node: BookmarkNode) {
+    bookmarkMoveTarget.value = node
+    showBookmarkMoveModal.value = true
+  }
+
+  function closeBookmarkMove() {
+    showBookmarkMoveModal.value = false
+    bookmarkMoveTarget.value = null
+  }
+
+  function openNewFolder(parentId: string) {
+    newFolderParentId.value = parentId
+    showNewFolderModal.value = true
+  }
+
+  function closeNewFolder() {
+    showNewFolderModal.value = false
+    newFolderParentId.value = '0'
+  }
+
   async function loadDoubleClickMode() {
     try {
       const result = await chrome.storage.local.get('doubleClickMode')
@@ -258,6 +301,9 @@ export const useUIStore = defineStore('ui', () => {
     notify, notifyWithUndo, executeUndo,
     openPreview, closePreview,
     openBookmarkPicker, closeBookmarkPicker,
+    showBookmarkEditModal, bookmarkEditTarget, openBookmarkEdit, closeBookmarkEdit,
+    showBookmarkMoveModal, bookmarkMoveTarget, openBookmarkMove, closeBookmarkMove,
+    showNewFolderModal, newFolderParentId, openNewFolder, closeNewFolder,
     loadDoubleClickMode, saveDoubleClickMode,
     loadSidebarMode, saveSidebarMode,
     loadPrivacyMode, savePrivacyMode,

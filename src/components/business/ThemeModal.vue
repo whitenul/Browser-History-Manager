@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from '@/i18n'
 import { useThemeStore, PRESET_THEMES, GRADIENT_PRESETS } from '@/stores/theme'
@@ -41,7 +41,7 @@ function setColor(varName: string, value: string) {
 
 const sections = [
   { id: 'color' as const, label: t('theme.color'), icon: 'i-lucide:palette' },
-  { id: 'background' as const, label: 'Background', icon: 'i-lucide:image' },
+  { id: 'background' as const, label: t('theme.background'), icon: 'i-lucide:image' },
   { id: 'layout' as const, label: t('theme.layout'), icon: 'i-lucide:layout' },
   { id: 'typo' as const, label: t('theme.typography'), icon: 'i-lucide:type' },
   { id: 'effects' as const, label: t('theme.effects'), icon: 'i-lucide:sparkles' },
@@ -49,11 +49,11 @@ const sections = [
 ]
 
 const bgTypes: { value: BackgroundType; label: string; icon: string }[] = [
-  { value: 'none', label: 'None', icon: 'i-lucide:ban' },
-  { value: 'gradient', label: 'Gradient', icon: 'i-lucide:blend' },
-  { value: 'stars', label: 'Stars', icon: 'i-lucide:stars' },
-  { value: 'aurora', label: 'Aurora', icon: 'i-lucide:sun' },
-  { value: 'image', label: 'Image', icon: 'i-lucide:image' },
+  { value: 'none', label: t('theme.bgTypeNone'), icon: 'i-lucide:ban' },
+  { value: 'gradient', label: t('theme.bgTypeGradient'), icon: 'i-lucide:blend' },
+  { value: 'stars', label: t('theme.bgTypeStars'), icon: 'i-lucide:stars' },
+  { value: 'aurora', label: t('theme.bgTypeAurora'), icon: 'i-lucide:sun' },
+  { value: 'image', label: t('theme.bgTypeImage'), icon: 'i-lucide:image' },
 ]
 
 function handleImageUpload(e: Event) {
@@ -117,10 +117,10 @@ function doImport() {
                 <span class="preset-name">{{ t(p.name) }}</span>
               </button>
             </div>
-            <div class="sub-label">Brand Colors</div>
+            <div class="sub-label">{{ t('theme.brandColors') }}</div>
             <div class="color-row">
-              <label class="color-field"><span>Primary</span><input type="color" :value="getColor('--color-primary')" @input="setColor('--color-primary', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
-              <label class="color-field"><span>Accent</span><input type="color" :value="getColor('--color-accent')" @input="setColor('--color-accent', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>{{ t('theme.primary') }}</span><input type="color" :value="getColor('--color-primary')" @input="setColor('--color-primary', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
+              <label class="color-field"><span>{{ t('theme.accent') }}</span><input type="color" :value="getColor('--color-accent')" @input="setColor('--color-accent', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
             </div>
             <div class="sub-label">{{ t('theme.textColors') }}</div>
             <div class="color-row">
@@ -144,12 +144,12 @@ function doImport() {
               <label class="color-field"><span>{{ t('theme.warning') }}</span><input type="color" :value="getColor('--color-warning')" @input="setColor('--color-warning', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
               <label class="color-field"><span>{{ t('theme.info') }}</span><input type="color" :value="getColor('--color-info')" @input="setColor('--color-info', ($event.target as HTMLInputElement).value)" class="color-input" /></label>
             </div>
-            <button v-if="theme.customColors" class="reset-btn" @click="theme.setCustomColors(null)"><span class="i-lucide:x" />Clear All Custom Colors</button>
+            <button v-if="theme.customColors" class="reset-btn" @click="theme.setCustomColors(null)"><span class="i-lucide:x" />{{ t('theme.clearAllCustomColors') }}</button>
           </div>
 
           <!-- 背景 -->
           <div v-if="activeSection === 'background'">
-            <div class="sub-label">Background Type</div>
+            <div class="sub-label">{{ t('theme.backgroundType') }}</div>
             <div class="bg-type-row">
               <button v-for="bt in bgTypes" :key="bt.value" class="bg-type-btn" :class="{ active: theme.background.type === bt.value }" @click="theme.setBackground({ type: bt.value })">
                 <span :class="bt.icon" />{{ bt.label }}
@@ -158,7 +158,7 @@ function doImport() {
 
             <!-- Gradient -->
             <div v-if="theme.background.type === 'gradient'" class="sub-section">
-              <div class="sub-label">Gradient Presets</div>
+              <div class="sub-label">{{ t('theme.gradientPresets') }}</div>
               <div class="gradient-grid">
                 <button v-for="g in GRADIENT_PRESETS" :key="g.id" class="gradient-card" :class="{ active: theme.background.gradient === g.gradient }" @click="theme.setBackground({ gradient: g.gradient })">
                   <div class="gradient-preview" :style="{ background: g.gradient }" />
@@ -169,15 +169,15 @@ function doImport() {
 
             <!-- Image -->
             <div v-if="theme.background.type === 'image'" class="sub-section">
-              <div class="sub-label">Upload Image</div>
+              <div class="sub-label">{{ t('theme.uploadImage') }}</div>
               <label class="upload-area">
                 <input type="file" accept="image/*" @change="handleImageUpload" class="hidden-input" />
-                <span class="i-lucide:upload" /><span>Click to upload</span>
+                <span class="i-lucide:upload" /><span>{{ t('theme.clickToUpload') }}</span>
               </label>
-              <div class="sub-label" style="margin-top:8px">Or paste URL</div>
+              <div class="sub-label" style="margin-top:8px">{{ t('theme.orPasteUrl') }}</div>
               <div class="url-row">
-                <input v-model="imageUrlInput" class="url-input" placeholder="https://..." @keydown.enter="applyImageUrl" />
-                <button class="apply-btn sm" @click="applyImageUrl">Apply</button>
+                <input v-model="imageUrlInput" class="url-input" :placeholder="t('theme.urlPlaceholder')" @keydown.enter="applyImageUrl" />
+                <button class="apply-btn sm" @click="applyImageUrl">{{ t('theme.apply') }}</button>
               </div>
               <div v-if="theme.background.imageUrl" class="image-preview-wrap">
                 <div class="image-preview" :style="{ backgroundImage: `url(${theme.background.imageUrl})` }" />
@@ -186,24 +186,24 @@ function doImport() {
 
             <!-- Blur & Opacity (for image/gradient) -->
             <div v-if="['image', 'gradient'].includes(theme.background.type)" class="sub-section">
-              <div class="sub-label">Adjustments</div>
+              <div class="sub-label">{{ t('theme.adjustments') }}</div>
               <div class="slider-row">
-                <span class="slider-label">Blur</span>
+                <span class="slider-label">{{ t('theme.blur') }}</span>
                 <input type="range" :value="theme.background.blur" min="0" max="30" step="1" @input="theme.setBackground({ blur: +($event.target as HTMLInputElement).value })" class="slider" />
                 <span class="slider-value">{{ theme.background.blur }}px</span>
               </div>
               <div class="slider-row">
-                <span class="slider-label">Opacity</span>
+                <span class="slider-label">{{ t('theme.opacity') }}</span>
                 <input type="range" :value="theme.background.opacity" min="0" max="1" step="0.05" @input="theme.setBackground({ opacity: +($event.target as HTMLInputElement).value })" class="slider" />
                 <span class="slider-value">{{ Math.round(theme.background.opacity * 100) }}%</span>
               </div>
               <div class="slider-row">
-                <span class="slider-label">Overlay</span>
+                <span class="slider-label">{{ t('theme.overlay') }}</span>
                 <input type="range" :value="theme.background.overlayOpacity" min="0" max="0.8" step="0.05" @input="theme.setBackground({ overlayOpacity: +($event.target as HTMLInputElement).value })" class="slider" />
                 <span class="slider-value">{{ Math.round(theme.background.overlayOpacity * 100) }}%</span>
               </div>
               <div class="slider-row">
-                <span class="slider-label">Overlay Color</span>
+                <span class="slider-label">{{ t('theme.overlayColor') }}</span>
                 <input type="color" :value="theme.background.overlayColor" @input="theme.setBackground({ overlayColor: ($event.target as HTMLInputElement).value })" class="color-input" />
               </div>
             </div>
@@ -215,92 +215,92 @@ function doImport() {
             <div class="option-grid-4">
               <button v-for="hs in (['solid','gradient','glass','minimal'] as HeaderStyle[])" :key="hs" class="option-card" :class="{ active: theme.headerStyle === hs }" @click="theme.setHeaderStyle(hs)">
                 <div class="option-preview header-preview" :class="hs" />
-                <span class="option-label">{{ hs }}</span>
+                <span class="option-label">{{ t(`theme.headerOptions.${hs}`) }}</span>
               </button>
             </div>
             <div class="sub-label">{{ t('theme.cardStyle') }}</div>
             <div class="option-grid-5">
               <button v-for="cs in (['flat','bordered','shadowed','elevated','glass'] as CardStyle[])" :key="cs" class="option-card" :class="{ active: theme.cardStyle === cs }" @click="theme.setCardStyle(cs)">
                 <div class="option-preview card-preview" :class="cs" />
-                <span class="option-label">{{ cs }}</span>
+                <span class="option-label">{{ t(`theme.cardOptions.${cs}`) }}</span>
               </button>
             </div>
-            <div class="sub-label">Radius</div>
+            <div class="sub-label">{{ t('theme.radiusStyle') }}</div>
             <div class="option-grid-5">
               <button v-for="rp in (['none','small','medium','large','full'] as RadiusPreset[])" :key="rp" class="option-card" :class="{ active: theme.radiusPreset === rp }" @click="theme.setRadiusPreset(rp)">
                 <div class="radius-demo" :class="rp" />
-                <span class="option-label">{{ rp }}</span>
+                <span class="option-label">{{ t(`theme.radiusOptions.${rp}`) }}</span>
               </button>
             </div>
             <button class="toggle-btn" :class="{ active: theme.compactMode }" @click="theme.toggleCompact()">
-              <span class="i-lucide:minimize-2" />Compact<span class="toggle-status">{{ theme.compactMode ? 'ON' : 'OFF' }}</span>
+              <span class="i-lucide:minimize-2" />{{ t('theme.compactMode') }}<span class="toggle-status">{{ theme.compactMode ? t('theme.on') : t('theme.off') }}</span>
             </button>
-            <div class="sub-label" style="margin-top:10px">Card Density</div>
+            <div class="sub-label" style="margin-top:10px">{{ t('theme.cardDensity') }}</div>
             <div class="option-grid-3">
               <button v-for="cd in (['compact','normal','comfortable'] as CardDensity[])" :key="cd" class="option-card" :class="{ active: theme.cardDensity === cd }" @click="theme.setCardDensity(cd)">
                 <div class="density-demo" :class="cd">
                   <div class="density-line" /><div class="density-line" /><div class="density-line" />
                 </div>
-                <span class="option-label">{{ cd }}</span>
+                <span class="option-label">{{ t(`theme.cardDensityOptions.${cd}`) }}</span>
               </button>
             </div>
           </div>
 
           <!-- 排版 -->
           <div v-if="activeSection === 'typo'">
-            <div class="sub-label">Font Size</div>
+            <div class="sub-label">{{ t('theme.fontSize') }}</div>
             <div class="option-grid-3">
               <button v-for="fs in (['small','medium','large'] as FontSize[])" :key="fs" class="option-card" :class="{ active: theme.fontSize === fs }" @click="theme.setFontSize(fs)">
                 <span class="font-preview" :style="{ fontSize: fs === 'small' ? '11px' : fs === 'medium' ? '13px' : '15px' }">Aa</span>
-                <span class="option-label">{{ fs }}</span>
+                <span class="option-label">{{ t(`theme.fontSizeOptions.${fs}`) }}</span>
               </button>
             </div>
-            <div class="sub-label">Font Family</div>
+            <div class="sub-label">{{ t('theme.fontFamily') }}</div>
             <div class="option-grid-4">
               <button v-for="ff in (['system','serif','mono','rounded'] as FontFamily[])" :key="ff" class="option-card" :class="{ active: theme.fontFamily === ff }" @click="theme.setFontFamily(ff)">
                 <span class="font-preview">{{ ff === 'system' ? 'Aa' : ff === 'serif' ? 'Aa' : ff === 'mono' ? 'Aa' : 'Aa' }}</span>
-                <span class="option-label">{{ ff }}</span>
+                <span class="option-label">{{ t(`theme.fontFamilyOptions.${ff}`) }}</span>
               </button>
             </div>
             <div class="sub-label">{{ t('theme.fontWeight') }}</div>
             <div class="option-grid-4">
               <button v-for="fw in (['light','normal','medium','semibold'] as FontWeight[])" :key="fw" class="option-card" :class="{ active: theme.fontWeight === fw }" @click="theme.setFontWeight(fw)">
                 <span class="font-preview" :style="{ fontWeight: fw === 'light' ? '300' : fw === 'normal' ? '400' : fw === 'medium' ? '500' : '600' }">Aa</span>
-                <span class="option-label">{{ fw }}</span>
+                <span class="option-label">{{ t(`theme.fontWeightOptions.${fw}`) }}</span>
               </button>
             </div>
             <div class="sub-label">{{ t('theme.lineHeight') }}</div>
             <div class="option-grid-3">
               <button v-for="lh in (['compact','normal','relaxed'] as LineHeight[])" :key="lh" class="option-card" :class="{ active: theme.lineHeight === lh }" @click="theme.setLineHeight(lh)">
                 <span class="lh-preview" :class="lh">Aa<br>Aa</span>
-                <span class="option-label">{{ lh }}</span>
+                <span class="option-label">{{ t(`theme.lineHeightOptions.${lh}`) }}</span>
               </button>
             </div>
           </div>
 
           <!-- 效果 -->
           <div v-if="activeSection === 'effects'">
-            <div class="sub-label">Animation Speed</div>
+            <div class="sub-label">{{ t('theme.animationSpeed') }}</div>
             <div class="option-grid-4">
               <button v-for="as_ in (['off','slow','normal','fast'] as AnimationSpeed[])" :key="as_" class="option-card" :class="{ active: theme.animationSpeed === as_ }" @click="theme.setAnimationSpeed(as_)">
                 <span class="anim-icon" :class="{ off: as_ === 'off', slow: as_ === 'slow', fast: as_ === 'fast' }">⟳</span>
-                <span class="option-label">{{ as_ }}</span>
+                <span class="option-label">{{ t(`theme.animationOptions.${as_}`) }}</span>
               </button>
             </div>
-            <div class="sub-label">Scrollbar</div>
+            <div class="sub-label">{{ t('theme.scrollbarStyle') }}</div>
             <div class="option-grid-3">
               <button v-for="ss in (['thin','default','hidden'] as ScrollbarStyle[])" :key="ss" class="option-card" :class="{ active: theme.scrollbarStyle === ss }" @click="theme.setScrollbarStyle(ss)">
-                <span class="option-label">{{ ss }}</span>
+                <span class="option-label">{{ t(`theme.scrollbarOptions.${ss}`) }}</span>
               </button>
             </div>
-            <div class="sub-label">Glass Settings</div>
+            <div class="sub-label">{{ t('theme.glassSettings') }}</div>
             <div class="slider-row">
-              <span class="slider-label">Blur</span>
+              <span class="slider-label">{{ t('theme.blur') }}</span>
               <input type="range" :value="theme.glassBlur" min="0" max="30" step="1" @input="theme.setGlassBlur(+($event.target as HTMLInputElement).value)" class="slider" />
               <span class="slider-value">{{ theme.glassBlur }}px</span>
             </div>
             <div class="slider-row">
-              <span class="slider-label">Opacity</span>
+              <span class="slider-label">{{ t('theme.opacity') }}</span>
               <input type="range" :value="theme.glassOpacity" min="0.1" max="1" step="0.05" @input="theme.setGlassOpacity(+($event.target as HTMLInputElement).value)" class="slider" />
               <span class="slider-value">{{ Math.round(theme.glassOpacity * 100) }}%</span>
             </div>
@@ -308,31 +308,31 @@ function doImport() {
 
           <!-- 高级 -->
           <div v-if="activeSection === 'advanced'">
-            <div class="sub-label">Custom CSS</div>
-            <p class="hint-text">Write custom CSS to override any style. Use CSS variables like <code>--color-primary</code>, <code>--fs-lg</code>, <code>--space-md</code> etc.</p>
+            <div class="sub-label">{{ t('theme.customCSS') }}</div>
+            <p class="hint-text">{{ t('theme.customCSSHint') }}</p>
             <textarea
               class="custom-css-textarea"
               v-model="customCSSText"
-              placeholder=":root { --color-primary: #ff0000; }"
+              :placeholder="t('theme.customCSSPlaceholder')"
               rows="8"
               spellcheck="false"
             />
             <div class="action-row" style="margin-top:6px">
-              <button class="action-btn" @click="applyCustomCSS"><span class="i-lucide:check" />Apply</button>
-              <button class="action-btn" @click="resetCustomCSS"><span class="i-lucide:rotate-ccw" />Clear</button>
+              <button class="action-btn" @click="applyCustomCSS"><span class="i-lucide:check" />{{ t('theme.apply') }}</button>
+              <button class="action-btn" @click="resetCustomCSS"><span class="i-lucide:rotate-ccw" />{{ t('theme.clear') }}</button>
             </div>
 
             <div class="sub-label" style="margin-top:12px">{{ t('theme.importExport') }}</div>
             <div class="action-row">
-              <button class="action-btn" @click="doExport"><span class="i-lucide:download" />Export</button>
-              <button class="action-btn" @click="showImportArea = !showImportArea"><span class="i-lucide:upload" />Import</button>
+              <button class="action-btn" @click="doExport"><span class="i-lucide:download" />{{ t('theme.exportConfig') }}</button>
+              <button class="action-btn" @click="showImportArea = !showImportArea"><span class="i-lucide:upload" />{{ t('theme.importConfig') }}</button>
             </div>
             <div v-if="showImportArea" class="import-area">
-              <textarea v-model="importText" class="import-textarea" placeholder="Paste theme JSON..." rows="4" />
-              <button class="apply-btn" @click="doImport"><span class="i-lucide:check" />Apply</button>
+              <textarea v-model="importText" class="import-textarea" :placeholder="t('theme.importPlaceholder')" rows="4" />
+              <button class="apply-btn" @click="doImport"><span class="i-lucide:check" />{{ t('theme.apply') }}</button>
             </div>
             <div class="sub-label" style="margin-top:16px">{{ t('theme.reset') }}</div>
-            <button class="btn-danger" @click="theme.resetAll()"><span class="i-lucide:rotate-ccw" />Reset All</button>
+            <button class="btn-danger" @click="theme.resetAll()"><span class="i-lucide:rotate-ccw" />{{ t('theme.resetAll') }}</button>
           </div>
         </div>
       </div>

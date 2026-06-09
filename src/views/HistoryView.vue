@@ -21,6 +21,7 @@ const showBlacklist = ref(false)
 const newBlacklistDomain = ref('')
 const showDailySummary = ref(true)
 const batchDeleteConfirm = ref(false)
+const showScrollTop = ref(false)
 
 watch(() => history.searchKeyword, (v) => {
   searchInput.value = v
@@ -75,7 +76,7 @@ function onSearch(e: Event) {
 
 function onContextMenu(e: MouseEvent, record: HistoryRecord) {
   e.preventDefault()
-  ui.openContextMenu(e.clientX, e.clientY, record)
+  ui.openContextMenu(e.clientX, e.clientY, 'history', record)
 }
 
 function getSessionLabel(key: string, records?: HistoryRecord[]): string {
@@ -98,9 +99,15 @@ function onRecordAction(record: HistoryRecord, action: string) {
 
 function onScroll(e: Event) {
   const el = e.target as HTMLElement
+  showScrollTop.value = el.scrollTop > 300
   if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
     history.loadMore()
   }
+}
+
+function scrollToTop() {
+  const el = recordListRef.value
+  if (el) el.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function scrollToFocused() {
@@ -345,13 +352,24 @@ onUnmounted(() => {
 
     <div class="record-list" ref="recordListRef" @scroll="onScroll">
       <div v-if="history.isLoading" class="loading-state">
-        <div class="spinner" />
-        <span>{{ t('common.loading') }}</span>
+        <div class="skeleton-list">
+          <div v-for="i in 6" :key="i" class="skeleton-item">
+            <div class="skeleton-avatar" />
+            <div class="skeleton-lines">
+              <div class="skeleton-line skeleton-line--title" />
+              <div class="skeleton-line skeleton-line--meta" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div v-else-if="!visibleRecords.length" class="empty-state">
         <span class="i-lucide:clock empty-icon" />
-        <p>{{ t('history.noResults') }}</p>
+        <p v-if="history.searchKeyword">{{ t('history.noResults') }}</p>
+        <p v-else>{{ t('history.noResults') }}</p>
+        <button v-if="history.searchKeyword" class="empty-action" @click="history.clearAllFilters(); searchInput = ''">
+          <span class="i-lucide:x" /> {{ t('common.clearFilter') }}
+        </button>
       </div>
 
       <template v-else>
@@ -497,6 +515,12 @@ onUnmounted(() => {
           {{ t('history.loadMore') }}
         </div>
       </template>
+
+      <Transition name="scroll-top-fade">
+        <button v-if="showScrollTop" class="scroll-top-btn" @click="scrollToTop" :title="t('common.back')">
+          <span class="i-lucide:arrow-up" />
+        </button>
+      </Transition>
     </div>
   </div>
 </template>
@@ -515,6 +539,11 @@ onUnmounted(() => {
   padding: 8px 12px;
   background: var(--color-bg-surface);
   border-bottom: 1px solid var(--color-border);
+  transition: border-color var(--transition-hover), box-shadow var(--transition-hover);
+}
+.search-bar:focus-within {
+  border-bottom-color: var(--color-primary);
+  box-shadow: 0 1px 0 var(--color-primary);
 }
 
 .search-icon { color: var(--color-text-muted); font-size: var(--fs-xl); flex-shrink: 0; }
@@ -687,7 +716,39 @@ onUnmounted(() => {
   animation: spin 0.6s linear infinite;
 }
 
+.skeleton-list { width: 100%; padding: 0; }
+.skeleton-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid var(--color-border);
+}
+.skeleton-avatar {
+  width: 28px; height: 28px; border-radius: var(--radius-sm);
+  background: var(--color-border); flex-shrink: 0;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+.skeleton-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.skeleton-line {
+  height: 12px; border-radius: var(--radius-sm);
+  background: var(--color-border);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+.skeleton-line--title { width: 65%; }
+.skeleton-line--meta { width: 40%; height: 10px; }
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .empty-icon { font-size: 36px; opacity: 0.4; }
+
+.empty-action {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 14px; font-size: var(--fs-md); font-weight: 500;
+  color: var(--color-primary); background: var(--color-primary-light);
+  border: 1px solid var(--color-primary); border-radius: var(--radius-sm);
+  cursor: pointer; transition: all var(--transition-hover);
+}
+.empty-action:hover { background: var(--color-primary); color: var(--color-text-inverse); }
 
 .group-header {
   display: flex; align-items: center; gap: 8px;
@@ -801,7 +862,12 @@ onUnmounted(() => {
 
 .record-actions {
   display: flex; gap: 2px;
+  opacity: 0;
   transition: opacity var(--transition-hover);
+}
+.record-item:hover .record-actions,
+.record-item.focused .record-actions {
+  opacity: 1;
 }
 
 .action-btn {
@@ -837,12 +903,31 @@ onUnmounted(() => {
   position: fixed; inset: 0; background: var(--color-bg-overlay);
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
+  animation: confirm-overlay-in 0.15s ease;
 }
+@keyframes confirm-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 .confirm-dialog {
   width: 280px; background: var(--color-bg-surface); border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg); padding: 20px;
+  animation: confirm-dialog-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+@keyframes confirm-dialog-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 .confirm-title { font-size: var(--fs-xl); font-weight: 600; color: var(--color-text-primary); margin-bottom: 8px; }
 .confirm-text { font-size: var(--fs-md); color: var(--color-text-secondary); margin-bottom: 16px; line-height: 1.5; }
 .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.scroll-top-btn {
+  position: sticky; bottom: 16px; float: right; margin-right: 12px;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--color-border); background: var(--color-bg-surface);
+  color: var(--color-text-muted); font-size: var(--fs-lg);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-md); transition: all var(--transition-hover);
+  z-index: 10;
+}
+.scroll-top-btn:hover { color: var(--color-primary); border-color: var(--color-primary); background: var(--color-primary-light); }
+.scroll-top-fade-enter-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.scroll-top-fade-leave-active { transition: opacity 0.15s ease; }
+.scroll-top-fade-enter-from { opacity: 0; transform: scale(0.8); }
+.scroll-top-fade-leave-to { opacity: 0; }
 </style>

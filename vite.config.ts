@@ -20,6 +20,7 @@ export default defineConfig({
       input: {
         popup: resolve(__dirname, 'popup.html'),
         sidebar: resolve(__dirname, 'sidebar.html'),
+        editor: resolve(__dirname, 'editor.html'),
         background: resolve(__dirname, 'src/background/main.ts'),
       },
       output: {
@@ -34,6 +35,7 @@ export default defineConfig({
             if (id.includes('tldts')) return 'vendor-tldts'
             if (id.includes('pinia')) return 'vendor-pinia'
             if (id.includes('vue')) return 'vendor-vue'
+            if (id.includes('codemirror') || id.includes('@codemirror') || id.includes('@lezer')) return 'vendor-codemirror'
             return 'vendor'
           }
           if (id.includes('src/utils/domainEntity')) return 'core-domain'

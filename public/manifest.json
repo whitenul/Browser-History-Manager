@@ -19,7 +19,9 @@
         "favicon",
         "tabGroups",
         "declarativeNetRequest",
-        "scripting"
+        "scripting",
+        "webNavigation",
+        "browsingData"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -74,6 +76,18 @@
             "run_at": "document_idle",
             "all_frames": false,
             "match_about_blank": true
+        },
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "userScriptMainWorld.js"
+            ],
+            "run_at": "document_start",
+            "all_frames": true,
+            "match_about_blank": true,
+            "world": "MAIN"
         },
         {
             "matches": [
