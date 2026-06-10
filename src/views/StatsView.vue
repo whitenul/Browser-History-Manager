@@ -35,6 +35,7 @@ const timeRangeOptions = computed(() => [
 const showProdPopup = ref(false)
 const hoveredCell = ref<{ day: number; hour: number; count: number } | null>(null)
 const tooltipPos = ref({ x: 0, y: 0 })
+const tooltipDirection = ref<'up' | 'down'>('up')
 const clickedCellKey = ref<string | null>(null)
 
 const prodLevelClass = computed(() => stats.productivity.level)
@@ -59,10 +60,16 @@ function onHeatCellEnter(cell: { day: number; hour: number; count: number }, eve
   const wrapper = target.closest('.heatmap-wrapper')
   if (wrapper) {
     const wrapperRect = wrapper.getBoundingClientRect()
+    const x = rect.left - wrapperRect.left + rect.width / 2
+    const y = rect.top - wrapperRect.top
+    // 边界钳位：防止 tooltip 左右溢出
     tooltipPos.value = {
-      x: rect.left - wrapperRect.left + rect.width / 2,
-      y: rect.top - wrapperRect.top,
+      x: Math.max(40, Math.min(x, wrapperRect.width - 40)),
+      y,
     }
+    // 智能方向：顶部空间不足时向下弹出（tooltip 约 28px 高 + 8px 间距）
+    const spaceAbove = rect.top - wrapperRect.top
+    tooltipDirection.value = spaceAbove < 36 ? 'down' : 'up'
   }
 }
 
@@ -225,9 +232,15 @@ watch(() => stats.timeRange, () => {
               <div
                 v-if="hoveredCell"
                 class="heatmap-tooltip"
+                :class="{ 'is-down': tooltipDirection === 'down' }"
                 :style="{ left: tooltipPos.x + 'px', top: tooltipPos.y + 'px' }"
               >
                 {{ tooltipText }}
+              </div>
+              <div class="heatmap-legend">
+                <span class="legend-label">{{ t('stats.less') }}</span>
+                <div v-for="lvl in 5" :key="lvl - 1" class="legend-swatch" :style="{ backgroundColor: HEAT_COLORS[lvl - 1] }" />
+                <span class="legend-label">{{ t('stats.more') }}</span>
               </div>
             </div>
           </div>
@@ -254,6 +267,7 @@ watch(() => stats.timeRange, () => {
             @click="onTopSiteClick(site.domain)"
             @contextmenu.prevent="openUrl('https://' + site.domain)"
           >
+            <div class="site-bar" :style="{ width: (site.count / Math.max(1, stats.topSites[0]?.count) * 100) + '%' }" />
             <img :src="site.favicon" class="site-favicon" @error="($event.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22 fill=%22%2364748b%22/></svg>'">
             <span class="site-rank">{{ idx + 1 }}</span>
             <div class="site-info">
@@ -348,9 +362,11 @@ watch(() => stats.timeRange, () => {
 
 .overview-strip {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-around;
-  padding: 10px 8px;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 12px 10px;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -416,7 +432,8 @@ watch(() => stats.timeRange, () => {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 20;
-  min-width: 200px;
+  min-width: 180px;
+  max-width: 240px;
 }
 
 .prod-popup-title {
@@ -508,7 +525,7 @@ watch(() => stats.timeRange, () => {
   flex-direction: column;
   justify-content: space-between;
   flex-shrink: 0;
-  padding-top: 14px;
+  padding-top: calc(var(--heat-label-row) + 2px);
 }
 
 .heatmap-day-label-spacer {
@@ -527,11 +544,12 @@ watch(() => stats.timeRange, () => {
   display: flex;
   flex-direction: column;
   position: relative;
+  --heat-label-row: 14px;
 }
 
 .heatmap-hour-labels {
   display: grid;
-  grid-template-rows: 14px;
+  grid-template-rows: var(--heat-label-row);
   grid-template-columns: repeat(24, 12px);
   gap: 2px;
   margin-bottom: 2px;
@@ -541,7 +559,7 @@ watch(() => stats.timeRange, () => {
   font-size: var(--fs-xs);
   color: var(--color-text-muted);
   text-align: center;
-  line-height: 14px;
+  line-height: var(--heat-label-row);
   overflow: visible;
   white-space: nowrap;
 }
@@ -570,13 +588,12 @@ watch(() => stats.timeRange, () => {
 }
 
 .heatmap-cell.is-clickable:hover {
-  transform: scale(1.4);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 8px var(--color-primary-light);
   z-index: 2;
 }
 
 html.dark .heatmap-cell.is-clickable:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 0 0 2px var(--heat-4), 0 0 10px rgba(57, 211, 83, 0.4);
 }
 
 .heatmap-cell.is-current {
@@ -604,7 +621,7 @@ html.dark .heatmap-cell.is-clickable:hover {
   position: absolute;
   transform: translate(-50%, -100%);
   margin-top: -8px;
-  padding: 4px 8px;
+  padding: 4px 10px;
   font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--tooltip-text);
@@ -613,11 +630,12 @@ html.dark .heatmap-cell.is-clickable:hover {
   white-space: nowrap;
   pointer-events: none;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-html.dark .heatmap-tooltip {
-  background: var(--tooltip-bg);
+.heatmap-tooltip.is-down {
+  transform: translate(-50%, 0);
+  margin-top: 12px;
 }
 
 .heatmap-tooltip::after {
@@ -626,13 +644,24 @@ html.dark .heatmap-tooltip {
   bottom: -4px;
   left: 50%;
   transform: translateX(-50%);
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 4px solid var(--tooltip-bg);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--tooltip-bg);
 }
 
-html.dark .heatmap-tooltip::after {
-  border-top-color: var(--tooltip-bg);
+.heatmap-tooltip.is-down::after {
+  bottom: auto;
+  top: -4px;
+  border-top: none;
+  border-bottom: 5px solid var(--tooltip-bg);
+}
+
+html.dark .heatmap-tooltip {
+  background: var(--tooltip-bg);
+}
+
+html.dark .heatmap-tooltip.is-down::after {
+  border-bottom-color: var(--tooltip-bg);
 }
 
 .heatmap-rhythm {
@@ -642,6 +671,27 @@ html.dark .heatmap-tooltip::after {
   margin-top: 8px;
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.legend-label {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .rhythm-icon {
@@ -664,10 +714,24 @@ html.dark .heatmap-tooltip::after {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 8px;
+  padding: 6px 10px;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: background var(--transition-hover);
+  position: relative;
+  overflow: hidden;
+}
+
+.site-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--color-primary-light);
+  opacity: 0.35;
+  border-radius: var(--radius-md);
+  z-index: 0;
+  transition: width 0.4s ease;
 }
 
 .top-site-item:hover {
@@ -679,6 +743,8 @@ html.dark .heatmap-tooltip::after {
   height: 16px;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .site-rank {
@@ -688,6 +754,8 @@ html.dark .heatmap-tooltip::after {
   width: 14px;
   text-align: center;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .site-info {
@@ -697,6 +765,8 @@ html.dark .heatmap-tooltip::after {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .site-domain {

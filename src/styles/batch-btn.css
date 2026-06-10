@@ -1,0 +1,25 @@
+/* 共享按钮样式 - 用于 BatchActionBar, BlacklistBar, ConfirmDialog 等组件 */
+.batch-btn {
+  padding: 3px 10px;
+  font-size: var(--fs-base);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.batch-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.batch-btn.danger {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.batch-btn.danger:hover {
+  background: var(--color-danger-light);
+}
+.batch-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

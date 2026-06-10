@@ -134,7 +134,9 @@ export default {
     weekPrefix: '周',
     session: '会话',
     recordsUnit: '条',
-    heatCellTitle: '周{day} {hour}:00 - {count}次',
+    heatCellTitle: '周{day} {hour}:00 — {count}次',
+    less: '少',
+    more: '多',
     productivityLevels: {
       high: '高效',
       good: '良好',

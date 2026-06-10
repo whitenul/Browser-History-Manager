@@ -134,7 +134,9 @@ export default {
     weekPrefix: '',
     session: 'Sessions',
     recordsUnit: 'records',
-    heatCellTitle: '{day} {hour}:00 - {count} visits',
+    heatCellTitle: '{day} {hour}:00 — {count} visits',
+    less: 'Less',
+    more: 'More',
     productivityLevels: {
       high: 'High',
       good: 'Good',

@@ -85,6 +85,7 @@ export function useSuggestions() {
       selectedIndex.value = selectedIndex.value <= 0 ? items.length - 1 : selectedIndex.value - 1
     } else if (e.key === 'Enter') {
       e.preventDefault()
+      e.stopPropagation()
       if (selectedIndex.value >= 0 && items[selectedIndex.value]) {
         onEnter(items[selectedIndex.value])
       } else {

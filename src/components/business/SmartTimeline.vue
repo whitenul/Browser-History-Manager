@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿<script setup lang="ts">
+﻿﻿﻿﻿﻿<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useHistoryStore } from '@/stores/history'
 import { useUIStore } from '@/stores/ui'
@@ -105,7 +105,7 @@ function getSegmentDots(seg: TimeSegment) {
     if (existing) existing.count++
     else domainMap.set(r.domain, { domain: r.domain, count: 1, favicon: getFaviconUrl(r.url) })
   })
-  return Array.from(domainMap.values()).sort((a, b) => b.count - a.count).slice(0, 8)
+  return Array.from(domainMap.values()).sort((a, b) => b.count - a.count).slice(0, 5)
 }
 
 const currentHour = new Date().getHours()
@@ -268,7 +268,7 @@ function toggleExpand(key: string) {
 .timeline-body { display: flex; flex-direction: column; gap: 4px; }
 
 .segment {
-  border-radius: var(--radius-md); padding: 6px 8px;
+  border-radius: var(--radius-md); padding: 8px 10px;
   background: var(--color-bg-base); transition: background 0.2s;
   border: 1px solid transparent;
 }
@@ -300,7 +300,7 @@ function toggleExpand(key: string) {
   display: flex; align-items: center; gap: 6px; margin-top: 4px;
 }
 .segment-bar-track {
-  flex: 1; height: 5px; background: var(--color-border);
+  flex: 1; height: 8px; background: var(--color-border);
   border-radius: var(--radius-sm); overflow: hidden;
 }
 .segment-bar-fill {
